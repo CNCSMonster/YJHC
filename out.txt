@@ -1,0 +1,17 @@
+#include <stdio.h>
+#include <stdlib.h>
+#define MY_MAX 11
+#define MY_HEIGHT 170
+int add(int a,int b){
+a=a+b;
+return a;
+}
+struct myData{
+int len;
+int getLen(int,int); }
+myData->int getLen(int a,int b){
+return (a-b)*len;
+}
+int main(){
+return 0;
+}

@@ -1,0 +1,4 @@
+#include stdio.h
+#include stdlib.h
+#define MY_MAX 11
+#define MY_HEIGHT 170

@@ -1,0 +1,36 @@
+/*
+//可以定义宏常量
+*/
+#include <stdio.h>
+#include <stdlib.h>
+
+//可以定义宏常量
+#define MY_MAX 11
+#define MY_HEIGHT 170
+
+int add(int a,int b){
+    a=a+b;
+    return a;
+}
+/*
+可以接受多行注释
+*/
+
+//支持面向对象编程
+struct myData{
+    int len;
+    int getLen(int,int);   //结构体的成员默认是可以访问的   //结构体内部可以声明方程
+}
+
+//在结构体外面完成其方法定义
+myData->int getLen(int a,int b){
+    return (a-b)*len;
+}
+
+
+
+int main(){
+    //可以接受c注释
+    return 0;
+
+}
