@@ -2,6 +2,18 @@
 #include <stdlib.h>
 #define MY_MAX 11
 #define MY_HEIGHT 170
+struct student{
+int id;
+int age
+void sayId();
+void sayAge();
+}
+struct student->void sayId(){
+printf("my id is:%d",id);
+}
+struct student->void sayAge(){
+printf("my age is:%d",di);
+}
 int add(int a,int b){
 a=a+b;
 return a;

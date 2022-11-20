@@ -2,13 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-int myfgets(char* buf,char* stops,FILE* fin);
+#include "mystring.c"
+#include "mystring.h"
+
+
 int global_remove(FILE* fin,FILE* fout,FILE* global);
-//判断是否是自定义类型定义关键字
-int isTypeDefKeyWords(char* s);
-//判断是否一个字符串是基础数据类型关键字,是返回非0值，不是返回0
-int isBaseType(char* s);
-int mystrReplace(char* s,char old,char new);
+
 /*
 fin为去掉宏定义后的文件的指针,fout为写入去掉全局量后的文件的指针,global为全局变量的位置
 把全局变量和全局常量(非宏定义常量)提取到一个文件之中
@@ -43,10 +42,29 @@ int global_remove(FILE* fin,FILE* fout,FILE* global){
       printf("c1\n");
       //如果是重名名符号,则一定不是全局常量和全局变量定义，
       //只可能是类型定义
-      fprintf(fout,"%s%c",first,end);
-      end=myfgets(first,";",fin);
-      if(end!=';') return 0;    //应该能够读到以;结尾
-      fprintf(fout,"%s%c",first,end);
+      fprintf(fout,"%s ",first);
+      //读取到话阔
+      end=myfgets(first,"{;",fin);
+      if(end==';'){
+        mystrReplace(first,'\n',' ');
+        fprintf(fout,"%s\n",first); //语法单元间统一用换行分割
+        return 0;    //应该能够读到以;结尾
+      }
+      else if(end=='{'){
+        //如果typedef后面首先读到了{}
+        //则后面跟着的应该是struct,enum,union这些自定义类型的定义
+        //则应该先读到右花括号写入,然后再读后面的
+        mystrReplace(first,'\n',' ');
+        fprintf(fout,"%s{",first);
+        //然后接下来应该读取右花括号以及中间内容
+        end=myfgets(first,"}",fin);
+        mystrReplace(first,'\n',' ');
+        fprintf(fout,"%s}",first);
+        //读取完右花括号后还要读取一个另名
+        end=myfgets(first,";",fin);
+        fprintf(fout,"%s\n",first);
+      }
+      else return 0;
     }
     //判断是否是常量声明符号
     else if(strcmp(first,"const")==0){
@@ -64,11 +82,11 @@ int global_remove(FILE* fin,FILE* fout,FILE* global){
       strcpy(last,first);
       end=myfgets(first,";{=",fin);
       //如果先遇到分号结束,则说明是全局变量定义语句
-      //如果先遇到等号结束，说明是全局变量定义语句且进行了初始化
       if(end==';'){
         mystrReplace(first,'\n',' ');
         fprintf(global,"%s %s\n",last,first);
       }
+      //如果先遇到等号结束，说明是全局变量定义语句且进行了初始化
       else if(end=='='){
         mystrReplace(first,'\n',' ');
         fprintf(global,"%s %s =",last,first);
@@ -78,7 +96,7 @@ int global_remove(FILE* fin,FILE* fout,FILE* global){
         fprintf(global,"%s\n",first);
         // printf("1\n");  //调试语句
       }
-      //否则是函数
+      //否则是函数或者自定义类型定义，都用换行符分割
       else if(end=='{'){
         mystrReplace(first,'\n',' ');
         fprintf(fout,"%s %s{",last,first);
@@ -100,61 +118,6 @@ int global_remove(FILE* fin,FILE* fout,FILE* global){
   }
   return 1;
 }
-
-//判断是否一个字符串是基础数据类型关键字,是返回非0值，不是返回0
-int isBaseType(char* s){
-  char* basetypes[]={
-    "int",
-    "short",
-    "double",
-    "long",
-    "char"
-  };
-  for(int i=0;i<sizeof(basetypes)/sizeof(basetypes[0]);i++){
-    if(!strcmp(s,basetypes[i])) return 1;
-  }
-  return 0;
-}
-
-//判断是否是自定义类型定义关键字
-int isTypeDefKeyWords(char* s){
-  char* typeKeyWords[]={
-    "struct",
-    "union",
-    "enum"
-  };
-  for(int i=0;i<sizeof(typeKeyWords)/sizeof(typeKeyWords[0]);i++){
-    if(!strcmp(s,typeKeyWords[i])) return 1;
-  }
-  return 0;
-}
-
-//读取一个字符串直到读到截止符号集中的符号或者读取到文件末尾,返回值为终止符
-int myfgets(char* buf,char* stops,FILE* fin){
-  char c;
-  int i=0;
-  while ((c=fgetc(fin))!=EOF)
-  {
-    int ifstop=0;
-    for(int j=0;j<strlen(stops);j++){
-      if(stops[j]==c){
-        ifstop=1;
-        break;
-      }
-    }
-    if(ifstop){
-      break;
-    }
-    buf[i++]=c;
-  }
-  buf[i]='\0';
-  return c;
-}
-int mystrReplace(char* s,char old,char new){
-  for(int i=0;i<strlen(s);i++) if(s[i]==old) s[i]=new;
-  return 1;
-}
-
 
 
 int main(int argc,char* argv[]){

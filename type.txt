@@ -1,0 +1,2 @@
+typedef struct student{ int id; int age; void sayId(); void sayAge(); }Student
+struct myData{ int len; int getLen(int,int); }

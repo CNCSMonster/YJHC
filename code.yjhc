@@ -8,10 +8,27 @@
 #define MY_MAX 11
 #define MY_HEIGHT 170
 
-int add(int a,int b){
-    a=a+b;
-    return a;
+//定义点全局变量和全局常量
+int year=2022;
+int month=11;
+int date=2;
+const double pi=3.1415;
+
+//结构体定义应该用分号结尾
+typedef struct student{
+    int id;
+    int age;
+    void sayId();
+    void sayAge();
+}Student;
+
+struct student->void sayId(){
+    printf("my id is:%d",id);
 }
+struct student->void sayAge(){
+    printf("my age is:%d",di);
+}
+
 /*
 可以接受多行注释
 */
@@ -20,17 +37,18 @@ int add(int a,int b){
 struct myData{
     int len;
     int getLen(int,int);   //结构体的成员默认是可以访问的   //结构体内部可以声明方程
-}
+};      //结构体的定义要用分号来完成
 
 //在结构体外面完成其方法定义
-myData->int getLen(int a,int b){
+struct myData->int getLen(int a,int b){
     return (a-b)*len;
 }
 
 
-
 int main(){
     //可以接受c注释
+    struct myData a;
+    printf("%d",a.getLen(1,2));
     return 0;
 
 }
