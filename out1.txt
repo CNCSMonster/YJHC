@@ -6,6 +6,12 @@ int year=2022;
 int month=11;
 int date=2;
 const double pi=3.1415;
+int return2(); int return2(){
+for(int i=0;i<100;i++){
+printf("%d",i);
+}
+return 2;
+}
 typedef struct student{
 int id;
 int age;

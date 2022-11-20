@@ -14,6 +14,17 @@ int month=11;
 int date=2;
 const double pi=3.1415;
 
+int return2();  //函数声明
+
+
+//函数定义
+int return2(){
+    for(int i=0;i<100;i++){
+        printf("%d",i);
+    }
+    return 2;
+}
+
 //结构体定义应该用分号结尾
 typedef struct student{
     int id;

@@ -1,3 +1,4 @@
+int return2(){ for(int i=0;i<100;i++){ printf("%d",i); } return 2; }
 struct student-->void sayId(){ printf("my id is:%d",id); }
 struct student-->void sayAge(){ printf("my age is:%d",di); }
 struct myData-->int getLen(int a,int b){ return (a-b)*len; }
