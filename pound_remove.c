@@ -8,21 +8,12 @@
 //提取出所有宏常量到到某个文件中
 //命令为pound_remove inputfile poundfile1 poundfile2
 //其中poundfile1中保存
-int pound_remove(int argc,char* argv[]);
+int pound_remove(FILE* fin,FILE* fout,FILE* pound_fout);
 
 
 
 //使用
 int main(int argc,char* argv[]){
-  pound_remove(argc,argv);
-
-  return 0;
-}
-
-
-
-//
-int pound_remove(int argc,char* argv[]){
   //把含有井的预编译命令和宏常量抵挡一提取出来
   if(argc!=4){
     printf("wrong!we need and only need 3 argument,pleas check your input");
@@ -48,10 +39,27 @@ int pound_remove(int argc,char* argv[]){
     printf("fail to open %s for write",argv[23]);
     exit(-1);
   }
+  pound_remove(fin,fout,pound_fout);
+  fclose(fin);fclose(fout);fclose(pound_fout);
+  return 0;
+}
+
+
+
+//返回1为表示完成了宏常量和预编译包含语句提取，如果返回0说明出现了异常退出
+int pound_remove(FILE* fin,FILE* fout,FILE* pound_fout){
   char c;
+  int ifPrintEnter=0;
   //然后开始读取,每次读取到预编译符号开始提取
   while((c=fgetc(fin))!=EOF){
-    if(c!='#') fputc(c,fout);
+    if(c=='\n'){
+      if(ifPrintEnter)  fputc('\n',fout);
+      ifPrintEnter=0;
+    }
+    else if(c!='#'){
+      fputc(c,fout);
+      ifPrintEnter=1;
+    }
     else if(c=='#'){
       char s[200];  //不允许预编译包含或者宏定义长度超过200
       fscanf(fin,"%s",s);
@@ -60,7 +68,7 @@ int pound_remove(int argc,char* argv[]){
         //如果
         if(s[strlen("define")]!='\0'){
           printf("wrong #define syntax");
-          fclose(fin);fclose(fout);fclose(pound_fout);exit(-1);
+          return 0;
         }
         //否则就是正确的,提取到宏定义中
         else{
@@ -86,7 +94,7 @@ int pound_remove(int argc,char* argv[]){
             fprintf(pound_fout,"#include %s\n",s+1);
           }else{
             printf("wrong #include syntax3,%s",s);
-            fclose(fin);fclose(fout);fclose(pound_fout);exit(-1);
+            return 0;
           }
         }
         //如果后面紧跟着包含的文件名,则截取判断
@@ -99,22 +107,21 @@ int pound_remove(int argc,char* argv[]){
             fprintf(pound_fout,"#include %s\n",s+1);
           }else{
             printf("wrong #include syntax1");
-            fclose(fin);fclose(fout);fclose(pound_fout);exit(-1);
+            return 0;
           }
         }else{
           //如果是其他情况，则报错
           printf("wrong #include syntax2");
-          fclose(fin);fclose(fout);fclose(pound_fout);exit(-1);
+          return 0;
         }
       }
       //否则不是预编译指令,报错
       else{
         printf("wrong # use syntax");
-        fclose(fin);fclose(fout);fclose(pound_fout);exit(-1);
+        return 0;
       }
     }
   }
-  fclose(fin);fclose(fout);fclose(pound_fout);
   return 0;
 }
 

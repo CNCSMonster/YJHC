@@ -1,2 +1,7 @@
-dad
-agad dad
+#include <stdio.h>
+#include <stdlib.h>
+int global_remove(FILE* fin,FILE* fout,FILE* global){
+}
+int main(){
+return 0;
+}

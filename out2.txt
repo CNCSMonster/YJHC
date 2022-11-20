@@ -1,0 +1,2 @@
+int add(int a,int b){ a=a+b; return a; }
+struct myData{ int len; int getLen(int,int); }

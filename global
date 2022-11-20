@@ -1,0 +1,6 @@
+int a =1
+int b =2
+int c =4
+const int a=5
+int c =11
+char m =6
