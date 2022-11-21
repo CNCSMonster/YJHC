@@ -26,6 +26,29 @@ int mystrReplace(char* s,char old,char new){
   return 1;
 }
 
+//从字符串根据指定终结符读取一个字符串
+int mysgets(char* buf,const char* stops,const char* src){
+  char c;
+  int i=0;
+  int j=0;
+  while ((c=src[j])!='\0')
+  {
+    int ifstop=0;
+    for(int j=0;j<strlen(stops);j++){
+      if(stops[j]==c){
+        ifstop=1;
+        break;
+      }
+    }
+    if(ifstop){
+      break;
+    }
+    buf[i++]=c;
+  }
+  buf[i]='\0';
+  return c;
+}
+
 
 //判断是否一个字符串是基础数据类型关键字,是返回非0值，不是返回0
 int isBaseType(char* s){

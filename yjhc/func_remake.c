@@ -58,7 +58,7 @@ int fputFunc(struct func* toPutFunc,FILE* fout);
 
 //主要过程函数
 //从前面步骤提取的函数文件中加载函数信息到哈希表中,包括函数名和是否结构体方法以及返回值类型
-int loadFunc(struct func_table* funcTable,struct func_arr* funcArr,);
+int loadFunc(struct func_table* funcTable,struct func_arr* funcArr);
 
 
 int main(){
