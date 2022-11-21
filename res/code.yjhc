@@ -33,6 +33,8 @@ typedef struct student{
     void sayAge();
 }Student;
 
+struct student a;
+
 struct student->void sayId(){
     printf("my id is:%d",id);
 }

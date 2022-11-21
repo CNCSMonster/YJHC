@@ -14,6 +14,7 @@ int doc_del(int argc,char* argv[]);
 
 */
 
+
 void showError(){
   printf("syntax error");
 }

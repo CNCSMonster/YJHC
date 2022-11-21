@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#define MY_MAX 11
-#define MY_HEIGHT 170
 int year=2022;
 int month=11;
 int date=2;
@@ -18,6 +14,7 @@ int age;
 void sayId();
 void sayAge();
 }Student;
+struct student a;
 struct student->void sayId(){
 printf("my id is:%d",id);
 }

@@ -34,7 +34,8 @@ int isBaseType(char* s){
     "short",
     "double",
     "long",
-    "char"
+    "char",
+    "void"  //表示无类型
   };
   for(int i=0;i<sizeof(basetypes)/sizeof(basetypes[0]);i++){
     if(!strcmp(s,basetypes[i])) return 1;
