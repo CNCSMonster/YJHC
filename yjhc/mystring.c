@@ -30,8 +30,8 @@ int mystrReplace(char* s,char old,char new){
 int mysgets(char* buf,const char* stops,const char* src){
   char c;
   int i=0;
-  int j=0;
-  while ((c=src[j])!='\0')
+  int k=0;
+  while ((c=src[k++])!='\0')
   {
     int ifstop=0;
     for(int j=0;j<strlen(stops);j++){

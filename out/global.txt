@@ -1,5 +1,3 @@
-int year =2022
-int month =11
-int date =2
-const double pi=3.1415
-struct student a
+const double pi = 3.1415926
+int year
+int month

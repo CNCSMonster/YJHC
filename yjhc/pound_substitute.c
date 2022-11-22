@@ -15,12 +15,14 @@ struct poundline{
 //从文件中读取一个宏定义表,通过指针返回读取到的宏定义表的大小
 struct poundline* loadPLs(FILE* pound_fin,int* returnSize);
 
+//判断是否是能够转义的字符
+int isEscape(char c);
 
 //进行宏替换,与一般字符串替换不同,宏替换有一定语义分析
 char* pound_substitute_string(char* toChange,struct poundline val);
 
-//去除宏嵌套
-char* pound_remove_nest(struct poundline* PLs,int size);
+//去除宏嵌套,对于输入的宏替换说明行数组,去除里面的宏嵌套
+void pound_remove_nest(struct poundline* PLs,int size);
 
 
 //主要功能方法
@@ -72,27 +74,26 @@ printf("%d",M); //这个语句中M会被替换成a_b
 
 
 int main(int argc ,char* argv[]){
-
-  if(argc!=4){
-    printf("wrong!miss argument in doc_del");
-    exit(-1);
-  }
+  // if(argc!=4){
+  //   printf("wrong!miss argument in doc_del");
+  //   exit(-1);
+  // }
   FILE* code_fin=fopen(argv[1],"r"); //打开要读取文件，获取句柄
-  // FILE* fin=fopen("code.yjhc","r"); //打开要读取文件，获取句柄
+  // FILE* code_fin=fopen("../out/out2.txt","r"); //打开要读取文件，获取句柄
   if(!code_fin){
     //如果打开文件失败
     printf("fail to open %s",argv[1]);
     exit(-1);
   }
   FILE* pound_fin=fopen(argv[2],"r");
-  // FILE* fout=fopen("out.txt","w"); //打开要读取文件，获取句柄
+  // FILE* pound_fin=fopen("../out/pound.txt","r"); //打开要读取文件，获取句柄
   if(!code_fin){
     fclose(code_fin);
     printf("fail to open %s for write",argv[2]);
     exit(-1);
   }
   FILE* fout=fopen(argv[3],"w");
-  // FILE* fout=fopen("out.txt","w"); //打开要读取文件，获取句柄
+  // FILE* fout=fopen("../out/out3.txt","w"); //打开要读取文件，获取句柄
   if(!fout){
     fclose(code_fin);
     fclose(pound_fin);
@@ -100,12 +101,13 @@ int main(int argc ,char* argv[]){
     exit(-1);
   }
   if(
-    pound_substitute_file(code_fin,pound_fin,fout)
+    !pound_substitute_file(code_fin,pound_fin,fout)
   ){
     printf("syntax error for pound_substitute");
   }
   fclose(code_fin);
   fclose(pound_fin);
+  printf("??");
   fclose(fout);
   return 0;
 }
@@ -131,7 +133,7 @@ struct poundline* loadPLs(FILE* pound_fin,int* returnSize){
       continue;
     }
     //如果是宏替换语句,则进行提取
-    else if(strcmp(tmp1,"#define")){
+    else if(strcmp(tmp1,"#define")==0){
       end=mysgets(tmp1," ",tmp+strlen("#define")+1);  //读取下一个字符串
       //如果遇到异常,异常处理
       if(end!=' '){
@@ -165,6 +167,7 @@ struct poundline* loadPLs(FILE* pound_fin,int* returnSize){
         memcpy(newMem,PLs,sizeof(struct poundline)*n);
         free(PLs);
       }
+
       //完成扩充后读取下一行,进入下一个语句
       end=myfgets(tmp,"\n",pound_fin);
     }
@@ -233,53 +236,58 @@ char* pound_substitute_string(char* toChange,struct poundline val){
     tmp[i++]=end;
     //根据读取到的终结符是否是双引号判断是否要跳过后面字符串部分
     if(end=='\"'){
-      //循环读取处理过程中的
+      //循环读取知道遇到字符串的结尾双引号
       char* stops2="\"\\";
-      int len=strlen(tmp1);
-      while((end=mysgets(tmp1,stops2,toChange))!='\0'&&end!='\"'){
+      while((end=mysgets(tmp1,stops2,toChange))!='\0'&&end=='\\'){
         toChange+=strlen(tmp1)+1;
-        //如果这个字符和后面连在一起的部分构成转义字符,一起读出
-        if(end=='\\'&&(
-          toChange[0]=='"'||
-          toChange[0]=='\\'||
-          toChange[0]=='n'||
-          toChange[0]=='t'||
-          toChange[0]=='b'||
-          toChange[0]=='r'
-        )){
-          tmp[i++]=toChange[0];
+        if (isEscape(toChange[0]))
+        {
+          strcpy(tmp + i, tmp1);
+          i += strlen(tmp1);
+          tmp[i++] =  '\\';
+          tmp[i++] =  toChange[0];
           toChange++;
-        }
-        //否则只是单纯的一个反斜杠,
-        else{
-
-        }
-
+        } //把字符转义,如果不在合理转义表里面,则返回0
+        else return NULL; //否则是不合理的情况,因为代码中字符串里面转义符号反斜杆不能单独出现
       }
       //如果读到字符串末尾了都没有出现字符串的双引号,则报异常
       if(end!='\"'){
         return NULL;  //返回NULL表示异常,也就是宏替换异常,因为宏替换只能够在字符串外进行
       }else{
-        continue;
+        strcpy(tmp+i,tmp1);
+        i+=strlen(tmp1);
+        tmp[i++]='\"';
+        toChange+=1+strlen(tmp1);
       }
     }
-    tmp[i++]=end;
   }
   //TODO,遇到\0退出后还有最后一次分离出的tmp1要处理
-
-
-
-
-
-
-
-  //完成上述替换后,生成合适大小的空间保存结果并返回
-  //首先最后要加入字符串结束符
+  strcpy(tmp+i,tmp1);
+  i+=strlen(tmp1);
+  //然后最后要加入字符串结束符
   tmp[i++]='\0';
+  //完成上述替换后,生成合适大小的空间保存结果并返回
   char* out=(char*)malloc(sizeof(char)*(i));
   strcpy(out,tmp);
   return out;
 }
+
+
+
+
+//判断是否是合理的转义字符
+int isEscape(char c){
+    if(c=='n'||c=='t'||c=='b'||c=='r'||c=='\"'||c=='\\'){
+      return 1;
+    }
+    return 0;
+}
+
+
+
+
+
+
 
 //去除宏嵌套,不需要返回值
 void pound_remove_nest(struct poundline* PLs,int size){
@@ -299,11 +307,47 @@ int pound_substitute_file(FILE* code_fin,FILE* pound_fin,FILE* fout){
   //首先,先加载宏定义表
   int size;
   struct poundline* PLs=loadPLs(pound_fin,&size);
+  if(PLs==NULL){
+    printf("");
+    return 0;
+  }
+
+  //打印获取结果
+  for(int i=0;i<size;i++) printf("%d.%s;%s\n",i+1,PLs[i].name,PLs[i].value);
+
   //然后,对宏定义表进行去除嵌套处理
   pound_remove_nest(PLs,size);
+
+  //打印去除嵌套后结果
+  for(int i=0;i<size;i++) printf("%d.%s;%s\n",i+1,PLs[i].name,PLs[i].value);
+
   //然后使用宏定义表对文件代码进行替换
   char tmp[1000];
-  char* stops=",;"
-
-
+  char end;
+  char* stops=",;()[]{}. \n/+-*^|&><";
+  //持续读直到文件末尾
+  while((end=myfgets(tmp,stops,code_fin))!=EOF){
+    if(strcmp(tmp,"")==0){
+      fprintf(fout,"%c",end);
+      continue;
+    }
+    for(int i=0;i<size;i++){
+      if(strcmp(tmp,PLs[i].name)==0){
+        strcpy(tmp,PLs[i].value);
+        break;
+      }
+    }
+    fprintf(fout,"%s%c",tmp,end);
+  }
+  //读到末尾了还有最后一行要处理
+  if(!strcmp(tmp,"")){
+    fprintf(fout,"%s",tmp);
+  }
+  //最后释放宏语句数组的动态空间
+  for(int i=0;i<size;i++){
+    free(PLs[i].name);
+    free(PLs[i].value);
+  }
+  free(PLs);
+  return 1;
 }

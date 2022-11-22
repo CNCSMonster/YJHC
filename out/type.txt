@@ -1,2 +1,3 @@
-typedef struct student{ int id; int age; void sayId(); void sayAge(); }Student
-struct myData{ int len; int getLen(int,int); }
+typedef enum score_level{ GOOD, BAD, NORMAL }LEVEL
+struct student{ double score; int age; char name[20]; double getScore(); void selfIntroduce(); }
+union{ int integer; double decimal; short shortInt; }

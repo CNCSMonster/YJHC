@@ -1,0 +1,5 @@
+typedef enum score_level{ GOOD, BAD, NORMAL }LEVEL
+struct student{ double score; int age; char name[20]; double getScore(); void selfIntroduce(); }
+union multiData{ int integer; double decimal; short shortInt; }
+struct student->double getScore(){ return score; }
+struct student->void selfIntroduce(){ printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age); }

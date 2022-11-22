@@ -1,5 +1,2 @@
-int return2(){ for(int i=0;i<100;i++){ printf("%d",i); } return 2; }
-struct student-->void sayId(){ printf("my id is:%d",id); }
-struct student-->void sayAge(){ printf("my age is:%d",di); }
-struct myData-->int getLen(int a,int b){ return (a-b)*len; }
-int main(){ struct myData a; printf("%d",a.getLen(1,2)); return 0; }
+struct student-->double getScore(){ return score; }
+struct student-->void selfIntroduce(){ printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age); }
