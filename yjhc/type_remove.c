@@ -112,7 +112,7 @@ int type_func_extract(FILE* fin,FILE* func_fout,FILE* type_fout){
       }
       //如果是函数定义
       else if(end=='('){
-        fprintf(func_fout,"%s(",term);
+        fprintf(func_fout,"%s %s(",term,first);
         while((end=fgetc(fin))!=EOF&&end!='\n'){
           fputc(end,func_fout);
         }
@@ -128,7 +128,7 @@ int type_func_extract(FILE* fin,FILE* func_fout,FILE* type_fout){
       end=myfgets(first,"{(",fin);
       //如果是函数定义
       if(end=='('){
-        fprintf(func_fout,"%s(",term);
+        fprintf(func_fout,"%s %s(",term,first);
         while((end=fgetc(fin))!=EOF&&end!='\n'){
           fputc(end,func_fout);
         }
