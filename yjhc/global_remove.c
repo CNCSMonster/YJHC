@@ -129,9 +129,59 @@ int global_remove(FILE* fin,FILE* fout,FILE* global){
       //异常
       else return 0;
     }
-    //否则是异常情况
+    //否则还可能是自定义类型的别名
     else{
-      return 0;
+      printf("c4\n");
+      char last[100];
+      strcpy(last,first);
+      end=myfgets(first,";{=",fin);
+      //如果先遇到分号结束,则说明是全局变量定义语句或者函数声明
+      if(end==';'){
+        //如果前面紧跟着右括号,说明是函数声明语句,可以直接省略
+        if(first[strlen(first)-1]==')'||first[strlen(first)-2]==')'){
+          printf("func anouncement:%s",first);
+          continue;
+        }
+        mystrReplace(first,'\n',' ');
+        fprintf(global,"%s %s\n",last,first);
+      }
+      //如果先遇到等号结束，说明是全局变量定义语句且进行了初始化
+      else if(end=='='){
+        mystrReplace(first,'\n',' ');
+        fprintf(global,"%s %s =",last,first);
+        end=myfgets(first,";",fin);
+        printf("after=:%s\n",first);
+        mystrReplace(first,'\n',' ');
+        fprintf(global,"%s\n",first);
+        // printf("1\n");  //调试语句
+      }
+      //否则是函数或者自定义类型定义，函数里面可能有for循环,或者花括号数组,所以还要进行处理
+      //使用一个属性左花括号数量来判断是否读到了函数结尾
+      else if(end=='{'){
+        mystrReplace(first,'\n',' ');
+        fprintf(fout,"%s %s{",last,first);
+        int leftPar=1;  //记录没有匹配的左括号数量
+        while((end=myfgets(first,"{;}",fin))!=EOF){
+          if(end=='}'&&leftPar==1) break;
+          //如果遇到花括号，说明遇到了数组赋值或者内置代码块
+          else if(end=='{'){
+            leftPar++;
+            mystrReplace(first,'\n',' ');
+            fprintf(fout,"%s{",first);
+          }else if(end=='}'){
+            leftPar--;
+            mystrReplace(first,'\n',' ');
+            fprintf(fout,"%s}",first);
+          }else{
+            mystrReplace(first,'\n',' ');
+            fprintf(fout,"%s;",first);
+          }
+        }
+        if(end=='}') fprintf(fout," }\n");
+        else return 0;
+      }
+      //异常
+      else return 0;
     }
   }
   return 1;

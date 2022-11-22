@@ -1,2 +1,4 @@
 struct student-->double getScore(){ return score; }
 struct student-->void selfIntroduce(){ printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age); }
+LEVEL(int score){ if(score>33){ return GOOD; }else if(score>22){ return NORMAL; }else{ return BAD; } }
+int main(){ struct student stu1; printf("N=M=%d",3); stu1.selfIntroduce(); LEVEL level=judLevel(stu1); int a=3; printf("student%s's score level is %d,he get %d pens!",3,a); return 1; }

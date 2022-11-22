@@ -106,8 +106,9 @@ int type_func_extract(FILE* fin,FILE* func_fout,FILE* type_fout){
       end=myfgets(first,"{(",fin);
       //如果是类型定义
       if(end=='{'){
+        fprintf(type_fout,"%s %s{",term,first);
         myfgets(first,"\n",fin);
-        fprintf(type_fout,"%s{%s\n",term,first);
+        fprintf(type_fout,"%s\n",first);
       }
       //如果是函数定义
       else if(end=='('){
@@ -120,7 +121,22 @@ int type_func_extract(FILE* fin,FILE* func_fout,FILE* type_fout){
       //
       else return 0;
     }
-    else return 0;  //异常返回0
+    //否则可能是自定义类型的别名,则属于函数
+    else{
+      char term[15];
+      strcpy(term,first);
+      end=myfgets(first,"{(",fin);
+      //如果是函数定义
+      if(end=='('){
+        fprintf(func_fout,"%s(",term);
+        while((end=fgetc(fin))!=EOF&&end!='\n'){
+          fputc(end,func_fout);
+        }
+        fputc(end,func_fout);
+      } 
+      //
+      else return 0;
+    }
   }
   return 1;
 }

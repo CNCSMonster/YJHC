@@ -39,6 +39,10 @@ union multiData{
 */
 //新语法中函数可以定义函数头,也可以不定义函数头
 
+//可以定义函数头,但是在中间过程中函数头会被处理掉
+//struct student->double getScore();
+//LEVEL judLevel(int score);
+
 //结构体方法定义方式
 struct student->double getScore(){
     return score;   //在结构体方法中能够直接引用结构体的成员变量
@@ -48,6 +52,8 @@ struct student->void selfIntroduce(){
     //结构体方法内调用了结构体自身的方法getScore()
     printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age);
 }
+
+
 //全局方法
 LEVEL judLevel(int score){
     if(score>33){

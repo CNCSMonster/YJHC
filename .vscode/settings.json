@@ -1,7 +1,8 @@
 {
     "files.associations": {
         "stdio.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "regex": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
