@@ -78,3 +78,20 @@ int isTypeDefKeyWords(char* s){
   }
   return 0;
 }
+
+
+//在已经读取出字符串左双引号的请况下,
+// 从文件中读取剩下的字符串,如果读不出符合c语法的字符串,
+// 则返回0,读取成功则返回非0值
+int freadRestString(FILE* fin){
+
+}
+
+//判断字符能否被转义
+//判断是否是合理的转义字符
+int isEscape(char c){
+    if(c=='n'||c=='t'||c=='b'||c=='r'||c=='\"'||c=='\\'){
+      return 1;
+    }
+    return 0;
+}

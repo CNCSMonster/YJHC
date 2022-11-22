@@ -15,9 +15,6 @@ struct poundline{
 //从文件中读取一个宏定义表,通过指针返回读取到的宏定义表的大小
 struct poundline* loadPLs(FILE* pound_fin,int* returnSize);
 
-//判断是否是能够转义的字符
-int isEscape(char c);
-
 //进行宏替换,与一般字符串替换不同,宏替换有一定语义分析
 char* pound_substitute_string(char* toChange,struct poundline val);
 
@@ -274,14 +271,6 @@ char* pound_substitute_string(char* toChange,struct poundline val){
 
 
 
-
-//判断是否是合理的转义字符
-int isEscape(char c){
-    if(c=='n'||c=='t'||c=='b'||c=='r'||c=='\"'||c=='\\'){
-      return 1;
-    }
-    return 0;
-}
 
 
 

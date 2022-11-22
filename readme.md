@@ -88,10 +88,10 @@ cp
 
    ```
    函数名|函数主人|函数返回值|函数参数表
-   eat|human|int|(int a)
+   eat|struct human|int|(int a)
    //表示结构体human具有的方法eat
    //如果是全局函数而不是某个结构体的方法
-   add|NULL|int|(int a,int b)
+   add|NULL|struct word|(int a,int b)
    //则函数主人部分分配类型为NULL
    //实现方法,先统计出
    ```

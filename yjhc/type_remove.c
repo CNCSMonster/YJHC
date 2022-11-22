@@ -70,7 +70,8 @@ int type_func_extract(FILE* fin,FILE* func_fout,FILE* type_fout){
       end=myfgets(first,">({",fin);
       //如果先读取到'-'则超前搜索一步，如果下一个字符是'>'则说明是结构体方法单元
       if(end=='>'){
-        fprintf(func_fout,"struct %s->",first);
+        if(first[strlen(first)-1]!='-') return 0;
+        fprintf(func_fout,"struct %s>",first);
         //读取，把直到换行为止得内容写入方法区区
         while((end=fgetc(fin))!=EOF&&end!='\n'){
           fputc(end,func_fout);

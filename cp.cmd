@@ -9,3 +9,5 @@ exe\ps out\out2.txt out/pound.txt out/out3.txt  @REM 使用pound_substitue使用
 exe\gr out/out3.txt out/out4.txt out/global.txt
 @REM 使用type_remove从去除宏,完成宏替换,去全局量后的文件中分离出函数以及类型定义
 exe\tr out/out4.txt out/func.txt out/type.txt   
+::使用func_analyze对func文件中提取出来的函数定义进行一阶段分析:分离函数头到head文件中,并把代码段token化,规则化到tokens文件中
+exe\fa out/func.txt out/func_head.txt out/func_tokens.txt

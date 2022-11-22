@@ -19,12 +19,13 @@ int main(){
   //测试c语言能否按照指定格式忽略读取
   char s[20];
   char s2[20];
-  scanf("(%s,%s)",s,s2);
-  printf("s1:%s\ns2:%s",s,s2);
+  scanf("%s",s);
+  scanf("%s",s2);
+  printf("s1:%s\ns2:%s\n",s,s2);
   //不能,scanf只能够对开头进行匹配,不能够对结果预测
 
-
-
+  int d=sprintf(s,"%s,nihao%d",s2,11);
+  printf("%d",d);
 
   // int a_b=3;
   // char* name E"33";
