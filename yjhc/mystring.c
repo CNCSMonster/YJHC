@@ -119,3 +119,11 @@ int isSep(char c){
   }
   return 0;
 }
+
+//判断是否是运算符组成，数个运算符可以组合在一起,比如|和|可以组成运算符||
+int isOp(char c){
+  for(int i=0;i<sizeof(operationElems)/sizeof(operationElems[0]);i++){
+    if(operationElems[i]==c) return 1;
+  }
+  return 0;
+}

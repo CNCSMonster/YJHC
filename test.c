@@ -10,6 +10,8 @@ union ttt
 
 
 int main(){
+  union  ttt* a;
+  a->tf=2.22;
   
   return 0;
 }

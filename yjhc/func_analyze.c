@@ -4,7 +4,7 @@
 #include "mystring.h"
 #include "mystring.c"
 #include "token_kind.h"
-
+#include "string.h"
 
 
 
@@ -15,102 +15,160 @@
 //代码段词法分析,直到遇到右花括号结束
 int code_parse(FILE* fin,FILE* code);
 //函数头分析,直到遇到一个左括号结束
-int head_analyze(FILE* fin,FILE* head);
+int head_analyze(FILE *fin, FILE *head);
 //函数文件分析
-int func_analyze(FILE* fin,FILE* head,FILE* code);
+int func_analyze(FILE *fin, FILE *head, FILE *code);
 
-int main(int argc,char* argv[]){
-  if(!argc==4){
+int main(int argc, char *argv[])
+{
+  if (!argc == 4)
+  {
     printf("func analysis need and only need 3 argument!input path, func head path,and code path!");
     exit(-1);
   }
-  char* inputPath=argv[1];
-  char* headPath=argv[2];
-  char* codePath=argv[3];
+  char *inputPath = argv[1];
+  char *headPath = argv[2];
+  char *codePath = argv[3];
   // char* inputPath="../func.txt";
   // char* headPath="../head.txt";
   // char* codePath="../tokens.txt";
-  FILE* fin=fopen(inputPath,"r");
-  if(fin==NULL){
-    printf("fail to open %s",inputPath);
+  FILE *fin = fopen(inputPath, "r");
+  if (fin == NULL)
+  {
+    printf("fail to open %s", inputPath);
     exit(-1);
   }
-  FILE* head=fopen(headPath,"w");
-  if(head==NULL){
+  FILE *head = fopen(headPath, "w");
+  if (head == NULL)
+  {
     fclose(fin);
-    printf("fail to open %s",headPath);
+    printf("fail to open %s", headPath);
     exit(-1);
   }
-  FILE* code=fopen(codePath,"w");
-  if(code==NULL){
+  FILE *code = fopen(codePath, "w");
+  if (code == NULL)
+  {
     fclose(fin);
     fclose(head);
-    printf("fail to open %s",codePath);
+    printf("fail to open %s", codePath);
     exit(-1);
   }
-  if(!func_analyze(fin,head,code)){
+  if (!func_analyze(fin, head, code))
+  {
     printf("syntax error!,fail to anlyze the function");
   }
-  fclose(fin);fclose(head);fclose(code);
+  fclose(fin);
+  fclose(head);
+  fclose(code);
   return 0;
 }
 
-
-
 //代码段词法分析,直到遇到右花括号结束
-int code_parse(FILE* fin,FILE* code){
+int code_parse(FILE *fin, FILE *code)
+{
   //先往文件中写入一个花括号并换行
-  fprintf(code,"%d %s\n",SEP,'{');
-  int leftPar=1;
+  fprintf(code, "%d %c\n", SEP, '{');
+  int leftPar = 1;
   //函数token分析
-  char* stops="+-*/^|&;,() {}\"\n"; //读到换行之前都是属于这个函数的内容
+  char *stops = "+-*/^|&;,.><=[]() {}\"\n"; //读到换行之前都是属于这个函数的内容
   char tmp[1000];
   char end;
-  while((end=myfgets(tmp,stops,fin))!='}'||leftPar>1){
+  end = myfgets(tmp, stops, fin);
+  while (end != '}' || leftPar > 1)
+  {
+    printf("^%s$\n",tmp);
     //对读取到的内容进行词法分析
     //仅仅读到的内容不为的时候才需要进行词法分析
-    if(strcmp(tmp,"")!=0){
+    if (strcmp(tmp, "") != 0)
+    {
       //判断是否是基础数据类型
-      if(isBaseType(tmp)){
-        fprintf(code,"%d %s\n",TYPE,tmp);
+      if (isBaseType(tmp))
+      {
+        fprintf(code, "%d %s\n", TYPE, tmp);
       }
       //判断是否是类型定义关键字
       //如果是类型定义关键字,则与后面的一个字符串一起组成类型名
-      else if(isTypeDefKeyWords(tmp)){
-        if(end!=' ') return 0;  //则后面应该是以空格结尾的
-        fprintf(code,"%d %s ",TYPE,tmp);
-        end=myfgets(tmp,stops,fin);
-        fprintf(code,"%s\n",end);
+      else if (isTypeDefKeyWords(tmp))
+      {
+        if (end != ' ')
+          return 0; //则后面应该是以空格结尾的
+        fprintf(code, "%d %s ", TYPE, tmp);
+        end = myfgets(tmp, stops, fin);
+        fprintf(code, "%s\n", tmp);
       }
       //判断是否是流程控制关键字
-      else if(isKeyForProcessControl(tmp)){
-        fprintf(code,"%d %s\n",CONTROL,tmp);
+      else if (isKeyForProcessControl(tmp))
+      {
+        fprintf(code, "%d %s\n", CONTROL, tmp);
       }
-      //否则是unknown类型等待以后分析      
-      else{
-        fprintf(code,"%d %s\n",UNKOWN,tmp);
+      //判断是否是数字
+      else if (strspn(tmp, "0123456789") == strlen(tmp))
+      {
+        //判断后面是否是小数点,如果是小数点,就是小数
+        if (end == '.')
+        {
+          fprintf(code, "%d %s.", CONST, tmp);
+          end = myfgets(tmp, stops, fin);
+          //数字后面跟着小数点,则后面一定是整数序列
+          if (strspn(tmp, "0123456789") != strlen(tmp))
+          {
+            return 0;
+          }
+          //
+          fprintf(code, "%s\n", tmp);
+        }
+        //如果不是小数点，就是整数
+        else
+        {
+          fprintf(code, "%d %s\n", CONST, tmp);
+        }
+      }
+      //判断是否是名(包括变量名常量名数组名以及函数名,应该不以数字开头,因为不确定是哪种名,定义为UNKOWN类型)
+      else if (tmp[0] > 57 || tmp[0] < 48)
+      {
+        fprintf(code, "%d %s\n", UNKNOWN, tmp); //还不确定是量名还是函数名
+      }
+      //如果出现了语法定义外的情况,提示语法错误
+      else
+      {
+        return 0;
       }
     }
+
     //然后对读到的终结符号进行判断
-    if(end==' ') continue;  //空格不用生成token
-    if(end=='{'){
+    if(end==' '){
+      end=myfgets(tmp,stops,fin);
+      continue;
+    }  //空格不用生成token
+    //判断是否是字符串的左双引号
+    if(end=='\"'){
+      //如果是,则读取出字符串剩下部分
+      end=freadRestString(fin,tmp);
+      if(!end) return 0;  //如果读不出字符串
+      //否则
+      fprintf(code,"%d \"%s\"\n",CONST,tmp);
+    }
+    else if(end=='{'){
       leftPar++;
       fprintf(code,"%d %c\n",SEP,end);
     }
     else if(end=='}'){
       leftPar--;
-      fprintf(code,"%d %c",SEP,end);
+      fprintf(code,"%d %c\n",SEP,end);
     }
     //判断是否是其他界符
     else if(isSep(end)){
-      fprintf(code,"%d %c",SEP,end);
+      fprintf(code,"%d %c\n",SEP,end);
     }
-    //判断是否是单独存在的运算符
-    else if(isSingleOperation(end)){
-      fprintf(code,"%d %c",OP,end);
+    //判断是否是运算符或者运算符的组成部分
+    else if(isOp(end)){
+      fprintf(code,"%d %c\n",OP,end);
     }
-    //TODO 否则可能是复合的运算符,要超前搜索一位判断
-
+    else{
+      return 0;
+    }
+    //处理完该次读取内容后获得下一次读取
+    end=myfgets(tmp,stops,fin);
   }
   if(end!='}') return 0;
   //最后一行读取的内容应该为空
@@ -118,11 +176,9 @@ int code_parse(FILE* fin,FILE* code){
   //循环读取,把后面一个换行符读取出来
   while((end=myfgets(tmp,"\n",fin))!='\n');
   if(end!='\n') return 0; //合理的格式最后面应该是一个换行符
-  fprintf(code,"%d %s\n",SEP,'}');
+  fprintf(code,"%d %c\n",SEP,'}');
   return 1;
 }
-
-
 
 //函数头分析,直到遇到一个左括号结束
 //如果到了文件的尽头,返回EOF
@@ -136,7 +192,7 @@ int head_analyze(FILE* fin,FILE* head){
   char funcName[200];
   char args[200]; //保存参数列表,这里面保存参数列表格式为type1 varname1,type2 varname2这样子,不保留前后括号
   //首先,函数头的大小是有限的,而且以{结束,中间可能出现的成分有类型定义符,->,逗号,小括号,id
-  end=myfgets(tmp,"\n;#@^%%<|{}",fin);
+  end=myfgets(tmp,"\n|{}",fin);
   //如果读取到了文件尽头,返回EOF
   if(end==EOF){
     return EOF;
@@ -226,11 +282,26 @@ int func_analyze(FILE* fin,FILE* head,FILE* code){
   //如果处理到了文件尽头,返回EOF,
   //如果有内容可以正常作为函数头处理,返回1
   //如果内容不符合函数头语法要求,返回0
+  int i=0;
   while((jud=head_analyze(fin,head))!=EOF&&jud!=0){
+    printf("%d\n",i++);
     if(!code_parse(fin,code)){
       return 0;
     }
+    printf("@%d\n",i++);
   }
   if(jud==0) return 0;
   return 1;
 }
+
+
+
+
+
+
+
+
+
+
+
+

@@ -34,5 +34,7 @@ int isKeyForProcessControl(char* s);
 //判断是否是界符
 int isSep(char c);
 
+//判断是否是运算符组成或者大运算符的组成部分
+int isOp(char c);
 
 #endif

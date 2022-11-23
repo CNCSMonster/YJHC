@@ -3,7 +3,7 @@
 
 //在该头文件中定义token编号
 typedef enum tokenkind{
-  UNKOWN,       //未知名称,没有确定类型的id,可能是typedef定义的类型别名
+  UNKNOWN,       //未知名称,没有确定类型的id,可能是typedef定义的类型别名
   CONTROL,        //流程控制关键字,包括if,else,do,while,for,return(暂时不包含GOTO)
   TYPE,     //类型名
   VAR,      //变量名
@@ -19,7 +19,7 @@ typedef enum tokenkind{
 
 //定义token类型对应的字符串描述
 const char* tokenStrings[]={
-  [UNKOWN] "unknown",
+  [UNKNOWN] "unknown",
   [CONTROL] "control keywords",
   [TYPE]  "type",
   [VAR] "variable", //变量名
@@ -43,6 +43,7 @@ const char* keyForProcessControl[]={
 //定义界符
 const char sepratorSymbols[]={
   ';',
+  ',',
   '{',
   '}',
   '(',
@@ -67,26 +68,52 @@ const char *typeKeyWords[] = {
     "enum"
 };
 
-//运算符字符串
+const char operationElems[]={
+  '+',
+  '-',
+  '*',
+  '/',
+  '^',
+  '=',
+  '>',
+  '<',
+  '.',
+  '|',
+  '&'
+};
+
+//有效的运算字符串集合
 const char* operations[]={
   "+",
   "-",
   "*",
   "/",
-  "/",  //异或
+  "^",  //异或
+  "+=",
+  "-=",
+  "*=",
+  "/=",
+  "^=",  //
   "->", //
   ".",  //类型变量访问成员符
   "<=",
   ">=",
   "<",
-  ">"
+  ">",
   ">>",
+  ">>=",
   "<<",
+  "<<=",
   "|",
+  "|=",
   "&",
+  "&=",
   "||",
+  "||=",
   "&&",
-  "!" //取否定
+  "&&=",
+  "!", //取否定,！作为一元运算符
+  "!="  //判不等符
 };
 
 #endif
