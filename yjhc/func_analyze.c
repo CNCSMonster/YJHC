@@ -19,6 +19,8 @@ int head_analyze(FILE *fin, FILE *head);
 //函数文件分析
 int func_analyze(FILE *fin, FILE *head, FILE *code);
 
+//字符串输出需要的结果,使用
+
 int main(int argc, char *argv[])
 {
   if (!argc == 4)

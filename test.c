@@ -7,11 +7,17 @@ union ttt
   double tf;
   char* ts;
 };
+struct st{
+  int a;
+  char* name;
+  double score;
+};
+
+struct st a ={1,"stname",2.33};
 
 
 int main(){
-  union  ttt* a;
-  a->tf=2.22;
+  printf("%d,%s,%f",a.a,a.name,a.score);
   
   return 0;
 }
