@@ -2,7 +2,9 @@
     "files.associations": {
         "stdio.h": "c",
         "stdlib.h": "c",
-        "regex": "cpp"
+        "regex": "cpp",
+        "type.h": "c",
+        "token_kind.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

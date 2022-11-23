@@ -26,13 +26,24 @@ struct student{
     char name[20];
     double getScore(); //学生的分数内容,其表中只能够说明类型
     void selfIntroduce();   //学生自我介绍
+    
 };
+
+void swap(int* a,int * b){
+    *a=*a+*b;
+    *b=*a-*b;
+    *a=*a-*b;
+}
 
 union multiData{
     int integer;
     double decimal;
     short shortInt;
+    void doA();
 };
+
+
+
 /*
 然后是函数定义
 函数,类型定义,预编译包含,和声明语句,全局常量变量定义,和宏替换语句,在yjhc语法中可以以任意顺序放置

@@ -14,10 +14,16 @@ double score;
 int age;
 char name[20];
 double getScore(); void selfIntroduce(); };
+void swap(int* a,int * b){
+*a=*a+*b;
+*b=*a-*b;
+*a=*a-*b;
+}
 union multiData{
 int integer;
 double decimal;
 short shortInt;
+void doA();
 };
 struct student->double getScore(){
 return score; }

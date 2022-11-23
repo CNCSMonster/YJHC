@@ -3,6 +3,12 @@
 #include <string.h>
 #include "mystring.h"
 #include "mystring.c"
+#include "token_kind.h"
+
+
+
+
+
 
 #define ownerString "NULL"
 
@@ -54,18 +60,56 @@ int main(int argc,char* argv[]){
 //代码段词法分析,直到遇到右花括号结束
 int code_parse(FILE* fin,FILE* code){
   //先往文件中写入一个花括号并换行
-  fputs("{\n",code);
+  fprintf(code,"%d %s\n",SEP,'{');
   int leftPar=1;
   //函数token分析
-  char* stops="+-*/^|&;,() \"\n"; //读到换行之前都是属于这个函数的内容
+  char* stops="+-*/^|&;,() {}\"\n"; //读到换行之前都是属于这个函数的内容
   char tmp[1000];
   char end;
   while((end=myfgets(tmp,stops,fin))!='}'||leftPar>1){
     //对读取到的内容进行词法分析
     //仅仅读到的内容不为的时候才需要进行词法分析
     if(strcmp(tmp,"")!=0){
+      //判断是否是基础数据类型
+      if(isBaseType(tmp)){
+        fprintf(code,"%d %s\n",TYPE,tmp);
+      }
+      //判断是否是类型定义关键字
+      //如果是类型定义关键字,则与后面的一个字符串一起组成类型名
+      else if(isTypeDefKeyWords(tmp)){
+        if(end!=' ') return 0;  //则后面应该是以空格结尾的
+        fprintf(code,"%d %s ",TYPE,tmp);
+        end=myfgets(tmp,stops,fin);
+        fprintf(code,"%s\n",end);
+      }
+      //判断是否是流程控制关键字
+      else if(isKeyForProcessControl(tmp)){
+        fprintf(code,"%d %s\n",CONTROL,tmp);
+      }
+      //否则是unknown类型等待以后分析      
+      else{
+        fprintf(code,"%d %s\n",UNKOWN,tmp);
+      }
     }
     //然后对读到的终结符号进行判断
+    if(end==' ') continue;  //空格不用生成token
+    if(end=='{'){
+      leftPar++;
+      fprintf(code,"%d %c\n",SEP,end);
+    }
+    else if(end=='}'){
+      leftPar--;
+      fprintf(code,"%d %c",SEP,end);
+    }
+    //判断是否是其他界符
+    else if(isSep(end)){
+      fprintf(code,"%d %c",SEP,end);
+    }
+    //判断是否是单独存在的运算符
+    else if(isSingleOperation(end)){
+      fprintf(code,"%d %c",OP,end);
+    }
+    //TODO 否则可能是复合的运算符,要超前搜索一位判断
 
   }
   if(end!='}') return 0;
@@ -74,7 +118,7 @@ int code_parse(FILE* fin,FILE* code){
   //循环读取,把后面一个换行符读取出来
   while((end=myfgets(tmp,"\n",fin))!='\n');
   if(end!='\n') return 0; //合理的格式最后面应该是一个换行符
-  fputs("}\n",code);
+  fprintf(code,"%d %s\n",SEP,'}');
   return 1;
 }
 
