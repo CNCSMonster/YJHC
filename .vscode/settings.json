@@ -4,7 +4,8 @@
         "stdlib.h": "c",
         "regex": "cpp",
         "type.h": "c",
-        "token_kind.h": "c"
+        "token_kind.h": "c",
+        "token_reader.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

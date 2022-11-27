@@ -40,7 +40,7 @@ const char* keyForProcessControl[]={
   "return"
 };
 
-//定义界符
+//定义界符,对于界符分割的,可能是运算式的一部分,也可能式条件语句中的布尔表达式
 const char sepratorSymbols[]={
   ';',
   ',',

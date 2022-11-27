@@ -129,8 +129,3 @@ int isOp(char c){
   return 0;
 }
 
-//token显示工具,根据类型和字符字面值换行输出token信息
-int printToken(TokenKind kind,char* s){
-  printf("(%s,%s)\n",tokenStrings[kind],s);
-  return 1;
-}

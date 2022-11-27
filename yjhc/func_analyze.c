@@ -298,12 +298,3 @@ int func_analyze(FILE* fin,FILE* head,FILE* code){
 
 
 
-
-
-
-
-
-
-
-
-

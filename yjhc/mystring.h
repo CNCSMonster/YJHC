@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "token.h"
 #include "token_kind.h"
 
 
@@ -38,7 +39,5 @@ int isSep(char c);
 //判断是否是运算符组成或者大运算符的组成部分
 int isOp(char c);
 
-//token显示工具,根据类型和字符字面值换行输出token信息
-int printToken(TokenKind kind,char* s);
 
 #endif

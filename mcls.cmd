@@ -1,4 +1,5 @@
 ::该控制台脚本用来清理测试区
+del 0.txt
 del 1.txt
 del 2.txt
 del 3.txt
