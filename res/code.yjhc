@@ -79,6 +79,8 @@ LEVEL judLevel(int score){
 //全局方法而且是函数入口
 int main(){
     struct student stu1;
+    union multiData md;
+    enum score_level L;
     T
     stu1.selfIntroduce();
     LEVEL level=judLevel(stu1);

@@ -27,4 +27,8 @@ void delToken(Token token);
 //token显示工具,根据类型和字符字面值换行输出token信息
 int printToken(Token token);
 
+//往文件中写回token的符号值和字符字面值
+int fputToken(Token token,FILE* fout);
+
+
 #endif

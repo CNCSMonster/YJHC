@@ -1,37 +1,25 @@
 #include <stdlib.h>
 #include <stdio.h>
-// #include "yjhc/token_kind.h"
-// #include "yjhc/token.h"
-// #include "yjhc/token.c"
-// #include "yjhc/mystring.c"
-// #include "yjhc/token_reader.h"
-// #include "yjhc/token_reader.c"
 
 
+int arr[3][3]={
+  [0] {[0] 1,[1] 2,[2] 3},
+  [1] {4,5,6},
+  [2] {7,8,9}
+};
 
-//上一条语句,如果是读到第一条语句,则上一条语句类型是init
+
 
 
 
 int main(){
-  //测试读取
- 
-
-  int i=1;
-  scanf("%d",&i);
-  switch(i){
-    case 1:
-    ;
-      int a=1;
-      int b=2;
-    case 2:
-    {
-      int a=22;
-      int b=33;
-      printf("%d,%d",a,b);
-    }
-    case 3:printf("3");break;
-    default: printf("default");
-  }
+  //测试从一个空文件里面扫描一个字符串
+  FILE* f=fopen("0.txt","r");
+  int i=0;
+  int jud=fscanf(f,"%d",&i);
+  printf("%d,%d\n",i,jud);
+  jud=fscanf(f,"%d",&i);
+  printf("%d,%d\n",i,jud);
+  fclose(f);
   return 0;
 }

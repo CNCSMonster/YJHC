@@ -5,12 +5,16 @@
 #include "mystring.c"
 #include "token_kind.h"
 #include "string.h"
+#include "token.h"
+#include "token.c"
 
 
 
 
 
 #define ownerString "NULL"
+
+int token_remake(FILE* fin,FILE* code);
 
 //代码段词法分析,直到遇到右花括号结束
 int code_parse(FILE* fin,FILE* code);
@@ -47,7 +51,8 @@ int main(int argc, char *argv[])
     printf("fail to open %s", headPath);
     exit(-1);
   }
-  FILE *code = fopen(codePath, "w");
+  char tmpPath[100];
+  FILE *code = fopen(strcpy(strcpy(tmpPath,codePath)+strlen(codePath),".tmp")-strlen(codePath), "w");
   if (code == NULL)
   {
     fclose(fin);
@@ -62,7 +67,73 @@ int main(int argc, char *argv[])
   fclose(fin);
   fclose(head);
   fclose(code);
+
+  //输出了token序列,但是token序列还可以进行优化，
+
+  //精确化token，对于一些==的运算符,上述处理会处理成两个=的token，现在要把它们分开
+  fin=fopen(tmpPath,"r");
+  code=fopen(codePath,"w");
+
+  
+  if(!token_remake(fin,code)){
+    printf("something wrong happen in token remake");
+  }
+  fclose(fin);
+  fclose(code);
   return 0;
+}
+
+
+
+int token_remake(FILE* fin,FILE* code){
+  Token last;   //上一个token,最多只要保留两个token(因为最多两个token来合成)
+  Token cur;
+  last=getToken(fin);
+  if(last.val==NULL) return 0;
+  cur=getToken(fin);
+  while(cur.val!=NULL){
+    //TODO 比较cur的字符字面值和各种字符串,返回比较结果
+    //目前当且仅当为op或者关键字的时候需要考试是否是某个token的部分
+    if(cur.kind==OP&&last.kind==OP){
+      //运算符组合不用都不用空格
+      if(
+        (strcmp(cur.val,"=")==0)
+      ||(strcmp(cur.val,"+")==0&&strcmp(last.val,"+")==0)
+      ||(strcmp(cur.val,"-")==0&&strcmp(last.val,"-")==0)
+      ||(strcmp(cur.val,">")==0&&strcmp(last.val,">")==0)
+      ||(strcmp(cur.val,"<")==0&&strcmp(last.val,"<")==0)
+      ||(strcmp(cur.val,">")==0&&strcmp(last.val,"-")==0)     //如果是指针访问结构体成员符
+      ){
+        Token new=connectToken(last,cur,OP,"");
+        delToken(last);
+        last=new;
+        delToken(cur);
+        cur=getToken(fin);
+      }
+    }
+    else if(cur.kind==CONTROL){
+      //
+      if(strcmp(cur.val,"if")==0&&strcmp(last.val,"else")==0){
+        Token new=connectToken(last,cur,CONTROL," ");
+        delToken(last);
+        delToken(cur);
+        last=new;
+        cur=getToken(fin);
+      }
+    }
+    //打印last,更新last
+    fputToken(last,code);
+    delToken(last);
+    last=cur;
+    //更新
+    cur=getToken(fin);
+  }
+  //处理最后一个或者不处理
+  if(last.val!=NULL){
+    fputToken(last,code);
+    delToken(last);
+  }
+  return 1;  
 }
 
 //代码段词法分析,直到遇到右花括号结束

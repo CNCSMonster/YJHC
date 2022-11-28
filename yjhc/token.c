@@ -1,6 +1,6 @@
 #include "token.h"
 
-//从文件中读取一个token,动态分配空间,如果读取到尽头,则返回的token的字符字面值为空
+//从文件中读取一个token,动态分配空间,如果读取到尽头,则返回的token的字符串属性为NULL
 struct token getToken(FILE* fin){
   struct token out;
   int jud=fscanf(fin,"%d",&out.kind); //读数直到遇到空格
@@ -41,5 +41,11 @@ void delToken(Token token){
 //token显示工具,根据类型和字符字面值换行输出token信息
 int printToken(Token token){
   printf("(%s,%s)\n",tokenStrings[token.kind],token.val);
+  return 1;
+}
+
+//往文件中写回token的符号值和字符字面值
+int fputToken(Token token,FILE* fout){
+  fprintf(fout,"%d %s\n",token.kind,token.val);
   return 1;
 }

@@ -37,6 +37,8 @@ return BAD;
 }
 int main(){
 struct student stu1;
+union multiData md;
+enum score_level L;
 printf("N=M=%d",3);
 stu1.selfIntroduce();
 LEVEL level=judLevel(stu1);
