@@ -16,7 +16,9 @@
 //为什么用的是struct类型而不是enum类型,是因为考虑到后面扩展语法的时候可能返回的
 //翻译指导动作是多方面的而不仅仅是是否翻译函数
 struct TranslateAction{
-  int ifTranslateFunc;      //是否进行函数翻译
+  enum PrintAction pa;
+  enum FuncTranslateAction fta;
+  enum BlockAction ba;
 };
 
 

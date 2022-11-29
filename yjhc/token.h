@@ -13,6 +13,14 @@ typedef struct token{
 }Token;
 
 
+//定义经常要使用的特别token集合,不是动态分配空间的token,而是固定token,不用delToken回收空间
+Token leftBraceToken={LEFT_BRACE,"{"};      
+Token rightBraceToken={RIGHT_BRACE,"}"};    
+
+
+
+
+
 //从文件中读取一个token,动态分配空间
 struct token getToken(FILE* fin);
 

@@ -67,13 +67,14 @@ struct student->void selfIntroduce(){
 
 //全局方法
 LEVEL judLevel(int score){
-    if(score>33){
+    if(score>=33)
         return GOOD;
-    }else if(score>22){
+    else if(score==22){
+        score++;
         return NORMAL;
-    }else{
+    }else
         return BAD;
-    }
+    
 }
 
 //全局方法而且是函数入口

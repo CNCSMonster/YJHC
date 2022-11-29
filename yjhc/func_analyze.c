@@ -14,7 +14,9 @@
 
 #define ownerString "NULL"
 
-int token_remake(FILE* fin,FILE* code);
+int token_mergeOp(FILE* fin,FILE* code);
+
+int token_addlayer(FILE* fin,FILE* code);
 
 //代码段词法分析,直到遇到右花括号结束
 int code_parse(FILE* fin,FILE* code);
@@ -52,7 +54,7 @@ int main(int argc, char *argv[])
     exit(-1);
   }
   char tmpPath[100];
-  FILE *code = fopen(strcpy(strcpy(tmpPath,codePath)+strlen(codePath),".tmp")-strlen(codePath), "w");
+  FILE *code = fopen(strcpy(tmpPath,"tmpTokens.tmp"), "w");
   if (code == NULL)
   {
     fclose(fin);
@@ -70,22 +72,37 @@ int main(int argc, char *argv[])
 
   //输出了token序列,但是token序列还可以进行优化，
 
-  //精确化token，对于一些==的运算符,上述处理会处理成两个=的token，现在要把它们分开
+  //精确化token，对于一些==的运算符,上述处理会处理成两个=的token，现在要把它们合并
   fin=fopen(tmpPath,"r");
-  code=fopen(codePath,"w");
+  char tmpPath2[100];
+  code=fopen(strcpy(tmpPath2,"tmppath2.tmp"),"w");
 
   
-  if(!token_remake(fin,code)){
-    printf("something wrong happen in token remake");
+  if(!token_mergeOp(fin,code)){
+    printf("something wrong happen when merge operation symbol");
   }
+  char tord[200];
+  strcpy(strcpy(tord,"del ")+strlen(tord),tmpPath);
   fclose(fin);
   fclose(code);
+  system(tord);
+
+
+  fin=fopen(tmpPath2,"r");
+  code=fopen(codePath,"w");
+  if(!token_addlayer(fin,code)){
+    printf("something wrong happen when add the layer");
+  }
+  strcpy(strcpy(tord,"del ")+strlen(tord),tmpPath2);
+  fclose(fin);
+  fclose(code);
+  // system(tord);
   return 0;
 }
 
 
 
-int token_remake(FILE* fin,FILE* code){
+int token_mergeOp(FILE* fin,FILE* code){
   Token last;   //上一个token,最多只要保留两个token(因为最多两个token来合成)
   Token cur;
   last=getToken(fin);
@@ -103,6 +120,8 @@ int token_remake(FILE* fin,FILE* code){
       ||(strcmp(cur.val,">")==0&&strcmp(last.val,">")==0)
       ||(strcmp(cur.val,"<")==0&&strcmp(last.val,"<")==0)
       ||(strcmp(cur.val,">")==0&&strcmp(last.val,"-")==0)     //如果是指针访问结构体成员符
+      ||(strcmp(cur.val,"|")==0&&strcmp(last.val,"|")==0)
+      ||(strcmp(cur.val,"&")==0&&strcmp(last.val,"&")==0)
       ){
         Token new=connectToken(last,cur,OP,"");
         delToken(last);
@@ -136,11 +155,98 @@ int token_remake(FILE* fin,FILE* code){
   return 1;  
 }
 
+//第三遍处理,给代码补充层次,比如for结构和if结构如果条件语句后面没有花括号的话补充上花括号
+int token_addlayer(FILE* fin,FILE* code){
+  Token cur;    //记录当前读取到的token
+  cur=getToken(fin);
+  //读到关键字才进行操作,否则直接写回
+  while(cur.val!=NULL){
+    fputToken(cur,stdout);
+    if(!isKeyForProcessControl(cur.val)){
+      fputToken(cur,code);
+      delToken(cur);
+      cur=getToken(fin);
+      continue;
+    }
+    //后面先跟条件语句,再为块
+    if(strcmp(cur.val,"if")==0||strcmp(cur.val,"else if")==0||strcmp(cur.val,"while")==0||strcmp(cur.val,"for")==0){
+      //读条件语句的token出来
+      fputToken(cur,code);delToken(cur);cur=getToken(fin);
+      if(cur.val==NULL) return 0;
+      if(cur.kind!=LEFT_PARENTHESIS){
+        delToken(cur);
+        return 0;
+      }
+      int leftP=1;
+      fputToken(cur,code);delToken(cur);cur=getToken(fin);  //把第一个左括号写入
+      while(cur.val!=NULL){
+        fputToken(cur,code);
+        if(cur.kind==RIGHT_PARENTHESIS){
+          if(leftP==1){
+            delToken(cur);cur=getToken(fin);
+            break;
+          }else if(leftP<1){
+            delToken(cur);
+            return 0;
+          }else{
+            leftP--;
+          }
+        }
+        else if(cur.kind==LEFT_PARENTHESIS) leftP++;
+        delToken(cur);cur=getToken(fin);
+      }
+      if(cur.val==NULL) return 0;
+      //如果后面缺乏块包裹符号的话,添加上层次
+      if(cur.kind!=LEFT_BRACE){
+        fputToken(leftBraceToken,code);
+        //然后输出下一个语句,然后输出右花括号
+        fputToken(cur,code);delToken(cur);cur=getToken(fin);
+        while(cur.val!=NULL&&cur.kind!=SEMICOLON){
+          fputToken(cur,code);delToken(cur);cur=getToken(fin);
+        }
+        if(cur.val==NULL) return 0;
+        fputToken(cur,code);delToken(cur);cur=getToken(fin);
+        fputToken(rightBraceToken,code);
+      }
+      //如果后面为{,则打印然后正常输出
+      else{
+        fputToken(cur,code);delToken(cur);cur=getToken(fin);
+      }
+    }
+    //直接后面为块
+    else if(strcmp(cur.val,"else")==0||strcmp(cur.val,"do")==0){
+      fputToken(cur,code);delToken(cur);cur=getToken(fin);
+      if(cur.val==NULL) return 0;
+      if(cur.kind!=LEFT_BRACE){
+        fputToken(leftBraceToken,code);
+        fputToken(cur,code);delToken(cur);cur=getToken(fin);
+        while(cur.val!=NULL&&cur.kind!=SEMICOLON){
+          fputToken(cur,code);delToken(cur);cur=getToken(fin);
+        }
+        if(cur.val==NULL) return 0;
+        fputToken(cur,code);delToken(cur);cur=getToken(fin);
+        fputToken(rightBraceToken,code);
+      }else{
+        fputToken(cur,code);delToken(cur);cur=getToken(fin);
+      }
+    }
+    //否则可能是continue,break,return之类的关键字
+    else{
+      fputToken(cur,code);delToken(cur);cur=getToken(fin);
+    }
+  }
+  return 1;
+}
+
+
+
+
+
 //代码段词法分析,直到遇到右花括号结束
 int code_parse(FILE *fin, FILE *code)
 {
   //先往文件中写入一个花括号并换行
-  fprintf(code, "%d %c\n", SEP, '{');
+  fprintf(code, "%d %c\n", LEFT_BRACE, '{');
   int leftPar = 1;
   //函数token分析
   char *stops = "+-*/^|&;,.><=[]() {}\"\n"; //读到换行之前都是属于这个函数的内容
@@ -197,7 +303,7 @@ int code_parse(FILE *fin, FILE *code)
         }
       }
       //判断是否是名(包括变量名常量名数组名以及函数名,应该不以数字开头,因为不确定是哪种名,定义为UNKOWN类型)
-      else if (tmp[0] > 57 || tmp[0] < 48)
+      else if (tmp[0] > 57 || tmp[0] < 48||tmp[0]=='_')
       {
         fprintf(code, "%d %s\n", UNKNOWN, tmp); //还不确定是量名还是函数名
       }
@@ -221,17 +327,11 @@ int code_parse(FILE *fin, FILE *code)
       //否则
       fprintf(code,"%d \"%s\"\n",CONST,tmp);
     }
-    else if(end=='{'){
-      leftPar++;
-      fprintf(code,"%d %c\n",SEP,end);
-    }
-    else if(end=='}'){
-      leftPar--;
-      fprintf(code,"%d %c\n",SEP,end);
-    }
-    //判断是否是其他界符
-    else if(isSep(end)){
-      fprintf(code,"%d %c\n",SEP,end);
+    //判断是否是界符
+    else if(isSep(end)>=0){
+      if(end=='{') leftPar++;
+      else if(end=='}') leftPar--;
+      fprintf(code,"%d %c\n",isSep(end),end);
     }
     //判断是否是运算符或者运算符的组成部分
     else if(isOp(end)){
@@ -249,7 +349,7 @@ int code_parse(FILE *fin, FILE *code)
   //循环读取,把后面一个换行符读取出来
   while((end=myfgets(tmp,"\n",fin))!='\n');
   if(end!='\n') return 0; //合理的格式最后面应该是一个换行符
-  fprintf(code,"%d %c\n",SEP,'}');
+  fprintf(code,"%d %c\n",RIGHT_BRACE,'}');
   return 1;
 }
 

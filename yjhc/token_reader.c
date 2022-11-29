@@ -14,6 +14,14 @@ void init_token_reader(FILE* fin){
 TBNode* token_readsentence(enum BlockAction* blockAction,enum PrintAction* printAction,struct TranslateAction* translateAction ){
   //语法制导翻译-part1:分割+打印+块动作翻译
   
+
+
+
+
+
+
+
+  
 }
 
 

@@ -49,8 +49,6 @@ int mysgets(char* buf,const char* stops,const char* src){
   return c;
 }
 
-
-//判断是否一个字符串是基础数据类型关键字,是返回非0值，不是返回0
 int isBaseType(char* s){
   for(int i=0;i<sizeof(basetypes)/sizeof(basetypes[0]);i++){
     if(!strcmp(s,basetypes[i])) return 1;
@@ -58,7 +56,6 @@ int isBaseType(char* s){
   return 0;
 }
 
-//判断是否是自定义类型定义关键字
 int isTypeDefKeyWords(char* s){
   for(int i=0;i<sizeof(typeKeyWords)/sizeof(typeKeyWords[0]);i++){
     if(!strcmp(s,typeKeyWords[i])) return 1;
@@ -67,9 +64,6 @@ int isTypeDefKeyWords(char* s){
 }
 
 
-//在已经读取出字符串左双引号的请况下,
-// 从文件中读取剩下的字符串,如果读不出符合c语法的字符串,
-// 则返回0,读取成功则返回非0值,以及通过指针返回读取到的字符串,不包括前后0
 int freadRestString(FILE* fin,char* returnString){
   //此时已经从程序中读出了一个双引号,期待字符串结尾的双引号
   char* stops="\\\"";
@@ -93,8 +87,6 @@ int freadRestString(FILE* fin,char* returnString){
   return 1;
 }
 
-//判断字符能否被转义
-//判断是否是合理的转义字符
 int isEscape(char c){
   if (c == 'n' || c == 't' || c == 'b' || c == 'r' || c == '\"' || c == '\\')
   {
@@ -104,7 +96,6 @@ int isEscape(char c){
 }
 
 
-//判断是否是流程控制关键字
 int isKeyForProcessControl(char* s){
   for(int i=0;i<sizeof(keyForProcessControl)/sizeof(keyForProcessControl[0]);i++){
     if(strcmp(s,keyForProcessControl[i])==0) return 1;
@@ -112,16 +103,15 @@ int isKeyForProcessControl(char* s){
   return 0;
 }
 
-//判断是否是界符
 int isSep(char c){
-  for(int i=0;i<sizeof(sepratorSymbols)/sizeof(sepratorSymbols[0]);i++){
-    if(sepratorSymbols[i]==c) return 1;
+  for(int i=0;i<sizeof(seps)/sizeof(seps[0]);i++){
+    if(seps[i]==c){
+      return sepTokens[i];
+    }
   }
-  return 0;
+  return -1;
 }
 
-
-//判断是否是运算符组成，数个运算符可以组合在一起,比如|和|可以组成运算符||
 int isOp(char c){
   for(int i=0;i<sizeof(operationElems)/sizeof(operationElems[0]);i++){
     if(operationElems[i]==c) return 1;

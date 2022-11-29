@@ -8,11 +8,18 @@ int arr[3][3]={
   [2] {7,8,9}
 };
 
+struct as{
+  char* str;
+};
+
+struct as a={"你好"};
+
 
 
 
 
 int main(){
+  printf("%s",a.str);
   //测试从一个空文件里面扫描一个字符串
   FILE* f=fopen("0.txt","r");
   int i=0;

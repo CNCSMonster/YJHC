@@ -31,13 +31,13 @@ struct student->void selfIntroduce(){
 printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age);
 }
 LEVEL judLevel(int score){
-if(score>33){
+if(score>=33)
 return GOOD;
-}else if(score>22){
+else if(score==22){
+score++;
 return NORMAL;
-}else{
+}else
 return BAD;
-}
 }
 int main(){
 struct student stu1;

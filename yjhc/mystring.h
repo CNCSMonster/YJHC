@@ -33,7 +33,7 @@ int isEscape(char c);
 //判断是否是流程控制关键字
 int isKeyForProcessControl(char* s);
 
-//判断是否是界符
+//判断是否是界符,如果是返回界符对应的TokenKind,如果不是,返回非正值
 int isSep(char c);
 
 //判断是否是运算符组成或者大运算符的组成部分
