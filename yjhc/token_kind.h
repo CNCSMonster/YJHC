@@ -4,7 +4,16 @@
 //在该头文件中定义token编号,分类不是很细致,因为实际上用不了分太多
 typedef enum tokenkind{
   UNKNOWN,       //未知名称,没有确定类型的id,可能是typedef定义的类型别名
-  CONTROL,        //流程控制关键字,包括if,else,do,while,for,return(暂时不包含GOTO)
+  //控制关键字也分割成小部分
+  IF,
+  ELIF,
+  ELSE,
+  FOR,
+  DO,
+  WHILE,
+  CONTINUE,
+  BREAK,
+  RETURN,
   TYPE,     //类型名
   VAR,      //变量名
   CONST,  //常量名,包括字符串,各种数字,以及使用Const定义的常量
@@ -27,18 +36,26 @@ typedef enum tokenkind{
 //定义token类型对应的字符串描述
 const char* tokenStrings[]={
   [UNKNOWN] "unknown",
-  [CONTROL] "control keywords",
+  [IF]    "keyword if",
+  [ELIF]  "keyword else if",
+  [ELSE]  "keyword else",
+  [FOR] "keyword for",
+  [DO]  "keyword do in do-while structure",
+  [WHILE] "keyword while in do-while structure",
+  [CONTINUE]  "keyword continue",
+  [BREAK] "keyword break",
+  [RETURN]  "keyword return",
   [TYPE]  "type",
   [VAR] "variable", //变量名
   [CONST] "const value",  //常量名
-  [SEMICOLON] "分号",      //分号
-  [COMMA] "逗号",      //逗号
-  [LEFT_PARENTHESIS] "左圆括号",     //左圆括号
-  [RIGHT_PARENTHESIS] "右圆括号",  //右圆括号  
-  [LEFT_BRACKET] "左方括号",   //左方括号
-  [RIGHT_BRACKET] "右方括号",    //右方括号
-  [LEFT_BRACE] "左花括号",   //左花括号
-  [RIGHT_BRACE] "右花括号",  //右花括号
+  [SEMICOLON] "semicolon",      //分号
+  [COMMA] "comma",      //逗号
+  [LEFT_PARENTHESIS] "left parenthesis",     //左圆括号
+  [RIGHT_PARENTHESIS] "right parenthesis",  //右圆括号  
+  [LEFT_BRACKET] "left bracket",   //左方括号
+  [RIGHT_BRACKET] "right bracket",    //右方括号
+  [LEFT_BRACE] "left brace",   //左花括号
+  [RIGHT_BRACE] "right brace",  //右花括号
   [OP]  "operation symbol",
   [POINTER] "pointer var id",  //指针变量名
   [FUNC] "function"
@@ -46,14 +63,14 @@ const char* tokenStrings[]={
 
 //定义流程控制字符串
 const char* keyForProcessControl[]={
-  "if",
-  "else",
-  "for",
-  "do",
-  "while",
-  "return",
-  "break",
+  "if","else","else if","for",
+  "do","while","return","break",
   "continue"
+};
+const TokenKind controlTokens[]={
+  IF,ELSE,ELIF,FOR,
+  DO,WHILE,RETURN,BREAK,
+  CONTINUE
 };
 
 

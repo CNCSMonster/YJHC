@@ -98,9 +98,9 @@ int isEscape(char c){
 
 int isKeyForProcessControl(char* s){
   for(int i=0;i<sizeof(keyForProcessControl)/sizeof(keyForProcessControl[0]);i++){
-    if(strcmp(s,keyForProcessControl[i])==0) return 1;
+    if(strcmp(s,keyForProcessControl[i])==0) return controlTokens[i];
   }
-  return 0;
+  return -1;
 }
 
 int isSep(char c){

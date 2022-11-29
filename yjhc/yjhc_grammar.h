@@ -170,40 +170,25 @@ q2    doBlockOut DoCondtition   //完成了逻辑语句,把之前一半的逻辑语句取出,填入完
 
 //语句类型,如果是读到第一条语句前,则上一条语句类型是init
 enum sentence_kind{
-  INIT,     //还没有进行读取的状态
-  NORMALBLOCK_IN,    //普通入块标记
-  NORMALBLOCK_OUT, //普通出块标记
-  IF_CONDITION_START,    //if条件块开始标志if(
-  IF_CONDITION,      //if条件式
-  IF_CONDITION_END,     //if条件块结束标志,如果之前压入栈中的内容
-  IF_BLOCK_IN,       //if分支代码块进入
-  IF_BLOCK_OUT,      //if分支代码块离开
-  ELIF_CONDITION_START,   //else if(,也就是else if条件开始,必须前面是if或者else if条件块结束才有效
-  ELIF_CONDITION,       //else if的条件
-  ELIF_CONDITION_FINISH,      //else if条件结束
-  ELIF_BLOCK_IN,     //else if分支块开始
-  ELIF_BLOCK_OUT,     //else if分支块结束
-  ELSE_BLOCK_IN,   //else{ 块开始
-  ELSE_BLOCK_OUT,   //} else块结束,把所有if-elseif-else或者if-else结构所有内容出栈
-  WHILE_CONDITION_START,  //while(  while条件开始
-  WHILE_CONDITION_END,    //)while条件结束
-  WHILE_BLOCK_IN,    //{ while循环体语句块开始
-  WHILE_BLOCK_OUT,    //} while循环体语句块结束
-  DO_BLOCK_IN,   //do{ do循环体语句块开
-  DO_CONDITION_START,     //}while( m同时是DoBLockOut
-  DO_CONDITION,
-  DO_CONDITION_END,     //)while块结束标记
-  FOR_START,     //for(  for的init部分开始标志,也是for块的进入方法
-  FOR_INIT,       //for开始标志后到第一个分号之前为init部分
-  FOR_CONDITION,    //FORINIT后到下一个分号前
-  FOR_REFRESH,    //FORCONDITION后到下一个括号前
-  FOR_BODY_IN,   //{ for循环体开始
-  FOR_BODY_OUT  //} for循环体结束
+  INIT,     //还没有读取进入函数的状态,唯一接受的token就是left brace
+  BLOCK_IN,   //进入了一个普通块或者函数块的栈符号,在这个状态下能够接受任何token,遇到一般的token当行打印,不用换行
+  IF_CONDITION_IN,    //在该栈顶符号下,遇到左边括号加入栈中,
+  LEFT_PARENTHESIS,   //左边小括号在栈顶,说明在某个condition中,如果遇到左圆括号压入栈顶,遇到右圆括号把左圆括号弹出
+  IF_BLOCK_IN,    //当在IF_CONDITION_IN的栈顶符号下遇到左花括号,则进入IF_BLOCK_IN,换行,if_block_in中遇到任何的句子都会
+  IF_BLOCK_OUT,   //当在ifblcokin栈顶遇到右花括号的时候,移出if_block_in,压入if_block_out
+  ELIF_CONDITION_IN,    //当处于if_block_in的时候,如果遇到了else if关键字,就弹出if_block_out，压入elif_condition_in
+  
+  
 };
 
 //语义动作指导表:包括打印动作，块进出动作，以及辅助栈的栈动作
 
 //第一个是打印动作指导表
+const PrintAction printActionTbl[][]={
+[init_token_reader] {}
+[]
+
+}
 
 
 //第二个是块动作指导表

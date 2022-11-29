@@ -30,7 +30,7 @@ int freadRestString(FILE* fin,char* returnString);
 //判断是否是合理的转义字符
 int isEscape(char c);
 
-//判断是否是流程控制关键字
+//判断是否是流程控制关键字,如果不是流程控制关键字,返回负数,如果是,返回对应tokenkind
 int isKeyForProcessControl(char* s);
 
 //判断是否是界符,如果是返回界符对应的TokenKind,如果不是,返回非正值

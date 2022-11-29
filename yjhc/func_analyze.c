@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
   strcpy(strcpy(tord,"del ")+strlen(tord),tmpPath2);
   fclose(fin);
   fclose(code);
-  // system(tord);
+  system(tord);
   return 0;
 }
 
@@ -130,10 +130,10 @@ int token_mergeOp(FILE* fin,FILE* code){
         cur=getToken(fin);
       }
     }
-    else if(cur.kind==CONTROL){
+    else if(cur.kind==IF){
       //
-      if(strcmp(cur.val,"if")==0&&strcmp(last.val,"else")==0){
-        Token new=connectToken(last,cur,CONTROL," ");
+      if(last.kind==ELSE){
+        Token new=connectToken(last,cur,ELIF," ");
         delToken(last);
         delToken(cur);
         last=new;
@@ -252,6 +252,7 @@ int code_parse(FILE *fin, FILE *code)
   char *stops = "+-*/^|&;,.><=[]() {}\"\n"; //读到换行之前都是属于这个函数的内容
   char tmp[1000];
   char end;
+  int tmpI; //暂存用的int
   end = myfgets(tmp, stops, fin);
   while (end != '}' || leftPar > 1)
   {
@@ -275,10 +276,10 @@ int code_parse(FILE *fin, FILE *code)
         end = myfgets(tmp, stops, fin);
         fprintf(code, "%s\n", tmp);
       }
-      //判断是否是流程控制关键字
-      else if (isKeyForProcessControl(tmp))
+      //判断是否是流程控制关键字,这里不会联系后面的token一起判断，对于else会直接判断成else类型,就算后面有if也不会判断成elif类型
+      else if ((tmpI=isKeyForProcessControl(tmp))>=0)
       {
-        fprintf(code, "%d %s\n", CONTROL, tmp);
+        fprintf(code, "%d %s\n", tmpI, tmp);
       }
       //判断是否是数字
       else if (strspn(tmp, "0123456789") == strlen(tmp))
@@ -328,10 +329,10 @@ int code_parse(FILE *fin, FILE *code)
       fprintf(code,"%d \"%s\"\n",CONST,tmp);
     }
     //判断是否是界符
-    else if(isSep(end)>=0){
+    else if((tmpI=isSep(end))>=0){
       if(end=='{') leftPar++;
       else if(end=='}') leftPar--;
-      fprintf(code,"%d %c\n",isSep(end),end);
+      fprintf(code,"%d %c\n",tmpI,end);
     }
     //判断是否是运算符或者运算符的组成部分
     else if(isOp(end)){
