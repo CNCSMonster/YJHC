@@ -18,6 +18,9 @@ int token_mergeOp(FILE* fin,FILE* code);
 
 int token_addlayer(FILE* fin,FILE* code);
 
+//读取一个括号包裹的逻辑表达式，读取成功返回非0值,否则返回0
+int readCase(FILE* fin,FILE* code);
+
 //代码段词法分析,直到遇到右花括号结束
 int code_parse(FILE* fin,FILE* code);
 //函数头分析,直到遇到一个左括号结束
@@ -169,32 +172,13 @@ int token_addlayer(FILE* fin,FILE* code){
       continue;
     }
     //后面先跟条件语句,再为块
-    if(strcmp(cur.val,"if")==0||strcmp(cur.val,"else if")==0||strcmp(cur.val,"while")==0||strcmp(cur.val,"for")==0){
+    if(cur.kind==IF||cur.kind==ELIF||cur.kind==WHILE||cur.kind==FOR){
       //读条件语句的token出来
-      fputToken(cur,code);delToken(cur);cur=getToken(fin);
-      if(cur.val==NULL) return 0;
-      if(cur.kind!=LEFT_PARENTHESIS){
-        delToken(cur);
+      fputToken(cur,code);delToken(cur);
+      if(!readCase(fin,code)){
         return 0;
       }
-      int leftP=1;
-      fputToken(cur,code);delToken(cur);cur=getToken(fin);  //把第一个左括号写入
-      while(cur.val!=NULL){
-        fputToken(cur,code);
-        if(cur.kind==RIGHT_PARENTHESIS){
-          if(leftP==1){
-            delToken(cur);cur=getToken(fin);
-            break;
-          }else if(leftP<1){
-            delToken(cur);
-            return 0;
-          }else{
-            leftP--;
-          }
-        }
-        else if(cur.kind==LEFT_PARENTHESIS) leftP++;
-        delToken(cur);cur=getToken(fin);
-      }
+      cur=getToken(fin);
       if(cur.val==NULL) return 0;
       //如果后面缺乏块包裹符号的话,添加上层次
       if(cur.kind!=LEFT_BRACE){
@@ -214,9 +198,11 @@ int token_addlayer(FILE* fin,FILE* code){
       }
     }
     //直接后面为块
-    else if(strcmp(cur.val,"else")==0||strcmp(cur.val,"do")==0){
+    else if(cur.kind==ELSE||cur.kind==DO){
+      TokenKind tmpKind=cur.kind;
       fputToken(cur,code);delToken(cur);cur=getToken(fin);
       if(cur.val==NULL) return 0;
+      //如果后面检查不到块花括号,则补充
       if(cur.kind!=LEFT_BRACE){
         fputToken(leftBraceToken,code);
         fputToken(cur,code);delToken(cur);cur=getToken(fin);
@@ -226,7 +212,27 @@ int token_addlayer(FILE* fin,FILE* code){
         if(cur.val==NULL) return 0;
         fputToken(cur,code);delToken(cur);cur=getToken(fin);
         fputToken(rightBraceToken,code);
-      }else{
+        if(tmpKind==DO){
+          if(cur.val==NULL) return 0;
+          if(cur.kind!=WHILE){
+            delToken(cur);
+            return 0;
+          }
+          fputToken(cur,code);delToken(cur);
+          if(!readCase(fin,code)){
+            return 0;
+          }
+          cur=getToken(fin);
+          if(cur.val==NULL) return 0;
+          if(cur.kind!=SEMICOLON){
+            delToken(cur);
+            return 0;
+          }
+          fputToken(cur,code);delToken(cur);cur=getToken(fin);
+        }
+      }
+      //否则跳过
+      else{
         fputToken(cur,code);delToken(cur);cur=getToken(fin);
       }
     }
@@ -238,6 +244,47 @@ int token_addlayer(FILE* fin,FILE* code){
   return 1;
 }
 
+
+//读取一个括号包裹的逻辑表达式，读取成功返回非0值,否则返回0
+int readCase(FILE* fin,FILE* code){
+  Token cur;
+  cur=getToken(fin);
+  if(cur.val==NULL) return 0;
+  else if(cur.kind!=LEFT_PARENTHESIS){
+    delToken(cur);
+    return 0;
+  }
+  int leftP=1;
+  fputToken(cur, code);
+  delToken(cur);
+  cur = getToken(fin); //把第一个左括号写入
+  while (cur.val != NULL)
+  {
+    fputToken(cur, code);
+    if (cur.kind == RIGHT_PARENTHESIS)
+    {
+      if (leftP == 1)
+      {
+        delToken(cur);
+        break;
+      }
+      else if (leftP < 1)
+      {
+        delToken(cur);
+        return 0;
+      }
+      else
+      {
+        leftP--;
+      }
+    }
+    else if (cur.kind == LEFT_PARENTHESIS)
+      leftP++;
+    delToken(cur);
+    cur = getToken(fin);
+  }
+  return 1;
+}
 
 
 

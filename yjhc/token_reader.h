@@ -39,8 +39,9 @@ typedef struct token_buffer_node{
 
 TBNode head={NULL,NULL,{0,NULL}};  //缓冲区地头节点,头节点不保存值,头节点的下一个节点作为首元节点
 
+
 struct lastSentenceKindStack
-preKindStack={NULL,0};
+lskStack={NULL,INIT};   //栈头节点就是init,不可删除
 
 FILE* tb_fin;  
 

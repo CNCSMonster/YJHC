@@ -19,14 +19,9 @@ struct as a={"你好"};
 
 
 int main(){
-  printf("%s",a.str);
-  //测试从一个空文件里面扫描一个字符串
-  FILE* f=fopen("0.txt","r");
-  int i=0;
-  int jud=fscanf(f,"%d",&i);
-  printf("%d,%d\n",i,jud);
-  jud=fscanf(f,"%d",&i);
-  printf("%d,%d\n",i,jud);
-  fclose(f);
+  int m=MA;
+  printf("%d",m);
+
+  
   return 0;
 }

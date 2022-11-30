@@ -6,7 +6,6 @@ void init_token_reader(FILE* fin){
   tb_fin=fin;
   head.last=NULL;
   head.next=NULL;
-  preKindStack.next=NULL;//³õÊ¼°ÚÉÏinit¿é
   
 }
 

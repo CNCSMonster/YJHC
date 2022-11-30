@@ -3,17 +3,17 @@
 
 //在该头文件中定义token编号,分类不是很细致,因为实际上用不了分太多
 typedef enum tokenkind{
-  UNKNOWN,       //未知名称,没有确定类型的id,可能是typedef定义的类型别名
+  UNKNOWN,        //未知名称,没有确定类型的id,可能是typedef定义的类型别名
   //控制关键字也分割成小部分
-  IF,
-  ELIF,
-  ELSE,
-  FOR,
-  DO,
-  WHILE,
-  CONTINUE,
-  BREAK,
-  RETURN,
+  IF, 
+  ELIF, 
+  ELSE, 
+  FOR, 
+  DO, 
+  WHILE, 
+  CONTINUE,  
+  BREAK, 
+  RETURN, 
   TYPE,     //类型名
   VAR,      //变量名
   CONST,  //常量名,包括字符串,各种数字,以及使用Const定义的常量
@@ -29,7 +29,8 @@ typedef enum tokenkind{
   //,以及指针类型修饰符(*),需要注意符号复用的处理
   OP,
   POINTER, //指针类型,需要注意的是指针类型可能指向任意的地址(为方便,不支持指针调用结构体方法)
-  FUNC
+  FUNC,   //函数名
+  token_kind_num  //函数enum的数量
 }TokenKind;
 
 
