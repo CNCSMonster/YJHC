@@ -1,10 +1,12 @@
 #include "hashset.h"
 
 
-//创建一个基础大小的哈希数组
+
+//创建一个元素大小为valSize的哈希数组
 HSet hashset_cre(int valSize){
     HSet out;
     out.valSize=valSize;
+    out.num=0;
     memset(out.nodes,0,sizeof(out.nodes));
     return out;
 }
@@ -38,6 +40,7 @@ int hashset_add(HSetp hashset,void* toAdd){
             return 0;
         }
     }
+    hashset->num++;
     //插入成功返回非0值
     return -1;
 }
@@ -86,6 +89,7 @@ int hashset_remove(HSetp hashset,void* toDel){
                 cur->next=cur->next->next;
                 free(t_node);
             }
+            hashset->num--;
             return -1;  //删除成功返回非0值
         }
     }

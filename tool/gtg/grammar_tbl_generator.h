@@ -3,6 +3,7 @@
 
 #include "grammar_tbl_generator.h"
 #include "hashset.h"
+#include "string_id.h"
 
 /*
 映射关系分析:
@@ -11,16 +12,31 @@
 
 */
 
+struct ActionsEachKind{
+  HSet actions;
+  int actionKind;
+  struct ActionsEachKind* next;
+};
+
+
 
 //设置命令器信息块
 struct gtgBlock{
-  //存放token的空间
+  //存放默认是错误值的字符串,必须是全大写的字符串
+  char* default;
+  //字符串id表
+  StrIdTable strIds;
+  //token表
+  HSet tokens;  //记录token用的表,能够用来快速判断token是否存在,其实里面保存的是字符串对应的中间号码
   //存放actionKind的空间
-  //存放不同action的空间
+  HSet actionKinds; //记录actionKind对应的中间号码
+  //存放不同action的空间,能够根据actionKind来寻找匹配
+  struct ActionsEachKind* actions;
   //存放syntax symbol的空间
-  //存放syntax动作的空间
-};
+  HSet symbols;
 
+  
+};
 
 
 /*

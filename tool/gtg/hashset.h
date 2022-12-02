@@ -5,9 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//该哈希表能够用来存值
+
 
 //采用链表数组的方式实现简单哈希
-#define HASHSET_DEFAULT_ARRLEN 1000
+#define HASHSET_DEFAULT_ARRLEN 100
 //每个节点的大小
 #define HASHSET_NODE_DEFAULT_MAXSIZE 4
 
@@ -19,6 +21,7 @@ typedef struct hashset_node{
 typedef struct hashset{
     HashNodep nodes[HASHSET_DEFAULT_ARRLEN];    //动态分配基础空间
     int valSize;
+    int num;    //记录添加的元素的数量
 }HSet,*HSetp;
 
 //创建一个基础大小的哈希数组
