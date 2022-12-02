@@ -117,3 +117,18 @@ int hash(void* value){
     int* int1=(int*)value;
     return (*int1)%HASHSET_DEFAULT_ARRLEN;
 }
+
+//获取加入hash中的字符串的一个可访问串,返回一个连续空间
+void* hashset_toArr(HSetp hashset){
+    void* out=malloc(hashset->valSize*hashset->num);
+    void* term=out;
+    for(int i=0;i<HASHSET_DEFAULT_ARRLEN;i++){
+        HashNodep tmp=hashset->nodes[i];
+        while(tmp!=NULL){
+            memcpy(term,tmp->val,sizeof(hashset->valSize));
+            term+=hashset->valSize;
+            tmp=tmp->next;
+        }
+    }
+    return out;
+}

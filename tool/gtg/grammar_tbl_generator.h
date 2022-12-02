@@ -6,6 +6,12 @@
 #include "string_id.h"
 #include "id_string.h"
 
+
+//默认工作文件,启动的时候会读取这个文件,退出的时候会写入这个文件
+#define DEFAULT_GTG_WORK_FILE "gtg.txt"
+
+
+
 /*
 映射关系分析:
 由token
@@ -51,7 +57,14 @@ struct gtgBlock{
   HSet symbols;
   //存放syntax
   struct syntax_line syntaxs; //syntax的头节点,从下一个节点开始才是有效syntax_line语句
-};
+}block;
+
+char* ord=NULL;
+FILE* fin=NULL;
+FILE* fout=NULL;
+
+
+
 
 /*
 对gtgBlock的说明:
@@ -93,34 +106,99 @@ ActionKind:symbol,token,action四元组
 
 */
 
-
-
 /*
 使用说明:
 命令格式
+
+action add 增加action,输入该命令后进入增加action选项
+默认会读取当行所有action增加直到遇到换行结束,
+或者使用action add -n 3 //则会读取后面3个action
+actionkind add 增加actionkind   
+也可以使用actionkind add -n N，N为一个数字,使用同上
+token add  //增加token,输入该命令后进入增加token命令
+symbol add //增加symbol
+syntax add //增加syntax,也可以使用-n
+help  //输出提示
+
+增加型命令:
+action add
+actionkind add
+token add
+symbol add
+syntax add
+增加型命令默认会使用下一行的内容作为所有增加内容
+增加型命令后面可以加上附加后缀[-n N]
+比如action add -n 4,该命令会读取从下一行开始的4个字符串作为增加的action这些字符串之间用空格类型字符隔开(比如空格或者换行)
+
+提示型命令:
+help 提示信息,提示使用信息
+
+查看命令:
+check actionkind  //查看actionkind列表
+check token //查看所有token信息
+check action  <actionkind> 查看某个actionkind下所有action信息
+check action  则查看所有action的信息,包括所有actionkind
+check symbol  //查看所有symbol信息
+check syntax  //查看所有syntax信息
+可以在后面加入-o命令把信息输出到-o后面指定的文件中
+
+
+控制型命令:
+exit 退出命令,获取该命令后,把缓冲结果保存,并且退出
+gc 垃圾回收命令,回收id,回收空间(garbage collect)
+
+替换型命令:
+replace
+输入该命令后会使用接下来的两个字符串分别作为要替换字符串，和替换后字符串
+也可以加入-n N增加属性,则会提取后面的n对字符串来replace操作
+
+删除命令
+del
+同样可以后面加入-n来使用,则会使用后面的n个字符串做删除操作
+
+
 */
 
+//判断命令的类型
 typedef enum ordkind{
-  UN_LEGAL,   //不合法的命令,也就是异常命令
-  DOC,    //注释命令,或者说注释行
-  ACTION_ADD,    //action增加命令
-  ACTION_DEL,   //action删除命令
-  ACTION_CLS,   //action清除所有命令
-  SYMBOL_ADD, //语义符号增加命令
-  SYMBOL_DEL, //语义符号减少命令
-  SYMBOL_CLS, //语义符号清除命令
-  SYNTAX_SET, //语法分析动作个别设置命令,也就是说语法动作只能够修改
-  SYNTAX_DEFAULT, //语法动作全局设置命令
-  OUTPUT_ORD,   //语法命令全局输入,以便再次读取使用
-  OUTPUT_TBL,   //输出yjhc中使用的grammar表
-  ordkind_num       //通过enum的结构,最后一位不当作OrdKind使用,而是能够表示OrdKind的数量
+  NOT_DEFINE, //未定义命令
+  ACTION_ADD, //action命令
+  ACTIONKIND_ADD, //actionkind增加
+  ACTIONKIND_SETDEFAULT,  //设置actionkind的default
+  SET_NOT_DEFINE, //设置未定义字符串
+  TOKEN_ADD,
+  SYMBOL_ADD,
+  SYNTAX_ADD, //syntax增加命令
+  DEL,    //删除一个字符串
+  REPLACE,    //替换
+  GC,     //启动垃圾回收
+  EXIT,   //退出
+  INIT,    //重启
+  HELP,   //提示
+  CHECK_ACTION_OFKIND,
+  CHECK_ACTION_ALL,
+  CHECK_ACTIONKIND,
+  CHECK_SYMBOL,
+  CHECK_SYNTAX,
+  CHECK_TOKEN,
+  CHECK_ALL
 }OrdKind;
+
+
+
+
+
+//初始化程序数据
+void init();
 
 //命令行读取器,读取一行命令,而且忽略前导空格,忽略注释符后面,而且读到换行停止,命令没有长度限制,动态分配空间
 char* fgetOrd(FILE* fin);
 
 //处理命令,如果是不合理的命令则返回0,否则处理成功后返回非0值
 int maintainOrd(char* ord);
+
+//判断某个字符串是否已经使用过了
+int ifHasUsed(char* str);
 
 //判断命令类型
 OrdKind ordKind(char* ord);
@@ -132,11 +210,57 @@ OrdKind ordKind(char* ord);
 一个处理命令方式函数表
 */
 
-int doc_run(FILE* fin,char* ord);
+int error();  //错误提示,当输入没有定义的命令的时候给出错误提示
 
-int action_add(FILE* fin,char* ord);
+int actionkind_setdefault();
+int set_not_define();
 
-int action_del(FILE* fin,char* ord);
+int action_add();
+int syntax_add();
+int symbol_add();
+int token_add();
+int actionkind_add();
+
+int help();
+int del();
+int replace();
+int gtg_exit();
+int gtg_init(); //初始化gtg数据
+
+
+int check_action_ofkind();
+int check_action_all();
+int check_symbol();
+int check_token();
+int check_all();
+int check_actionkind();
+int check_syntax();
+
+
+
+int (*executeOrds[])(void)={
+  [NOT_DEFINE] error,
+  [ACTIONKIND_SETDEFAULT] actionkind_setdefault,
+  [SET_NOT_DEFINE] set_not_define,
+  [ACTION_ADD] action_add,
+  [SYMBOL_ADD] symbol_add,
+  [SYNTAX_ADD] syntax_add,
+  [TOKEN_ADD] token_add,
+  [ACTIONKIND_ADD] actionkind_add,
+  [DEL] del,
+  [HELP] help,
+  [INIT] gtg_init,
+  [EXIT]  gtg_exit,
+  [REPLACE] replace,
+  [CHECK_ACTION_OFKIND] check_action_ofkind,
+  [CHECK_ACTION_ALL] check_action_all,
+  [CHECK_ACTIONKIND] check_actionkind,
+  [CHECK_SYMBOL] check_symbol,
+  [CHECK_SYNTAX] check_syntax,
+  [CHECK_TOKEN] check_token,
+  [CHECK_ALL] check_all
+};
+
 
 
 
