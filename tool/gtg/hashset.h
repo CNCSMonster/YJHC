@@ -9,7 +9,7 @@
 
 
 //采用链表数组的方式实现简单哈希
-#define HASHSET_DEFAULT_ARRLEN 100
+#define HASHSET_DEFAULT_ARRLEN 200
 //每个节点的大小
 #define HASHSET_NODE_DEFAULT_MAXSIZE 4
 

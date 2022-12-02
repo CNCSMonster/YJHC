@@ -1,4 +1,4 @@
-#include "id.h"
+#include "id_string.h"
 
 
 //获取一个id分配器
@@ -91,6 +91,14 @@ int delString(IdAlp idAllocator,int id){
   idAllocator->val[id]=NULL;
   return 1;
 }
+
+//获取id对应的字符串,获取成功返回分配空间的str,获取失败返回NULL
+char* getIdString(IdAlp idAllocator,int id){
+  if(id>=idAllocator->alcSt||idAllocator->val[id]==NULL) return NULL;
+  return strcpy(malloc(sizeof(idAllocator->val[id])+1),idAllocator->val[id]);
+}
+
+
 
 int spaceAllocateForIdAllocator(IdAlp idAllocator){
   void* tmp;

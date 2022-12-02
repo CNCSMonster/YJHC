@@ -1,5 +1,5 @@
-#ifndef _ID_H
-#define _ID_H
+#ifndef _ID_STRING_H
+#define _ID_STRING_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <mem.h>
@@ -51,6 +51,9 @@ int dropIdUseTimes(IdAlp idAllocator,int id,int dropTimes);
 
 //重定位一个可用id的字符串到新的字符串
 int resetIdString(IdAlp idAllocator,int id,char* newStr);
+
+//获取id对应的字符串,获取成功返回分配空间的str,获取失败返回NULL
+char* getIdString(IdAlp idAllocator,int id);
 
 //强制回收一个id
 int releaseId(IdAlp idAllocator,int id);

@@ -17,8 +17,8 @@ typedef struct string_id_table{
   struct string_id_node* string_id_arr[STRRING_ID_TABLE_ARR_SIZE];
 }*StrIdTable;
 
-//初始化哈希表
-void initStrIdTable(StrIdTable table);
+//获得新哈希表
+StrIdTable getStrIdTable();
 
 //获取字符串对应的哈希值
 int string_id_hash(char* str);
@@ -32,7 +32,8 @@ int putStrId(StrIdTable table,char* str,int id);
 //删除字符串与对应的id
 int delStr(StrIdTable table,char* str);
 
-
+//删除整个表
+void delStrIdTable(StrIdTable table);
 
 
 

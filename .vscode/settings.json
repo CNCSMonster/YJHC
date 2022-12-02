@@ -5,7 +5,9 @@
         "regex": "cpp",
         "type.h": "c",
         "token_kind.h": "c",
-        "token_reader.h": "c"
+        "token_reader.h": "c",
+        "istream": "c",
+        "ostream": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

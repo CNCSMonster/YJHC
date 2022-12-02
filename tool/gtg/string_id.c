@@ -1,9 +1,12 @@
 #include "string_id.h"
 
-//初始化哈希表
-void initStrIdTable(StrIdTable table){
-  memset(table->string_id_arr,NULL,sizeof(table->string_id_table));
+StrIdTable getStrIdTable(){
+  StrIdTable table=malloc(sizeof(struct string_id_table));
+  memset(table->string_id_arr,NULL,sizeof(table->string_id_arr));
+  return table;
 }
+
+
 
 //获取字符串对应的哈希值
 int string_id_hash(char* str){
@@ -13,7 +16,7 @@ int string_id_hash(char* str){
   for(int i=0;i<len;i++){
     hash^=str[i]; //使用位运算大概获得每个位置的特征
   }
-  return int(hash)+len;
+  return (int)hash+len;
 }
 
 
@@ -80,3 +83,14 @@ int delStr(StrIdTable table,char* str){
   return 1;
 }
 
+//删除整个表
+void delStrIdTable(StrIdTable table){
+  for(int i=0;i<STRRING_ID_TABLE_ARR_SIZE;i++){
+    while(table->string_id_arr[i]!=NULL){
+      struct string_id_node* tmp=table->string_id_arr[i];
+      table->string_id_arr[i]=tmp->next;
+      free(tmp->str);
+      free(tmp);
+    }
+  }
+}

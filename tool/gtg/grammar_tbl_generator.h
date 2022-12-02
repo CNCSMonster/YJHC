@@ -4,6 +4,7 @@
 #include "grammar_tbl_generator.h"
 #include "hashset.h"
 #include "string_id.h"
+#include "id_string.h"
 
 /*
 映射关系分析:
@@ -14,16 +15,26 @@
 
 struct ActionsEachKind{
   HSet actions;
+  int defaultAction;  //默认用的action，如果编号为-1的话,说明使用全局未定义符号
   int actionKind;
   struct ActionsEachKind* next;
+};
+
+
+struct syntax_line{
+  int actionKind;
+  int symbol;
+  int token;
+  int action;
+  struct syntax_line* next;
 };
 
 
 
 //设置命令器信息块
 struct gtgBlock{
-  //存放默认是错误值的字符串,必须是全大写的字符串
-  char* default;
+  //存放默认值字符串(对应是负数,表示notdefine),必须是全大写的字符串
+  char* not_define;
   //字符串id表
   StrIdTable strIds;
   //token表
@@ -32,62 +43,53 @@ struct gtgBlock{
   HSet actionKinds; //记录actionKind对应的中间号码
   //存放不同action的空间,能够根据actionKind来寻找匹配
   struct ActionsEachKind* actions;
+
+  //id分配器
+  struct IdAllocator idAllocator; //id分配器
+
   //存放syntax symbol的空间
   HSet symbols;
-
-  
+  //存放syntax
+  struct syntax_line syntaxs; //syntax的头节点,从下一个节点开始才是有效syntax_line语句
 };
 
-
 /*
-要解决的问题有:
-用什么保存action们?
-用什么保存syntax们?
-用什么保存token们?
-要求action能够快速地增删改
-syntax也要能够快速增删改
-如何保存syntax表信息?
+对gtgBlock的说明:
+1.
+not_define保存默认的未定义字符串
+比如not_define的默认值是NULL,也就是没有经过人定义
+结果输出表格的时候,会生成一句:
+#define NOT_DEFINE (-1)
+我们可以使用not_define ggb 命令设置not_define="ggb"
+结果输出表格的时候,会生成一句:
+#define NOT_DEFINE (-1)
 
-构思:
-使用边列表道式保存syntax信息
-比如对于token COMMA,以及对于栈顶symbol BLOCK_IN,有PrintAction NEWLINE
-则保存为
-action_kind:top_symbol,token,action的形式
-如:
-PrintAction:BLOCK_IN,COMMA,NEWLINE的形式
-为了能够精简化表达,应该要把对应得字符串转为编号
+2.tokens,symbols,actionKinds
+tokens保存的是token字符串分配的id,能够快速查找
+symbols保存的是syntax symbols字符串分配的id
+actionKinds同理保存的是ActionKind字符串分配的id
 
-整理:
-Action,或者Token,或者SyntaxSymbol都是字符串
-为了节省数据占用的内存，采用了给每个字符串编号,然后保存编号的方法
-在内存中的编号
-如果加入某个字符串,则给该字符串分配一个可用编号,然后在一个哈希表中
-加入表项<key,val>=(str,id),其中str是该字符串,id为分配给该表项的编号,
-同时需要另外一个哈希表,加入表项编
-<key,val>=(id,str)
-在内存中加入syntax语法的时候就保存编号,
-在实际上output的法表的时候,就根据编号找到对应的字符串。
-如果删除了某个字符串,则设置对应的编号为默认编号,默认号则会使用默认字符串
+3.strIdTable
+字符串Id表,保存<key,val>=<str,id>
+能够快速查找字符串对应的id,用来保存字符串与它分配的id的对应关系
 
-也就是经过两层映射
+4.idAllocator
+id分配器,用来对id进行分配,
+能够给新字符串分配id
+能够根据id查找对应的字符串
+能够自动回收id
 
-字符串(用户层)-->中间号码(内存中使用)-->实际字符串(用户层)
-两个哈希表:
-[字符串,中间号码]
-[中间号码,实际字符串]
-
-关于中间号码的回收:
-如果删掉了某个token字符串,则删掉对应的所有syntax反应,并且回收它中间号码
-如果删掉了某个action,则删掉对应的action-中间号码对,并且设置对应的中间号码指向默认值
-如果删掉了某个syntax_symbol,则删掉对应的所有syntax反应,并且回收对应的中间号码
-关于action使用的中间号码的回收,使用引入计数的方法，同时保存action对应的引用次数,如果引用次数等于0,则回收
-该中间号码
+5.actions
+action链表。
+每个节点记录了一个actionKind下的所有action以及该actionKind的默认action
+这样删除actionKind的时候能够快速删除掉一个action的所有内容
 
 
-解答:
-使用中间代码分配器,IdAllocator来分配和回收中间代码
-使用hashset来保存各种action,token以及syntaxSymbol
-
+6.syntax_line
+以链表形式保存的语法分析动作命令行
+每行保存一个
+ActionKind:symbol,token,action四元组
+里面的每个值都保存的是对应字符串分配到的id
 
 */
 
@@ -95,18 +97,8 @@ Action,或者Token,或者SyntaxSymbol都是字符串
 
 /*
 使用说明:
-
-
+命令格式
 */
-
-
-
-
-
-
-
-
-
 
 typedef enum ordkind{
   UN_LEGAL,   //不合法的命令,也就是异常命令
