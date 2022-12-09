@@ -39,7 +39,7 @@ struct IdAllocator getIdAllocator();
 
 
 //给字符串str分配一个id,如果分配成功,返回分配的id(一个非负数)
-int setIdString(IdAlp idAllocator,char* str);
+int allocateId(IdAlp idAllocator,char* str);
 
 //增加id的引用次数,必须是绑定了字符串的id才能增加引用次数,如果是字符串已经解绑的id,不能够增加引用次数
 //正常增加引用次数返回非0值,否则返回0

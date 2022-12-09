@@ -11,7 +11,7 @@ struct IdAllocator getIdAllocator(){
   out.toReuse=malloc(sizeof(int)*out.toReuseSize);
   out.useTimes=malloc(sizeof(int)*out.size);
   out.val=malloc(sizeof(char*)*out.size);
-  memset(out.val,NULL,sizeof(char*)*out.size);
+  memset(out.val,0,sizeof(char*)*out.size);
   memset(out.useTimes,0,sizeof(int)*out.size);
   return out;
 }
@@ -19,7 +19,7 @@ struct IdAllocator getIdAllocator(){
 
 
 //增加一个字符串,并给该字符串分配一个id，如果分配成功返回一个id(为非负数)
-int setIdString(IdAlp idAllocator,char* str){
+int allocateId(IdAlp idAllocator,char* str){
   int id; //记录分配的id
   if(idAllocator->toReuseNum!=0){
     id=idAllocator->toReuse[--(idAllocator->toReuseNum)];
@@ -107,7 +107,7 @@ int spaceAllocateForIdAllocator(IdAlp idAllocator){
     int newSize=idAllocator->size+ID_STRING_NUM;
     char** tmpVal=malloc(newSize*sizeof(char*));
     int* tmpUseTimes=malloc(newSize*sizeof(int));
-    memset(tmpVal,NULL,newSize*sizeof(char*));
+    memset(tmpVal,0,newSize*sizeof(char*));
     memset(tmpUseTimes,0,newSize*sizeof(int));
     memcpy(tmpVal,idAllocator->val,sizeof(char*)*idAllocator->size);
     memcpy(tmpUseTimes,idAllocator->useTimes,sizeof(int)*idAllocator->size);
@@ -122,7 +122,7 @@ int spaceAllocateForIdAllocator(IdAlp idAllocator){
     int newSize=idAllocator->size-ID_STRING_NUM;
     char** tmpVal=malloc(newSize*sizeof(char*));
     int* tmpUseTimes=malloc(newSize*sizeof(int));
-    memset(tmpVal,NULL,newSize*sizeof(char*));
+    memset(tmpVal,0,newSize*sizeof(char*));
     memset(tmpUseTimes,0,newSize*sizeof(int));
     memcpy(tmpVal,idAllocator->val,newSize*sizeof(char*));
     memcpy(tmpUseTimes,idAllocator->useTimes,newSize*sizeof(int));

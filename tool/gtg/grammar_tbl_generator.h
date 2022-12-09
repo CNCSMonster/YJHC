@@ -1,8 +1,9 @@
 #ifndef _GRAMMAR_TBL_GENERATOR_H
 #define _GRAMMAR_TBL_GENERATOR_H
 
-#include "grammar_tbl_generator.h"
+
 #include "hashset.h"
+#include "mstr.h"
 #include "string_id.h"
 #include "id_string.h"
 
@@ -10,22 +11,15 @@
 //默认工作文件,启动的时候会读取这个文件,退出的时候会写入这个文件
 #define DEFAULT_GTG_WORK_FILE "gtg.txt"
 
+//默认提示用文件,help命令会输出这个文件里面的文本
+#define HELP_FILE "help.txt"   
 
 
 /*
 映射关系分析:
-由token
 
 
 */
-
-struct ActionsEachKind{
-  HSet actions;
-  int defaultAction;  //默认用的action，如果编号为-1的话,说明使用全局未定义符号
-  int actionKind;
-  struct ActionsEachKind* next;
-};
-
 
 struct syntax_line{
   int actionKind;
@@ -34,6 +28,17 @@ struct syntax_line{
   int action;
   struct syntax_line* next;
 };
+
+struct tblBlock{
+  HSet actions;
+  int defaultAction;  //默认用的action，如果编号为-1的话,说明使用全局未定义符号
+  int actionKind;
+  struct syntax_line* syntaxs;  //该actionkind下的syntaxs们
+  struct tblBlock* next;
+};
+
+
+
 
 
 
@@ -47,24 +52,23 @@ struct gtgBlock{
   HSet tokens;  //记录token用的表,能够用来快速判断token是否存在,其实里面保存的是字符串对应的中间号码
   //存放actionKind的空间
   HSet actionKinds; //记录actionKind对应的中间号码
-  //存放不同action的空间,能够根据actionKind来寻找匹配
-  struct ActionsEachKind* actions;
+  //存放不同actionkind对应的表格的链表每个表格内有default_action,actions,syntaxs信息
+  struct tblBlock* actions;
 
   //id分配器
   struct IdAllocator idAllocator; //id分配器
 
   //存放syntax symbol的空间
   HSet symbols;
-  //存放syntax
-  struct syntax_line syntaxs; //syntax的头节点,从下一个节点开始才是有效syntax_line语句
 }block;
 
 char* ord=NULL;
 FILE* fin=NULL;
 FILE* fout=NULL;
 
+int n_each_line_gtg=6;    //每行打印的字符串个数限制
 
-
+int n_gtg;  //命令-n附加属性提取结果,如果命令附加了-n则，输入的数字属性会保存在这里(如果是个有效的正数)
 
 /*
 对gtgBlock的说明:
@@ -103,61 +107,11 @@ action链表。
 每行保存一个
 ActionKind:symbol,token,action四元组
 里面的每个值都保存的是对应字符串分配到的id
-
 */
 
-/*
-使用说明:
-命令格式
-
-action add 增加action,输入该命令后进入增加action选项
-默认会读取当行所有action增加直到遇到换行结束,
-或者使用action add -n 3 //则会读取后面3个action
-actionkind add 增加actionkind   
-也可以使用actionkind add -n N，N为一个数字,使用同上
-token add  //增加token,输入该命令后进入增加token命令
-symbol add //增加symbol
-syntax add //增加syntax,也可以使用-n
-help  //输出提示
-
-增加型命令:
-action add
-actionkind add
-token add
-symbol add
-syntax add
-增加型命令默认会使用下一行的内容作为所有增加内容
-增加型命令后面可以加上附加后缀[-n N]
-比如action add -n 4,该命令会读取从下一行开始的4个字符串作为增加的action这些字符串之间用空格类型字符隔开(比如空格或者换行)
-
-提示型命令:
-help 提示信息,提示使用信息
-
-查看命令:
-check actionkind  //查看actionkind列表
-check token //查看所有token信息
-check action  <actionkind> 查看某个actionkind下所有action信息
-check action  则查看所有action的信息,包括所有actionkind
-check symbol  //查看所有symbol信息
-check syntax  //查看所有syntax信息
-可以在后面加入-o命令把信息输出到-o后面指定的文件中
 
 
-控制型命令:
-exit 退出命令,获取该命令后,把缓冲结果保存,并且退出
-gc 垃圾回收命令,回收id,回收空间(garbage collect)
 
-替换型命令:
-replace
-输入该命令后会使用接下来的两个字符串分别作为要替换字符串，和替换后字符串
-也可以加入-n N增加属性,则会提取后面的n对字符串来replace操作
-
-删除命令
-del
-同样可以后面加入-n来使用,则会使用后面的n个字符串做删除操作
-
-
-*/
 
 //判断命令的类型
 typedef enum ordkind{
@@ -179,9 +133,12 @@ typedef enum ordkind{
   CHECK_ACTION_ALL,
   CHECK_ACTIONKIND,
   CHECK_SYMBOL,
-  CHECK_SYNTAX,
+  CHECK_SYNTAX_OFKIND,
+  CHECK_SYNTAXS,
   CHECK_TOKEN,
-  CHECK_ALL
+  CHECK_ALL,
+  OUTPUT_ORDERS,
+  OUTPUT_GRAMMAR
 }OrdKind;
 
 
@@ -194,11 +151,24 @@ void init();
 //命令行读取器,读取一行命令,而且忽略前导空格,忽略注释符后面,而且读到换行停止,命令没有长度限制,动态分配空间
 char* fgetOrd(FILE* fin);
 
+//读取一个单词,忽略前导空格和单行注释以及
+char* fgetWord(FILE* fin);
+
+//根据ids打印字符串,正常打印返回非0值,打印异常(比如出现未注册的id)返回0
+int showStringsByIds(int* ids,int num);
+
+
+//从指令中提取-n信息(读取-n指定的参数N,一个大于0的整数),读取成功返回非0值,读取失败返回0
+int extractN(char* line,int* returnN);
+
+//从指令中读取-o属性,提取成功返回非0值，提取失败返回0
+int extractO(char* line,char* returnPath);
+
 //处理命令,如果是不合理的命令则返回0,否则处理成功后返回非0值
 int maintainOrd(char* ord);
 
-//判断某个字符串是否已经使用过了
-int ifHasUsed(char* str);
+//判断某个字符串是否已经使用过了,如果已经使用过了返回非0值,否则返回0
+int isUsedStr(char* str);
 
 //判断命令类型
 OrdKind ordKind(char* ord);
@@ -222,6 +192,7 @@ int token_add();
 int actionkind_add();
 
 int help();
+int gc();
 int del();
 int replace();
 int gtg_exit();
@@ -234,7 +205,16 @@ int check_symbol();
 int check_token();
 int check_all();
 int check_actionkind();
-int check_syntax();
+int check_syntax_ofkind();
+int check_syntaxs();
+
+//输出命令
+
+//输出能够运行的已经执行的数据的gtg脚本文件
+int output_orders();
+
+//输出能够用在yjhc中的grammar语法文件
+int output_grammar();
 
 
 
@@ -250,15 +230,19 @@ int (*executeOrds[])(void)={
   [DEL] del,
   [HELP] help,
   [INIT] gtg_init,
+  [GC] gc,
   [EXIT]  gtg_exit,
   [REPLACE] replace,
   [CHECK_ACTION_OFKIND] check_action_ofkind,
   [CHECK_ACTION_ALL] check_action_all,
   [CHECK_ACTIONKIND] check_actionkind,
   [CHECK_SYMBOL] check_symbol,
-  [CHECK_SYNTAX] check_syntax,
+  [CHECK_SYNTAX_OFKIND] check_syntax_ofkind,
+  [CHECK_SYNTAXS] check_syntaxs,
   [CHECK_TOKEN] check_token,
-  [CHECK_ALL] check_all
+  [CHECK_ALL] check_all,
+  [OUTPUT_GRAMMAR] output_grammar,
+  [OUTPUT_ORDERS] output_orders
 };
 
 
