@@ -22,24 +22,21 @@
 */
 
 struct syntax_line{
-  int actionKind;
   int symbol;
   int token;
   int action;
   struct syntax_line* next;
 };
 
+
+//表格块
 struct tblBlock{
   HSet actions;
   int defaultAction;  //默认用的action，如果编号为-1的话,说明使用全局未定义符号
   int actionKind;
-  struct syntax_line* syntaxs;  //该actionkind下的syntaxs们
+  struct syntax_line syntaxs_head;  //该actionkind下的syntaxs们
   struct tblBlock* next;
 };
-
-
-
-
 
 
 //设置命令器信息块
@@ -53,7 +50,7 @@ struct gtgBlock{
   //存放actionKind的空间
   HSet actionKinds; //记录actionKind对应的中间号码
   //存放不同actionkind对应的表格的链表每个表格内有default_action,actions,syntaxs信息
-  struct tblBlock* actions;
+  struct tblBlock actions_head;
 
   //id分配器
   struct IdAllocator idAllocator; //id分配器
@@ -147,6 +144,14 @@ typedef enum ordkind{
 
 //初始化程序数据
 void init();
+
+//释放语法列表,释放成功返回释放的语法行的个数,释放失败返回负数
+int delSyntaxs(struct syntax_line* syntaxHead);
+
+
+
+//释放语法翻译动作指导表,无异常返回非0值,有异常返回0
+int delTblBlocks(struct tblBlock* tbls_head);
 
 //命令行读取器,读取一行命令,而且忽略前导空格,忽略注释符后面,而且读到换行停止,命令没有长度限制,动态分配空间
 char* fgetOrd(FILE* fin);

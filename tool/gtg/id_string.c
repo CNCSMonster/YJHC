@@ -18,6 +18,8 @@ struct IdAllocator getIdAllocator(){
 
 
 
+
+
 //增加一个字符串,并给该字符串分配一个id，如果分配成功返回一个id(为非负数)
 int allocateId(IdAlp idAllocator,char* str){
   int id; //记录分配的id
@@ -27,8 +29,7 @@ int allocateId(IdAlp idAllocator,char* str){
     id=(idAllocator->alcSt)++;
   }
   //找到对应id所在的位置,分配足够空间
-  idAllocator->val[id]=malloc(strlen(str)+1);
-  strcpy(idAllocator->val[id],str);
+  idAllocator->val[id]=strcpy(malloc(strlen(str)+1),str);
   //检查是否需要扩张或者放缩空间
   return id;
 }
@@ -59,7 +60,7 @@ int dropIdUseTimes(IdAlp idAllocator,int id,int dropTimes){
 }
 
 int releaseId(IdAlp idAllocator,int id){
-  if(idAllocator->val[id]==NULL&&idAllocator->useTimes[id]==0){
+  if(idAllocator->val==NULL||idAllocator->val[id]==NULL&&idAllocator->useTimes[id]==0){
     return 0;
   }
   if(idAllocator->val[id]!=NULL){
@@ -74,9 +75,8 @@ int releaseId(IdAlp idAllocator,int id){
 }
 
 
-//重定位一个可用id的字符串到新的字符串
 int resetIdString(IdAlp idAllocator,int id,char* newStr){
-  if(idAllocator->val[id]==NULL){
+  if(idAllocator->val[id]==NULL||idAllocator->val==NULL){
     return 0;
   }
   free(idAllocator->val[id]);
@@ -85,19 +85,13 @@ int resetIdString(IdAlp idAllocator,int id,char* newStr){
   return 1;
 }
 
-int delString(IdAlp idAllocator,int id){
-  if(idAllocator->val[id]==NULL) return 0;
-  free(idAllocator->val[id]);
-  idAllocator->val[id]=NULL;
-  return 1;
-}
+
 
 //获取id对应的字符串,获取成功返回分配空间的str,获取失败返回NULL
 char* getIdString(IdAlp idAllocator,int id){
-  if(id>=idAllocator->alcSt||idAllocator->val[id]==NULL) return NULL;
+  if(id>=idAllocator->alcSt||idAllocator->val[id]==NULL||idAllocator->val==NULL) return NULL;
   return strcpy(malloc(sizeof(idAllocator->val[id])+1),idAllocator->val[id]);
 }
-
 
 
 int spaceAllocateForIdAllocator(IdAlp idAllocator){
@@ -156,11 +150,12 @@ int spaceAllocateForIdAllocator(IdAlp idAllocator){
   return 1;
 }
 
-//回收id分配器
+//回收id分配器,free了之后就不能够使用了
 int freeIdAllocator(IdAlp idAllocator){
   //回收所有字符串
   for(int i=0;i<idAllocator->alcSt;i++){
-    if(idAllocator->val!=NULL) free(idAllocator->val);
+    if(idAllocator->val[i]==NULL) continue;
+    free(idAllocator->val[i]);
   }
   free(idAllocator->val);
   free(idAllocator->toReuse);

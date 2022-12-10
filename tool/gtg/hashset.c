@@ -97,7 +97,7 @@ int hashset_remove(HSetp hashset,void* toDel){
     return 0;
 }
 
-//销毁哈希表
+//清空哈希表
 void hashset_del(HSetp hashset){
     int size=sizeof(hashset->nodes)/sizeof(hashset->nodes[0]);
     for(int i=0;i<size;i++){
@@ -108,7 +108,9 @@ void hashset_del(HSetp hashset){
             hashset->nodes[i]=cur->next;
             free(cur);
         }
+        hashset->nodes[i]=NULL;
     }
+    hashset->num=0;
 }
 
 //使用的哈希函数,根据值使用的哈希函数，使用的是数组的值的前面4个字节，

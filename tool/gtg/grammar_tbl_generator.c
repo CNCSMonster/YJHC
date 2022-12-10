@@ -5,7 +5,7 @@
 //初始化程序数据,
 void init(){
   block.actionKinds=hashset_cre(sizeof(int));
-  block.actions=NULL;
+  block.actions_head.next=NULL;
   block.tokens=hashset_cre(sizeof(int));
   block.symbols=hashset_cre(sizeof(int));
   block.not_define=NULL;
@@ -20,9 +20,45 @@ void init(){
     fclose(fin);
   }
   fin=stdin;
-  fin=stdin;
   fout=NULL;
 }
+
+
+int delSyntaxs(struct syntax_line* syntaxHead){
+  int out=0;
+  //注意,删除语法行的时候,要清楚对应的idAllocator里面的引用次数统计
+  struct syntax_line* tmp=syntaxHead->next;
+  //
+  while(tmp!=NULL){
+    out++;
+    syntaxHead->next=tmp->next;
+    int symbol=tmp->symbol;
+    int token=tmp->token;
+    int action=tmp->action;
+    dropIdUseTimes(&block.idAllocator,symbol,1);
+    dropIdUseTimes(&block.idAllocator,token,1);
+    dropIdUseTimes(&block.idAllocator,action,1);
+    free(tmp);
+    tmp=syntaxHead->next;
+  }
+  return out;
+}
+
+
+int delTblBlocks(struct tblBlock* tbls_head){
+  while (tbls_head->next!=NULL)
+  {
+    struct tblBlock* tmp=tbls_head->next;
+    tbls_head->next=tmp->next;
+    int actionkind=tmp->actionKind;
+    hashset_del(&tmp->actions);
+    int dropTimes=delSyntaxs(&tmp->syntaxs_head);
+    free(tmp);
+    if(dropTimes<0) return 0;
+  }
+  return 1;
+}
+
 
 //命令行读取器,读取一行命令,而且忽略前导空格,忽略注释符后面,而且读到换行停止,命令没有长度限制,动态分配空间
 char* fgetOrd(FILE* fin){
@@ -67,6 +103,7 @@ char* fgetOrd(FILE* fin){
   free(out);
   return tmp;
 }
+
 
 
 int showStringsByIds(int* ids,int num){
@@ -288,7 +325,7 @@ int action_add(){
       id = allocateId(&block.idAllocator, tmp);
       putStrId(block.strIds, tmp, id);
       // TODO,找到对应actionkind的块,加入该内容
-      struct tblBlock *tmpAEK = block.actions;
+      struct tblBlock *tmpAEK = block.actions_head.next;
       while (tmpAEK != NULL && tmpAEK->actionKind != ackindId)
       {
         tmpAEK = tmpAEK->next;
@@ -322,7 +359,7 @@ int action_add(){
         id=allocateId(&block.idAllocator,tmp);
         putStrId(block.strIds,tmp,id);
         //TODO,找到对应actionkind的块,加入该内容
-        struct tblBlock* tmpAEK=block.actions;
+        struct tblBlock* tmpAEK=block.actions_head.next;
         while(tmpAEK!=NULL&&tmpAEK->actionKind!=ackindId){
           tmpAEK=tmpAEK->next;
         }
@@ -337,7 +374,6 @@ int action_add(){
       }
     }
   }
-  
   return 1;
 }
 
@@ -501,6 +537,7 @@ int help(){
 int del(){return error();
 
 }
+
 int replace(){return error();
 
 }
@@ -524,13 +561,51 @@ int gtg_exit(){
   if(!check_actionkind()) return 0;
   //再保存actions和syntax,根据每个actionkind保存
 
-  //TODO 释放空间
+  fclose(fout);
 
+  //释放空间
+  //清空symbol表并释放空间
+  hashset_del(&block.symbols);
+  //清除token表释放
+  hashset_del(&block.tokens);
+  //清除actionkind表并释放空间
+  hashset_del(&block.actionKinds);
+  //清除语法块
+  delTblBlocks(&block.actions_head);
+  //释放并更换id分配器
+  freeIdAllocator(&block.idAllocator);
+  //释放字符串-id哈希表
+  delStrIdTable(block.strIds);
+  free(block.strIds);
+  //重置默认字符串
+  if(block.not_define!=NULL){
+    free(block.not_define);
+    block.not_define=NULL;
+  }
   exit(0);
 }
 
-int gtg_init(){return error();
+int gtg_init(){
 
+  //清空symbol表并释放空间
+  hashset_del(&block.symbols);
+  //清除token表释放
+  hashset_del(&block.tokens);
+  //清除actionkind表并释放空间
+  hashset_del(&block.actionKinds);
+  //清除语法块
+  delTblBlocks(&block.actions_head);
+  //释放并更换id分配器
+  freeIdAllocator(&block.idAllocator);
+  block.idAllocator=getIdAllocator();
+  //释放字符串-id哈希表
+  delStrIdTable(block.strIds);
+  //重置默认字符串
+  if(block.not_define!=NULL){
+    free(block.not_define);
+    block.not_define=NULL;
+  }
+  return 1;
 }
 
 

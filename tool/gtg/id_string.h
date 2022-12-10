@@ -45,11 +45,11 @@ int allocateId(IdAlp idAllocator,char* str);
 //正常增加引用次数返回非0值,否则返回0
 int increaseIdUseTimes(IdAlp idAllocator,int id,int increaseTimes);
 
-//减少一个可用id的引用次数,减少成功返回非0值,减少失败返回0
+//减少一个可用id的引用次数,正常减少返回非0值,异常情况返回0
 int dropIdUseTimes(IdAlp idAllocator,int id,int dropTimes);
 
 
-//重定位一个可用id的字符串到新的字符串
+//重定位一个已分配未回收的id到新的字符串
 int resetIdString(IdAlp idAllocator,int id,char* newStr);
 
 //获取id对应的字符串,获取成功返回分配空间的str,获取失败返回NULL
@@ -58,8 +58,6 @@ char* getIdString(IdAlp idAllocator,int id);
 //强制回收一个id
 int releaseId(IdAlp idAllocator,int id);
 
-//删除一个字符串,把对应分配的id绑定的val重置为NULL
-int delString(IdAlp idAllocator,int id);
 
 //空间扩展或者缩小检查
 int spaceAllocateForIdAllocator(IdAlp idAllocator);
