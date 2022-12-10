@@ -93,6 +93,13 @@ char* getIdString(IdAlp idAllocator,int id){
   return strcpy(malloc(sizeof(idAllocator->val[id])+1),idAllocator->val[id]);
 }
 
+int delString(IdAlp IdAllocator,int id){
+  if(id>=IdAllocator->alcSt||IdAllocator->val[id]==NULL) return 0;
+  free(IdAllocator->val[id]);
+  IdAllocator->val[id]=NULL;
+  return 1;
+}
+
 
 int spaceAllocateForIdAllocator(IdAlp idAllocator){
   void* tmp;

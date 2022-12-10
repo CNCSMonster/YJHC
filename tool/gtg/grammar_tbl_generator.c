@@ -267,6 +267,13 @@ int error() //错误提示,当输入没有定义的命令的时候给出错误提示
 }
 
 int gc(){
+  //垃圾回收,对于含有未定义语法块的句子进行回收
+
+
+
+
+
+
   return error();
 }
 
@@ -503,11 +510,58 @@ int token_add(){
   HSetp tokens=&block.tokens;
   //如果没有附加-n属性,使用接下来一行作为输入
   if(n_gtg==0){
-
+    char* line=fgetOrd(fin);
+    char* tline=line;
+    char tmp[200];
+    char end;
+    do{
+      end=mysgets(tmp," \n\r#",tline);
+      tline+=strlen(tmp)+1;
+      if(isUsedStr(tmp)){
+        fprintf(fout,"\nerror!this word %s has been added!\n",tmp);
+        continue;
+      }
+      else if(strlen(tmp)==0){
+        fprintf(fout,"\nerror!you can't use empty string as token!\n",tmp);
+        continue;
+      }
+      //首先,给该字符串分配id
+      int id=allocateId(&block.idAllocator,tmp);
+      //然后把id加入到字符串id表中,同时把id加入到symbols表中
+      if(id>=0){
+        putStrId(block.strIds,tmp,id);
+        hashset_add(&block.tokens,&id);
+      }
+      else fprintf(fout,"\nerror!fail to allocate id for %s\n",tmp);
+      
+    }while(end!='\0'&&end!='#');
+    free(line);
   }
   //否则使用接下来n个单词作为输入
   else{
-
+    for(int i=0;i<n_gtg;i++){
+      char* tmp=fgetWord(fin);
+      //判断是否是已经加入的字符串
+      if(isUsedStr(tmp)){
+        fprintf(fout,"\nerror!this word %s has been added!\n",tmp);
+        free(tmp);
+        continue;
+      }
+      else if(strlen(tmp)==0){
+        fprintf(fout,"\nerror!you can't use empty string as symbol!\n",tmp);
+        free(tmp);
+        continue;
+      }
+      //首先,给该字符串分配id
+      int id=allocateId(&block.idAllocator,tmp);
+      //然后把id加入到字符串id表中,同时把id加入到symbols表中
+      if(id>=0){
+        putStrId(block.strIds,tmp,id);
+        hashset_add(&block.tokens,&id);
+      }
+      else fprintf(fout,"\nerror!fail to allocate id for %s\n",tmp);
+      free(tmp);
+    }
   }
   return 1;
 }
@@ -516,11 +570,74 @@ int actionkind_add(){
   HSetp actionkinds=&block.actionKinds;
   //如果没有附加-n属性,使用接下来一行作为输入
   if(n_gtg==0){
-
+    char* line=fgetOrd(fin);
+    char* tline=line;
+    char tmp[200];
+    char end;
+    do{
+      end=mysgets(tmp," \n\r#",tline);
+      tline+=strlen(tmp)+1;
+      if(isUsedStr(tmp)){
+        fprintf(fout,"\nerror!this word %s has been added!\n",tmp);
+        continue;
+      }
+      else if(strlen(tmp)==0){
+        fprintf(fout,"\nerror!you can't use empty string as symbol!\n",tmp);
+        continue;
+      }
+      //首先,给该字符串分配id
+      int id=allocateId(&block.idAllocator,tmp);
+      //然后把id加入到字符串id表中,同时把id加入到symbols表中
+      if(id>=0){
+        putStrId(block.strIds,tmp,id);
+        hashset_add(&block.actionKinds,&id);
+        //加入新的actionkind块
+        struct tblBlock* addTbl=malloc(sizeof(struct tblBlock));
+        addTbl->next=block.actions_head.next;
+        block.actions_head.next=addTbl;
+        addTbl->actionKind=id;
+        addTbl->actions=hashset_cre(sizeof(int));
+        addTbl->defaultAction=-1; //负数表示使用默认的id
+        addTbl->syntaxs_head.next=NULL;
+      }
+      else fprintf(fout,"\nerror!fail to allocate id for %s\n",tmp);
+      
+    }while(end!='\0'&&end!='#');
+    free(line);
   }
   //否则使用接下来n个单词作为输入
   else{
-
+    for(int i=0;i<n_gtg;i++){
+      char* tmp=fgetWord(fin);
+      //判断是否是已经加入的字符串
+      if(isUsedStr(tmp)){
+        fprintf(fout,"\nerror!this word %s has been added!\n",tmp);
+        free(tmp);
+        continue;
+      }
+      else if(strlen(tmp)==0){
+        fprintf(fout,"\nerror!you can't use empty string as symbol!\n",tmp);
+        free(tmp);
+        continue;
+      }
+      //首先,给该字符串分配id
+      int id=allocateId(&block.idAllocator,tmp);
+      //然后把id加入到字符串id表中,同时把id加入到symbols表中
+      if(id>=0){
+        putStrId(block.strIds,tmp,id);
+        hashset_add(&block.actionKinds,&id);
+        //加入新的actionkind块
+        struct tblBlock* addTbl=malloc(sizeof(struct tblBlock));
+        addTbl->next=block.actions_head.next;
+        block.actions_head.next=addTbl;
+        addTbl->actionKind=id;
+        addTbl->actions=hashset_cre(sizeof(int));
+        addTbl->defaultAction=-1; //负数表示使用默认的id
+        addTbl->syntaxs_head.next=NULL;
+      }
+      else fprintf(fout,"\nerror!fail to allocate id for %s\n",tmp);
+      free(tmp);
+    }
   }
   return 1;
 }
@@ -552,7 +669,7 @@ int gtg_exit(){
   if(fout==NULL) return 0;
   if(ord!=NULL) free(ord);
   ord=NULL; 
-  //保存数据到文件中
+  //TODO保存数据到文件中
   //先保存symbols
   if(!check_symbol()) return 0;
   //再保存tokens
@@ -629,7 +746,7 @@ int check_symbol(){
 
 int check_token(){
   int* arr=hashset_toArr(&block.tokens);
-  int jud=showStringsByIds(arr,block.symbols.num);
+  int jud=showStringsByIds(arr,block.tokens.num);
   return jud;
 }
 
@@ -637,11 +754,12 @@ int check_token(){
 int check_all(){
   //执行文件,把-o等属性获取之后去掉-o,然后执行各种check
 
+
   return 1;
 }
 int check_actionkind(){
-  int* arr=hashset_toArr(&block.symbols);
-  int jud=showStringsByIds(arr,block.symbols.num);
+  int* arr=hashset_toArr(&block.actionKinds);
+  int jud=showStringsByIds(arr,block.actionKinds.num);
   return jud;
 }
 

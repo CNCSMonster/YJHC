@@ -58,6 +58,8 @@ char* getIdString(IdAlp idAllocator,int id);
 //强制回收一个id
 int releaseId(IdAlp idAllocator,int id);
 
+//解除id与某个字符串的绑定,但是不立刻回收,而是会等到引用计数为0时才回收。正常解除返回非0值,解除异常返回0
+int delString(IdAlp IdAllocator,int id);
 
 //空间扩展或者缩小检查
 int spaceAllocateForIdAllocator(IdAlp idAllocator);
