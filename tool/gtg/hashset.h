@@ -39,7 +39,7 @@ int hashset_contains(HSetp hashset,void* toFind);
 int hashset_remove(HSetp hashset,void* toDel);
 
 //销毁哈希表
-void hashset_del(HSetp hashset);
+void free_hashset(HSetp hashset);
 
 //使用的哈希函数,根据值使用的哈希函数，使用的是数组的值的前面4个字节，
 //如果对小于int大小的数据使用哈希，需要修改hash函数，避免访问越界

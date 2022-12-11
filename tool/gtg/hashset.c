@@ -98,7 +98,7 @@ int hashset_remove(HSetp hashset,void* toDel){
 }
 
 //Çå¿Õ¹þÏ£±í
-void hashset_del(HSetp hashset){
+void free_hashset(HSetp hashset){
     int size=sizeof(hashset->nodes)/sizeof(hashset->nodes[0]);
     for(int i=0;i<size;i++){
         if(hashset->nodes[i]==NULL) continue;
@@ -134,3 +134,5 @@ void* hashset_toArr(HSetp hashset){
     }
     return out;
 }
+
+

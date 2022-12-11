@@ -51,7 +51,7 @@ int delTblBlocks(struct tblBlock* tbls_head){
     struct tblBlock* tmp=tbls_head->next;
     tbls_head->next=tmp->next;
     int actionkind=tmp->actionKind;
-    hashset_del(&tmp->actions);
+    free_hashset(&tmp->actions);
     int dropTimes=delSyntaxs(&tmp->syntaxs_head);
     free(tmp);
     if(dropTimes<0) return 0;
@@ -67,13 +67,14 @@ char* fgetOrd(FILE* fin){
   char* out=malloc(sizeof(char)*size);
   int i=0;
   char c;
-  //忽略所有有效命令前的空格以及换行
+  //忽略所有有效命令前的空格
   while((c=fgetc(fin))!=EOF){
     if(c==' ') continue;
     if(c=='#'){
       while((c=fgetc(fin))!=EOF&&c!='\n');
       if(c==EOF) break;
-    }else{
+    }else if(c=='\n') return strcpy(malloc(1),"");
+    else{
       break;
     }
   }
@@ -144,7 +145,7 @@ int maintainOrd(char* ord){
   }
   int jud=executeOrds[kind]();
   if(!jud){
-    printf("fail to execute such line ");
+    printf("fail to execute such line\n");
   }
   if(fout!=stdout) fclose(fout);
   if(ord!=NULL)  free(ord);
@@ -156,7 +157,7 @@ int isUsedStr(char* str){
   //首先查找字符串id表中查找该字符串的编号,如果查找到了说明已经使用过了
   int jud=strToId(block.strIds,str);
   if(jud<0) return 0;
-  return 1;
+  return -1;
 }
 
 //读取一个单词,忽略前导空格和单行注释以及
@@ -189,6 +190,9 @@ OrdKind ordKind(char* ord){
     return INIT;
   }else if(strcmp(tmp,"gc")==0){
     return GC;
+  }
+  else if(strcmp(tmp,"del")==0){
+    return DEL;
   }
   //判断是否是提示命令
   else if(strcmp(tmp,"help")==0){
@@ -234,6 +238,12 @@ OrdKind ordKind(char* ord){
     else if(strcmp(tmp,"token")==0){
       return CHECK_TOKEN;
     }
+    else if(strcmp(tmp,"syntax")==0){
+      return CHECK_SYNTAX_OFKIND;
+    }
+    else if(strcmp(tmp,"syntaxs")==0){
+      return CHECK_SYNTAX_ALL;
+    }
     else if(strcmp(tmp,"symbol")==0){
       return CHECK_SYMBOL;
     }
@@ -273,7 +283,6 @@ int gc(){
 
 
 
-
   return error();
 }
 
@@ -304,8 +313,8 @@ int action_add(){
   int ackindId;
   //如果字符串表类里面没有这个字符串,或者这个字符串对应的id没有保存在actionkind表里面
   if((id=strToId(block.strIds,tmp))<0||!hashset_contains(&block.actionKinds,&id)){
-    printf("your input is not correct id!");
-    return error();
+    printf("your should input action add <actionkind> to start add actions.\nthe actionkind you doesn't exist!");
+    return 0;
   }
   ackindId=id;    //保存actionkind的id,后面使用
 
@@ -316,7 +325,6 @@ int action_add(){
     //然后把ord中所有内容加入到该actionkind的action中
     track=ord;
     int islast=1;
-    //TODO
     while ((end = mysgets(tmp, " ", track)) != '\0'||islast)
     {
       track+=strlen(tmp)+1;
@@ -331,7 +339,7 @@ int action_add(){
       }
       id = allocateId(&block.idAllocator, tmp);
       putStrId(block.strIds, tmp, id);
-      // TODO,找到对应actionkind的块,加入该内容
+      //,找到对应actionkind的块,加入该内容
       struct tblBlock *tmpAEK = block.actions_head.next;
       while (tmpAEK != NULL && tmpAEK->actionKind != ackindId)
       {
@@ -651,12 +659,63 @@ int help(){
   fputc('\n',stdout);
   return 1;
 }
-int del(){return error();
 
+//in this way you will del a string.
+int del(){
+  //如果没有-n属性指定,则删除下一行输入的所有字符串
+  if(n_gtg==0){
+    char* line=fgetOrd(fin);
+    char* tline=line;
+    char tmp[200];
+    char end;
+    //TODO
+    do{
+      end=mysgets(tmp," \n\r#",tline);
+      tline+=strlen(tmp)+1;
+      if(!gtg_delString(tmp)) fprintf(fout,"fail to del string \"%s\"\n",tmp);
+    }while(end!='\0'&&end!='#');
+    free(line);
+  }
+  else{
+    //，完成多行时del处理
+    for(int i=0;i<n_gtg;i++){
+      char* tmp=fgetWord(fin);
+      //判断是否是已经加入的字符串
+      if(!isUsedStr(tmp)){
+        fprintf(fout,"\nerror!you can't del string %s,which has not been added!\n",tmp);
+        free(tmp);
+        continue;
+      }
+      if(!gtg_delString(tmp)) fprintf(fout,"fail to del string \"%s\"\n",tmp);
+    }
+  }
+  return 1;
 }
 
-int replace(){return error();
 
+
+int replace(){
+  if(n_gtg==0){
+    char* line=fgetOrd(fin);
+    char* tline=line;
+    char tmp[200];
+    char end;
+    //TODO
+    do{
+      end=mysgets(tmp," \n\r#",tline);
+      tline+=strlen(tmp)+1;
+      if(!gtg_replaceString(tmp)) fprintf(fout,"fail to execute replace \"%s\"\n",tmp);
+    }while(end!='\0'&&end!='#');
+    free(line);
+  }
+  else{
+    //，完成多行时del处理
+    for(int i=0;i<n_gtg;i++){
+      char* tmp=fgetWord(fin);
+      if(!gtg_replaceString(tmp)) fprintf(fout,"fail to execute replace \"%s\"\n",tmp);
+    }
+  }
+  return 1;
 }
 
 int gtg_exit(){
@@ -669,24 +728,15 @@ int gtg_exit(){
   if(fout==NULL) return 0;
   if(ord!=NULL) free(ord);
   ord=NULL; 
-  //TODO保存数据到文件中
-  //先保存symbols
-  if(!check_symbol()) return 0;
-  //再保存tokens
-  if(!check_token()) return 0;
-
-  if(!check_actionkind()) return 0;
-  //再保存actions和syntax,根据每个actionkind保存
-
+  output_orders();
   fclose(fout);
-
   //释放空间
   //清空symbol表并释放空间
-  hashset_del(&block.symbols);
+  free_hashset(&block.symbols);
   //清除token表释放
-  hashset_del(&block.tokens);
+  free_hashset(&block.tokens);
   //清除actionkind表并释放空间
-  hashset_del(&block.actionKinds);
+  free_hashset(&block.actionKinds);
   //清除语法块
   delTblBlocks(&block.actions_head);
   //释放并更换id分配器
@@ -705,11 +755,11 @@ int gtg_exit(){
 int gtg_init(){
 
   //清空symbol表并释放空间
-  hashset_del(&block.symbols);
+  free_hashset(&block.symbols);
   //清除token表释放
-  hashset_del(&block.tokens);
+  free_hashset(&block.tokens);
   //清除actionkind表并释放空间
-  hashset_del(&block.actionKinds);
+  free_hashset(&block.actionKinds);
   //清除语法块
   delTblBlocks(&block.actions_head);
   //释放并更换id分配器
@@ -728,12 +778,13 @@ int gtg_init(){
 
 
 
-int check_action_ofkind(){return error();
+int check_actions_ofkind(){
+  //TODO
 
 }
 
 
-int check_action_all(){return error();
+int check_actions_all(){return error();
 
 }
 
@@ -763,22 +814,172 @@ int check_actionkind(){
   return jud;
 }
 
-int check_syntax_ofkind(){
-  //TODO
+int check_syntaxs_ofkind(){
+  //TODO,
   return error();
 }
 
 
-int check_syntaxs(){
-  return error();
+int check_syntaxs_all(){
+  //循环打印不同actionkind的action
+  fprintf(fout,"\nAll syntaxs:\n");
+  struct tblBlock* tmpTbl=block.actions_head.next;
+  while(tmpTbl!=NULL){
+    int id=tmpTbl->actionKind;
+    char* actionkind=getIdString(&block.idAllocator,id);
+    //判断这个字符串是否存在，不可能不存在,如果不存在就是出了异常
+    if(actionkind==NULL) return 0;
+    fprintf(fout,"Table of %s:\n",actionkind);
+    fprintf(fout,"actionkind:symbol,token,action\n");
+    struct syntax_line* tmp_syntax_line=tmpTbl->syntaxs_head.next;
+    struct syntax_line* pre=&tmpTbl->syntaxs_head;
+    while (tmp_syntax_line!=NULL)
+    {
+      char* symbol=getIdString(&block.idAllocator,tmp_syntax_line->symbol);
+      char* token=getIdString(&block.idAllocator,tmp_syntax_line->token);
+      char* action=getIdString(&block.idAllocator,tmp_syntax_line->action);
+      //进行检查
+      int isLegal=1;  //标记是否是个正常的syntax
+      if(symbol==NULL){
+        //把这个id的引用次数减1
+        isLegal=0;
+        dropIdUseTimes(&block.idAllocator,tmp_syntax_line->symbol,1);
+      }
+      if(token==NULL){
+        //把这个id的引用次数减1
+        isLegal=0;
+        dropIdUseTimes(&block.idAllocator,tmp_syntax_line->token,1);
+      }
+      if(action==NULL){
+        //把这个id的引用次数减1
+        isLegal=0;
+        dropIdUseTimes(&block.idAllocator,tmp_syntax_line->action,1);
+      }
+      if(!isLegal){
+        pre->next=tmp_syntax_line->next;
+        free(tmp_syntax_line);
+        tmp_syntax_line=pre->next;
+        continue;
+      }
+      fprintf(fout,"%s:%s,%s,%s\n",actionkind,symbol,token,action);
+      free(symbol);
+      free(token);
+      free(action);
+      pre=tmp_syntax_line;
+      tmp_syntax_line=tmp_syntax_line->next;
+    }
+    free(actionkind);
+    tmpTbl=tmpTbl->next;
+  }
+  return 1;
 }
 
 
-int output_orders(){return error();
+int output_orders(){
+  //首先输出所有的symbol
 
+
+  //然后输出所有token
+
+
+  //然后输出所有的actionkind
+
+
+  //然后输出每个actionkind的action和syntax
+  return error();
 }
 
 
 int output_grammar(){return error();
 
+}
+
+
+/*
+other
+*/
+
+int gtg_delString(char* tmp)
+{
+  if(!isUsedStr(tmp)) return 0;
+  int id=strToId(block.strIds,tmp);
+  if(id<0) return 0;
+  // 然后解除这个id与字符串的绑定
+  delString(&block.idAllocator, id);
+  // 并把这个id从字符串id表中取出
+  delStr(block.strIds, tmp);
+  // 然后判断是否是各种类型的内容,如果是,从集合中取出
+  if (hashset_contains(&block.symbols, &id))
+  {
+    hashset_remove(&block.symbols, &id);
+  }
+  else if (hashset_contains(&block.tokens, &id))
+  {
+    hashset_remove(&block.tokens, &id);
+  }
+  else if (hashset_contains(&block.actionKinds, &id))
+  {
+    hashset_remove(&block.actionKinds,&id);
+    struct tblBlock *cur = block.actions_head.next;
+    struct tblBlock *pre = &block.actions_head;
+    // 找到actionkind对应的tbl块
+    while (cur != NULL)
+    {
+      if (cur->actionKind != id)
+      {
+        pre = cur;
+        cur = pre->next;
+        continue;
+      }
+      // 否则进行删除处理
+      cur = pre->next;
+      pre->next->next = NULL;
+      delTblBlocks(pre);
+      pre->next = cur;
+      break;
+    }
+  }
+  // 否则是actions,查找位置,删除
+  else
+  {
+    // 遍历块,查询到是哪个块的
+    struct tblBlock *cur = block.actions_head.next;
+    struct tblBlock *pre = &block.actions_head;
+    // 找到actionkind对应的tbl块
+    int hasDel=0;
+    while (cur != NULL)
+    {
+      if (!hashset_contains(&cur->actions, &id))
+      {
+        pre = cur;
+        cur = pre->next;
+        continue;
+      }
+      hashset_remove(&cur->actions,&id);
+      hasDel=1;
+      break;
+    }
+    if(!hasDel) return 0;
+  }
+  return 1;
+}
+
+
+int gtg_replaceString(char* input){
+  char* stops=">";
+  char old[200];
+  char* new;
+  char end=mysgets(old,stops,input);
+  if(end!='>') return 0;
+  if(old[strlen(old)-1]!='-') return 0;
+  else old[strlen(old)-1]='\0';
+  new=input+strlen(old)+2;
+  //要替换成的新字符串不能够是已经使用的字符串
+  if(isUsedStr(new)) return 0;
+  int id=strToId(block.strIds,old);
+  if(id<0) return 0;
+  resetIdString(&block.idAllocator,id,new);
+  delStr(block.strIds,old);
+  putStrId(block.strIds,new,id);
+  return 1;
 }

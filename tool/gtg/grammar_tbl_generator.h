@@ -131,7 +131,7 @@ typedef enum ordkind{
   CHECK_ACTIONKIND,
   CHECK_SYMBOL,
   CHECK_SYNTAX_OFKIND,
-  CHECK_SYNTAXS,
+  CHECK_SYNTAX_ALL,
   CHECK_TOKEN,
   CHECK_ALL,
   OUTPUT_ORDERS,
@@ -204,14 +204,14 @@ int gtg_exit();
 int gtg_init(); //初始化gtg数据
 
 
-int check_action_ofkind();
-int check_action_all();
+int check_actions_ofkind();
+int check_actions_all();
 int check_symbol();
 int check_token();
 int check_all();
 int check_actionkind();
-int check_syntax_ofkind();
-int check_syntaxs();
+int check_syntaxs_ofkind();
+int check_syntaxs_all();
 
 //输出命令
 
@@ -238,12 +238,12 @@ int (*executeOrds[])(void)={
   [GC] gc,
   [EXIT]  gtg_exit,
   [REPLACE] replace,
-  [CHECK_ACTION_OFKIND] check_action_ofkind,
-  [CHECK_ACTION_ALL] check_action_all,
+  [CHECK_ACTION_OFKIND] check_actions_ofkind,
+  [CHECK_ACTION_ALL] check_actions_all,
   [CHECK_ACTIONKIND] check_actionkind,
   [CHECK_SYMBOL] check_symbol,
-  [CHECK_SYNTAX_OFKIND] check_syntax_ofkind,
-  [CHECK_SYNTAXS] check_syntaxs,
+  [CHECK_SYNTAX_OFKIND] check_syntaxs_ofkind,
+  [CHECK_SYNTAX_ALL] check_syntaxs_all,
   [CHECK_TOKEN] check_token,
   [CHECK_ALL] check_all,
   [OUTPUT_GRAMMAR] output_grammar,
@@ -251,8 +251,10 @@ int (*executeOrds[])(void)={
 };
 
 
+//从信息块中删掉字符串,删除成功返回非0值,删除失败返回0
+int gtg_delString(char* tmp);
 
-
-
+//根据替换输入来完成字符串的替换,替换成功返回非0值,替换异常返回0
+int gtg_replaceString(char* input);
 
 #endif
