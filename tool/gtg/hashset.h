@@ -38,7 +38,7 @@ int hashset_contains(HSetp hashset,void* toFind);
 //从哈希表中删去一个元素,删除成功返回-1，删除失败返回0
 int hashset_remove(HSetp hashset,void* toDel);
 
-//销毁哈希表
+//销毁哈希表,释放里面的空间,注意,销毁后可以当作新的哈希表利用
 void free_hashset(HSetp hashset);
 
 //使用的哈希函数,根据值使用的哈希函数，使用的是数组的值的前面4个字节，

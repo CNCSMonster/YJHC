@@ -12,11 +12,7 @@ action add B
 ba bb bc
 set defaultAction B
 NOT_DEFINE
-syntax add B -n 1
-B:sa,ta,bb
 action add A
 aa ab ac
 set defaultAction A
 NOT_DEFINE
-syntax add A -n 1
-A:sa,ta,aa

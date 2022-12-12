@@ -4,6 +4,7 @@
 int main(){
 
   init();
-  while((ord=fgetOrd(stdin))!=NULL) maintainOrd(ord);
+  while((ord=fgetOrd(stdin))!=NULL) 
+    maintainOrd(ord);
   return 0;
 }

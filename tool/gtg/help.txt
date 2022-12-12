@@ -27,12 +27,18 @@ NEWLINE CURLINE
 这四行命令会增加两个actionkind:PrintAction和BlockAction,增加PrintAction下面的两个action:
 NEWLINE和CURLINE
 
+设定型命令:
+可设定的内容在未设定前有默认值
+set defaultAction <actionkind>  #该命令设置actionkind对应表格的默认动作
+set notDefine       #该命令用来设置全局的not_define字符串
+
 
 提示型命令:
 help 提示信息,提示使用信息
 
 查看命令:
 check actionkind  //查看actionkind列表
+check defaultAction //查看指定actionkind的default action
 check token //查看所有token信息
 check action  <actionkind> 查看某个actionkind下所有action信息
 check actions  则查看所有action的信息,包括所有actionkind

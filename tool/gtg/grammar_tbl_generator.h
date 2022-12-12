@@ -14,6 +14,9 @@
 //默认提示用文件,help命令会输出这个文件里面的文本
 #define HELP_FILE "help.txt"   
 
+#define NOT_DEFINE_ID (-1)
+
+#define DEFAULT_NOTDEFINE_STRING "NOT_DEFINE"
 
 /*
 映射关系分析:
@@ -21,6 +24,7 @@
 
 */
 
+//语法行
 struct syntax_line{
   int symbol;
   int token;
@@ -34,6 +38,7 @@ struct tblBlock{
   HSet actions;
   int defaultAction;  //默认用的action，如果编号为-1的话,说明使用全局未定义符号
   int actionKind;
+  int syntax_num;     //增加的语法行的数量
   struct syntax_line syntaxs_head;  //该actionkind下的syntaxs们
   struct tblBlock* next;
 };
@@ -112,22 +117,24 @@ ActionKind:symbol,token,action四元组
 
 //判断命令的类型
 typedef enum ordkind{
-  NOT_DEFINE, //未定义命令
+  NOT_DEFINE_ORD, //未定义命令
   ACTION_ADD, //action命令
   ACTIONKIND_ADD, //actionkind增加
-  ACTIONKIND_SETDEFAULT,  //设置actionkind的default
+  SET_DEFAULT_ACTION,  //设置actionkind的default
   SET_NOT_DEFINE, //设置未定义字符串
   TOKEN_ADD,
   SYMBOL_ADD,
-  SYNTAX_ADD, //syntax增加命令
+  SYNTAX_ADD, //syntax根据类型输入
   DEL,    //删除一个字符串
   REPLACE,    //替换
   GC,     //启动垃圾回收
   EXIT,   //退出
+  CLS,  //clear screen
   INIT,    //重启
   HELP,   //提示
   CHECK_ACTION_OFKIND,
   CHECK_ACTION_ALL,
+  CHECK_DEFAULT_ACTION,
   CHECK_ACTIONKIND,
   CHECK_SYMBOL,
   CHECK_SYNTAX_OFKIND,
@@ -187,7 +194,7 @@ OrdKind ordKind(char* ord);
 
 int error();  //错误提示,当输入没有定义的命令的时候给出错误提示
 
-int actionkind_setdefault();
+int set_defaultAction();
 int set_not_define();
 
 int action_add();
@@ -198,6 +205,7 @@ int actionkind_add();
 
 int help();
 int gc();
+int cls();
 int del();
 int replace();
 int gtg_exit();
@@ -206,6 +214,7 @@ int gtg_init(); //初始化gtg数据
 
 int check_actions_ofkind();
 int check_actions_all();
+int check_default_action(); //查看指定动作类型的默认动作
 int check_symbol();
 int check_token();
 int check_all();
@@ -224,8 +233,8 @@ int output_grammar();
 
 
 int (*executeOrds[])(void)={
-  [NOT_DEFINE] error,
-  [ACTIONKIND_SETDEFAULT] actionkind_setdefault,
+  [NOT_DEFINE_ORD] error,
+  [SET_DEFAULT_ACTION] set_defaultAction,
   [SET_NOT_DEFINE] set_not_define,
   [ACTION_ADD] action_add,
   [SYMBOL_ADD] symbol_add,
@@ -233,6 +242,7 @@ int (*executeOrds[])(void)={
   [TOKEN_ADD] token_add,
   [ACTIONKIND_ADD] actionkind_add,
   [DEL] del,
+  [CLS] cls,    //清空屏幕之前显示的内容
   [HELP] help,
   [INIT] gtg_init,
   [GC] gc,
@@ -241,6 +251,7 @@ int (*executeOrds[])(void)={
   [CHECK_ACTION_OFKIND] check_actions_ofkind,
   [CHECK_ACTION_ALL] check_actions_all,
   [CHECK_ACTIONKIND] check_actionkind,
+  [CHECK_DEFAULT_ACTION] check_default_action,
   [CHECK_SYMBOL] check_symbol,
   [CHECK_SYNTAX_OFKIND] check_syntaxs_ofkind,
   [CHECK_SYNTAX_ALL] check_syntaxs_all,
@@ -256,5 +267,15 @@ int gtg_delString(char* tmp);
 
 //根据替换输入来完成字符串的替换,替换成功返回非0值,替换异常返回0
 int gtg_replaceString(char* input);
+
+//往表块中加入一条语法分析表表项
+int syntax_line_add(char* toAdd,struct tblBlock* tmpTbl);
+
+int gtg_showTbl(struct tblBlock *tmpTbl);
+
+int gtg_showSyntaxs(struct tblBlock* tmpTbl,char* actionkind);
+
+//获取对应actionkind的表
+struct tblBlock* getTbl(char* actionkind);
 
 #endif

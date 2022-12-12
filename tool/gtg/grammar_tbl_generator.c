@@ -111,16 +111,14 @@ int showStringsByIds(int* ids,int num){
   int i=0;
   while(i<num){
     char* str=NULL;
-    for(int j=0;j<n_each_line_gtg-1&&i<num;j++){
+    str=getIdString(&block.idAllocator,ids[i++]);
+    if(str==NULL) return 0;
+    fprintf(fout,"%s",str);
+    free(str);
+    for(int j=1;j<n_each_line_gtg&&i<num;j++){
       str=getIdString(&block.idAllocator,ids[i++]);
       if(str==NULL) return 0;
-      fprintf(fout,"%s ",str);
-      free(str);
-    }
-    if(i<num){
-      str=getIdString(&block.idAllocator,ids[i++]);
-      if(str==NULL) return 0;
-      fprintf(fout,"%s",str);
+      fprintf(fout," %s",str);
       free(str);
     }
     fprintf(fout,"\n");
@@ -150,6 +148,7 @@ int maintainOrd(char* ord){
   if(fout!=stdout) fclose(fout);
   if(ord!=NULL)  free(ord);
   ord=NULL;
+  n_gtg=0;    //清除之前读出的数字大小
   return 1;
 }
 
@@ -191,6 +190,9 @@ OrdKind ordKind(char* ord){
   }else if(strcmp(tmp,"gc")==0){
     return GC;
   }
+  else if(strcmp(tmp,"cls")==0){
+    return CLS;
+  }
   else if(strcmp(tmp,"del")==0){
     return DEL;
   }
@@ -223,11 +225,19 @@ OrdKind ordKind(char* ord){
     end=mysgets(tmp,stops,ord+strlen(tmp)+1);
     if(strcmp(tmp,"add")==0) return TOKEN_ADD;
   }
+  else if(strcmp(tmp,"set")==0){
+    end=mysgets(tmp,stops,ord+strlen(tmp)+1);
+    if(strcmp(tmp,"defaultAction")==0) return SET_DEFAULT_ACTION;
+    else if(strcmp(tmp,"notDefine")) return SET_NOT_DEFINE;
+  }
   //判断是否是查看命令
   else if(strcmp(tmp,"check")==0){
     end=mysgets(tmp,stops,ord+strlen(tmp)+1);
     if(strcmp(tmp,"actions")==0){
       return CHECK_ACTION_ALL;
+    }
+    if(strcmp(tmp,"defaultAction")==0){
+      return CHECK_DEFAULT_ACTION;
     }
     else if(strcmp(tmp,"action")==0){
       return CHECK_ACTION_OFKIND;
@@ -259,7 +269,7 @@ OrdKind ordKind(char* ord){
   }
 
   //否则是未定义命令
-  return NOT_DEFINE;
+  return NOT_DEFINE_ORD;
 }
 
 
@@ -281,20 +291,16 @@ int gc(){
 
 
 
-
-
   return error();
 }
 
-int actionkind_setdefault(){return error();
-  
+int cls(){
+  system("cls");
+  return 1;
 }
 
-int set_not_define(){return error();
-
-}
-
-int action_add(){
+int set_defaultAction(){
+  //首先读取actionkind
   char* track=ord;
   char tmp[1000];
   char end;
@@ -306,24 +312,57 @@ int action_add(){
   if(end==' ') track+=strlen(tmp)+1;
   else return error();
   //开始读取actionkind作为输入
-  end=mysgets(tmp," ",track);
-  track+=strlen(tmp)+1;
-  //判断actionkind是否合理
-  int id;
-  int ackindId;
-  //如果字符串表类里面没有这个字符串,或者这个字符串对应的id没有保存在actionkind表里面
-  if((id=strToId(block.strIds,tmp))<0||!hashset_contains(&block.actionKinds,&id)){
-    printf("your should input action add <actionkind> to start add actions.\nthe actionkind you doesn't exist!");
-    return 0;
+  char actionkind[200];
+  end=mysgets(actionkind," ",track);
+  struct tblBlock* targetTbl=getTbl(actionkind);
+  if(targetTbl==NULL) return 0;
+  char* action=fgetWord(fin);
+  //如果是要恢复到默认设置
+  if(strcmp(action,DEFAULT_NOTDEFINE_STRING)==0){
+    free(action);
+    targetTbl->defaultAction=NOT_DEFINE_ID;
+    return 1;
   }
-  ackindId=id;    //保存actionkind的id,后面使用
+  int id=strToId(block.strIds,action);
+  free(action);
+  if(id<0||!hashset_contains(&targetTbl->actions,&id)) return 0;
+  targetTbl->defaultAction=id;
+  return 1;
+}
 
+int set_not_define(){
+  char* newNotDefineString=fgetWord(fin);
+  if(block.not_define==NULL) block.not_define=newNotDefineString;
+  else{
+    free(block.not_define);
+    block.not_define=newNotDefineString;
+  }
+  return 1;
+}
+
+int action_add(){
+  //TODO fix
+  char* track=ord;
+  char tmp[1000];
+  char end;
+  int id;
+  //读取actionkind属性
+  end=mysgets(tmp," ",track);
+  if(end==' ') track+=strlen(tmp)+1;
+  else return error();
+  end=mysgets(tmp," ",track);
+  if(end==' ') track+=strlen(tmp)+1;
+  else return error();
+  //开始读取actionkind作为输入
+  char actionkind[500];
+  end=mysgets(actionkind," ",track);
+  struct tblBlock* tbl=getTbl(actionkind);
+  if(tbl==NULL) return 0;
   //如果没有附加-n属性,则读取下一行所有内容作为输入
   if(n_gtg==0){
-    free(ord);
-    ord=fgetOrd(fin);
+    char* tord=fgetOrd(fin);
     //然后把ord中所有内容加入到该actionkind的action中
-    track=ord;
+    track=tord;
     int islast=1;
     while ((end = mysgets(tmp, " ", track)) != '\0'||islast)
     {
@@ -334,77 +373,148 @@ int action_add(){
       //再判断这个名字有没有用过
       if (isUsedStr(tmp))
       {
-        fprintf(fout,"%s has been input!\n");
+        fprintf(fout,"%s has been input!\n",tmp);
         continue;
       }
       id = allocateId(&block.idAllocator, tmp);
+      if(id<0) return 0;
       putStrId(block.strIds, tmp, id);
-      //,找到对应actionkind的块,加入该内容
-      struct tblBlock *tmpAEK = block.actions_head.next;
-      while (tmpAEK != NULL && tmpAEK->actionKind != ackindId)
-      {
-        tmpAEK = tmpAEK->next;
-      }
-      if (tmpAEK == NULL)
-      {
-        fprintf(fout,"actions block for such actionkind doesn't exist!\n");
-        fclose(fout);
-        return 0;
-      }
       //往该actions块中加入内容
-      hashset_add(&(tmpAEK->actions), &id);
+      hashset_add(&tbl->actions, &id);
     }
+    free(tord);
   }
   //否则读取接下来n个有效字符串作为该action的输入
   else{
     for(int i=0;i<n_gtg;i++){
-      while((end=myfgets(tmp," \n#",fin))!=EOF){
-        if(end=='#'){
-          end=myfgets(tmp,"\n",fin);
-          if(end==EOF) break;
-          else continue;
-        }
-        else if(strlen(tmp)==0) continue;
-        //再判断这个名字有没有用过
-        if(isUsedStr(tmp)){
-          fprintf(fout,"%s has been input!\n");
-          fclose(fout);
-          return 0;
-        }
-        id=allocateId(&block.idAllocator,tmp);
-        putStrId(block.strIds,tmp,id);
-        //TODO,找到对应actionkind的块,加入该内容
-        struct tblBlock* tmpAEK=block.actions_head.next;
-        while(tmpAEK!=NULL&&tmpAEK->actionKind!=ackindId){
-          tmpAEK=tmpAEK->next;
-        }
-        if(tmpAEK==NULL){
-          fprintf(fout,"actions block for such actionkind doesn't exist!\n");
-          fclose(fout);
-          return 0;
-        }
-        //往该actions块中加入内容
-        hashset_add(&(tmpAEK->actions),&id);
-        break;
+      char* tmp=fgetWord(fin);
+      if(strlen(tmp)==0){
+        free(tmp);
+        continue;
       }
+      //再判断这个名字有没有用过
+      if(isUsedStr(tmp)){
+        fprintf(fout,"%s has been input!\n",tmp);
+        fprintf(fout,"you can't add %s as action for actionkind\"%s\"\n",tmp,actionkind);
+        free(tmp);
+        continue;
+      }
+      id=allocateId(&block.idAllocator,tmp);
+      if(id<0) return 0;
+      putStrId(block.strIds,tmp,id);
+      hashset_add(&tbl->actions,&id);
+      free(tmp);
     }
   }
   return 1;
 }
 
 int syntax_add(){
-  //TODO
-  //如果没有-n属性
+  char* track=ord;
+  char tmp[1000];
+  char end;
+  //读取actionkind属性
+  end=mysgets(tmp," ",track);
+  if(end==' ') track+=strlen(tmp)+1;
+  else return error();
+  end=mysgets(tmp," ",track);
+  if(end==' ') track+=strlen(tmp)+1;
+  else return error();
+  //开始读取actionkind作为输入
+  char actionkind[200];
+  end=mysgets(actionkind," ",track);
+  int id=strToId(block.strIds,actionkind);
+  struct tblBlock* kindof=NULL;
+  if(id>=0){
+    kindof=block.actions_head.next;
+    while (kindof!=NULL&&kindof->actionKind!=id) kindof=kindof->next;
+  }
+  //如果没有-n属性,读取该行的n个
   if(n_gtg==0){
-
+    char* line=fgetOrd(fin);
+    char* tline=line;
+    int ifHasEnd=0;
+    end=' ';
+    while((end!='\0')&&((end=mysgets(tmp," ",tline))!='\0'||!ifHasEnd)){
+      if(end=='\0') ifHasEnd=1; 
+      else tline+=strlen(tmp)+1;
+      char tmp2[200];
+      char tend=mysgets(tmp2,":",tmp);
+      if(tend!=':'){
+        int jud;
+        if(kindof==NULL){
+          fprintf(fout,"miss <actionkind> for add syntax line \"%s\"\n",tmp);
+          jud=0;
+        }
+        else jud=syntax_line_add(tmp,kindof);
+        if(!jud) fprintf(fout,"fail to add syntax line \"%s\"\n",tmp);
+        continue;
+      }
+      int tid=strToId(block.strIds,tmp2);
+      if(tid<0){
+        fprintf(fout,"fail to add syntax line \"%s\"\n",tmp);
+        continue;
+      }
+      struct tblBlock* tmpTbl=block.actions_head.next;
+      while(tmpTbl!=NULL&&tmpTbl->actionKind!=tid) tmpTbl=tmpTbl->next;
+      if(tmpTbl==NULL){
+        fprintf(fout,"table missed for actionkind %s\n",actionkind);
+        continue;
+      }
+      if(!syntax_line_add(tmp+strlen(tmp2)+1,tmpTbl)){
+        fprintf(fout,"fail to add syntax line \"%s\"\n",tmp);
+      }
+    }
+    free(line);
   }
   //如果有-n属性,则读取接下来n个信息作为输入
-  else{
-
+  else
+  {
+    for (int i = 0; i < n_gtg; i++)
+    {
+      char *toAdd = fgetWord(fin);
+      char tmp2[200];
+      end = mysgets(tmp2, ":", toAdd);
+      if (end != ':')
+      {
+        int jud;
+        if (kindof == NULL)
+        {
+          fprintf(fout, "miss <actionkind> for add syntax line \"%s\"\n", toAdd);
+          jud = 0;
+        }
+        else
+          jud = syntax_line_add(toAdd, kindof);
+        if (!jud)
+          fprintf(fout, "fail to add syntax line \"%s\"\n", toAdd);
+        free(toAdd);
+        continue;
+      }
+      int tid = strToId(block.strIds, tmp2);
+      if (tid < 0)
+      {
+        fprintf(fout, "fail to add syntax line \"%s\"\n", toAdd);
+        free(toAdd);
+        continue;
+      }
+      struct tblBlock *tmpTbl = block.actions_head.next;
+      while (tmpTbl != NULL && tmpTbl->actionKind != tid)
+        tmpTbl = tmpTbl->next;
+      if (tmpTbl == NULL)
+      {
+        fprintf(fout, "table missed for actionkind %s\n", actionkind);
+        free(toAdd);
+        continue;
+      }
+      if (!syntax_line_add(toAdd + strlen(tmp2) + 1, tmpTbl))
+      {
+        fprintf(fout, "fail to add syntax line %s\n", toAdd);
+      }
+      free(toAdd);
+    }
   }
-
+  return 1;
 }
-
 
 int extractN(char* line,int* returnN){
   char tmp[1000];
@@ -497,7 +607,7 @@ int symbol_add(){
         continue;
       }
       else if(strlen(tmp)==0){
-        fprintf(fout,"\nerror!you can't use empty string as symbol!\n",tmp);
+        fprintf(fout,"\nerror!you can't use empty string as symbol!\n");
         free(tmp);
         continue;
       }
@@ -530,7 +640,7 @@ int token_add(){
         continue;
       }
       else if(strlen(tmp)==0){
-        fprintf(fout,"\nerror!you can't use empty string as token!\n",tmp);
+        fprintf(fout,"\nerror!you can't use empty string as token!\n");
         continue;
       }
       //首先,给该字符串分配id
@@ -556,7 +666,7 @@ int token_add(){
         continue;
       }
       else if(strlen(tmp)==0){
-        fprintf(fout,"\nerror!you can't use empty string as symbol!\n",tmp);
+        fprintf(fout,"\nerror!you can't use empty string as symbol!\n");
         free(tmp);
         continue;
       }
@@ -590,7 +700,7 @@ int actionkind_add(){
         continue;
       }
       else if(strlen(tmp)==0){
-        fprintf(fout,"\nerror!you can't use empty string as symbol!\n",tmp);
+        fprintf(fout,"\nerror!you can't use empty string as symbol!\n");
         continue;
       }
       //首先,给该字符串分配id
@@ -604,8 +714,9 @@ int actionkind_add(){
         addTbl->next=block.actions_head.next;
         block.actions_head.next=addTbl;
         addTbl->actionKind=id;
+        addTbl->syntax_num=0;
         addTbl->actions=hashset_cre(sizeof(int));
-        addTbl->defaultAction=-1; //负数表示使用默认的id
+        addTbl->defaultAction=NOT_DEFINE_ID; //负数表示使用默认的id
         addTbl->syntaxs_head.next=NULL;
       }
       else fprintf(fout,"\nerror!fail to allocate id for %s\n",tmp);
@@ -624,7 +735,7 @@ int actionkind_add(){
         continue;
       }
       else if(strlen(tmp)==0){
-        fprintf(fout,"\nerror!you can't use empty string as symbol!\n",tmp);
+        fprintf(fout,"\nerror!you can't use empty string as symbol!\n");
         free(tmp);
         continue;
       }
@@ -640,6 +751,7 @@ int actionkind_add(){
         block.actions_head.next=addTbl;
         addTbl->actionKind=id;
         addTbl->actions=hashset_cre(sizeof(int));
+        addTbl->syntax_num=0;
         addTbl->defaultAction=-1; //负数表示使用默认的id
         addTbl->syntaxs_head.next=NULL;
       }
@@ -719,16 +831,13 @@ int replace(){
 }
 
 int gtg_exit(){
-
-  //先进行空间整理和化简
-  
   //把所有内容先写入文件
   fout=fopen(DEFAULT_GTG_WORK_FILE,"w");
 
   if(fout==NULL) return 0;
   if(ord!=NULL) free(ord);
   ord=NULL; 
-  output_orders();
+  output_orders();  
   fclose(fout);
   //释放空间
   //清空symbol表并释放空间
@@ -779,13 +888,46 @@ int gtg_init(){
 
 
 int check_actions_ofkind(){
-  //TODO
-
+  //TODO查找到对应的块,查看action
+  //先读取actionkind
+  char tmp[1000];
+  char end=mysgets(tmp," ",ord);
+  if(end=='\0') return 0;
+  char* tord=ord+strlen(tmp)+1;
+  end=mysgets(tmp," ",tord);
+  if(end=='\0') return 0;
+  tord+=strlen(tmp)+1;
+  end=mysgets(tmp," ",tord);
+  int id=strToId(block.strIds,tmp);
+  //查找该字符串是否已经注册,查找注册id
+  //如果返回id小于0,则说明该字符串没注册,更不可能对应actionkind
+  if(id<0) return 0;
+  if(!hashset_contains(&block.actionKinds,&id)) return 0;
+  //找到目的表格
+  struct tblBlock* target=block.actions_head.next;
+  while(target!=NULL&&target->actionKind!=id) target=target->next;
+  if(target==NULL) return 0;
+  //展示actions
+  int* arr=hashset_toArr(&target->actions);
+  showStringsByIds(arr,target->actions.num);
+  free(arr);
+  return 1;
 }
 
 
-int check_actions_all(){return error();
-
+int check_actions_all(){
+  struct tblBlock* target=block.actions_head.next;
+  while(target!=NULL){
+    char* actionkind=getIdString(&block.idAllocator,target->actionKind);
+    fprintf(fout,"actionkind:%s\n",actionkind);
+    if(target==NULL) return 0;
+    //展示actions
+    int* arr=hashset_toArr(&target->actions);
+    showStringsByIds(arr,target->actions.num);
+    free(arr);
+    target=target->next;
+  }
+  return 1;
 }
 
 
@@ -803,11 +945,24 @@ int check_token(){
 
 
 int check_all(){
-  //执行文件,把-o等属性获取之后去掉-o,然后执行各种check
-
-
+  fprintf(fout,"All symbols:\n");
+  if(!check_symbol()) return 0;
+  fprintf(fout,"All tokens:\n");
+  if(!check_token()) return 0;
+  fprintf(fout,"All actionkinds:\n");
+  if(!check_actionkind()) return 0;
+  fprintf(fout,"All actions:\n");
+  if(!check_actions_all()) return 0;
+  fprintf(fout,"All syntaxs:\n");
+  if(!check_syntaxs_all()) return 0;
   return 1;
 }
+
+
+
+
+
+
 int check_actionkind(){
   int* arr=hashset_toArr(&block.actionKinds);
   int jud=showStringsByIds(arr,block.actionKinds.num);
@@ -815,78 +970,112 @@ int check_actionkind(){
 }
 
 int check_syntaxs_ofkind(){
-  //TODO,
-  return error();
+  //首先读取actionkind
+  char tmp[1000];
+  char* tord=ord;
+  char end=mysgets(tmp," ",tord);
+  if(end==' ')  tord+=strlen(tmp)+1;
+  else return 0;
+  end=mysgets(tmp," ",tord);
+  if(end==' ')  tord+=strlen(tmp)+1;
+  else return 0;
+  end=mysgets(tmp," ",tord);
+  //然后根据actionkind找到对应的块
+  struct tblBlock* target=getTbl(tmp);
+  if(target==NULL) return 0;
+  return gtg_showTbl(target);
 }
 
 
 int check_syntaxs_all(){
   //循环打印不同actionkind的action
-  fprintf(fout,"\nAll syntaxs:\n");
+  struct tblBlock* tmpTbl=block.actions_head.next;
+  int jud=1;
+  while(tmpTbl!=NULL){
+    jud=jud&&gtg_showTbl(tmpTbl);
+    tmpTbl=tmpTbl->next;
+  }
+  return jud;
+}
+
+//查看指定动作类型的默认动作
+int check_default_action(){
+  //先获取actionkind所在的块 
+  char tmp[1000];
+  char* tord=ord;
+  char end=mysgets(tmp," ",ord);
+  if(end==' ')  tord+=strlen(tmp)+1;
+  else return 0;
+  end=mysgets(tmp," ",ord);
+  if(end==' ')  tord+=strlen(tmp)+1;
+  else return 0;
+  end=mysgets(tmp," ",tord);
+  int id=strToId(block.strIds,tmp);
+  if(id<0) return 0;
+  if(!hashset_contains(&block.actionKinds,&id)) return 0;
+  struct tblBlock* tbl=getTbl(tmp);
+  if(tbl==NULL) return 0; 
+  char* default_action=getIdString(&block.idAllocator,tbl->defaultAction);
+  fprintf(fout,"%s\n",default_action);
+  return 1;
+}
+
+int output_orders(){
+  gc(); //先进行收缩
+  //首先输出所有的symbol
+  int num=block.symbols.num;
+  if(num!=0){
+    fprintf(fout,"symbol add -n %d\n",num);
+    check_symbol();
+  }
+  //然后输出所有token
+  num=block.tokens.num;
+  if(num!=0){
+    fprintf(fout,"token add -n %d\n",num);
+    check_token();
+  }
+  //然后输出所有的actionkind
+  num=block.actionKinds.num;
+  if(num!=0){
+    fprintf(fout,"actionkind add -n %d\n",num);
+    check_actionkind();
+  }
+  //然后输出每个actionkind的action和syntax
   struct tblBlock* tmpTbl=block.actions_head.next;
   while(tmpTbl!=NULL){
-    int id=tmpTbl->actionKind;
-    char* actionkind=getIdString(&block.idAllocator,id);
-    //判断这个字符串是否存在，不可能不存在,如果不存在就是出了异常
+    //输出对应表格对应的default actionkind
+    char* actionkind=getIdString(&block.idAllocator,tmpTbl->actionKind);
     if(actionkind==NULL) return 0;
-    fprintf(fout,"Table of %s:\n",actionkind);
-    fprintf(fout,"actionkind:symbol,token,action\n");
-    struct syntax_line* tmp_syntax_line=tmpTbl->syntaxs_head.next;
-    struct syntax_line* pre=&tmpTbl->syntaxs_head;
-    while (tmp_syntax_line!=NULL)
-    {
-      char* symbol=getIdString(&block.idAllocator,tmp_syntax_line->symbol);
-      char* token=getIdString(&block.idAllocator,tmp_syntax_line->token);
-      char* action=getIdString(&block.idAllocator,tmp_syntax_line->action);
-      //进行检查
-      int isLegal=1;  //标记是否是个正常的syntax
-      if(symbol==NULL){
-        //把这个id的引用次数减1
-        isLegal=0;
-        dropIdUseTimes(&block.idAllocator,tmp_syntax_line->symbol,1);
+    //首先写入action,如果有的话
+    if(tmpTbl->actions.num!=0){
+      int* arr=hashset_toArr(&tmpTbl->actions);
+      num=tmpTbl->actions.num;
+      fprintf(fout,"action add %s\n",actionkind);
+      showStringsByIds(arr,num);
+      free(arr);
+    }
+    //然后写入default action
+    if(actionkind==NULL) return 0;
+    fprintf(fout,"set defaultAction %s\n",actionkind);
+    if(tmpTbl->defaultAction==NOT_DEFINE_ID) fprintf(fout,"%s\n",DEFAULT_NOTDEFINE_STRING);
+    else{
+      char* def_act=getIdString(&block.idAllocator,tmpTbl->defaultAction);
+      if(def_act==NULL){
+        free(actionkind);
+        return 0;
       }
-      if(token==NULL){
-        //把这个id的引用次数减1
-        isLegal=0;
-        dropIdUseTimes(&block.idAllocator,tmp_syntax_line->token,1);
-      }
-      if(action==NULL){
-        //把这个id的引用次数减1
-        isLegal=0;
-        dropIdUseTimes(&block.idAllocator,tmp_syntax_line->action,1);
-      }
-      if(!isLegal){
-        pre->next=tmp_syntax_line->next;
-        free(tmp_syntax_line);
-        tmp_syntax_line=pre->next;
-        continue;
-      }
-      fprintf(fout,"%s:%s,%s,%s\n",actionkind,symbol,token,action);
-      free(symbol);
-      free(token);
-      free(action);
-      pre=tmp_syntax_line;
-      tmp_syntax_line=tmp_syntax_line->next;
+      fprintf(fout,"%s\n",def_act);
+      free(def_act);
+    }
+    //最后写入syntaxs
+    if(tmpTbl->syntax_num!=0){
+      fprintf(fout,"syntax add %s -n %d\n",actionkind,tmpTbl->syntax_num);
+      gtg_showSyntaxs(tmpTbl,actionkind);
     }
     free(actionkind);
     tmpTbl=tmpTbl->next;
   }
   return 1;
-}
-
-
-int output_orders(){
-  //首先输出所有的symbol
-
-
-  //然后输出所有token
-
-
-  //然后输出所有的actionkind
-
-
-  //然后输出每个actionkind的action和syntax
-  return error();
 }
 
 
@@ -983,3 +1172,132 @@ int gtg_replaceString(char* input){
   putStrId(block.strIds,new,id);
   return 1;
 }
+
+
+int syntax_line_add(char* toAdd,struct tblBlock* tmpTbl){
+  if(tmpTbl==NULL||toAdd==NULL) return 0;
+  char* stops=",";
+  char tmp[1000];
+  char end=mysgets(tmp,stops,toAdd);
+  toAdd+=strlen(tmp)+1;
+  int symbol=strToId(block.strIds,tmp);
+  if(symbol<0||end!=',') return 0;
+  end=mysgets(tmp,stops,toAdd);
+  toAdd+=strlen(tmp)+1;
+  int token=strToId(block.strIds,tmp);
+  if(token<0||end!=',') return 0;
+  end=mysgets(tmp,stops,toAdd);
+  toAdd+=strlen(tmp)+1;
+  int action=strToId(block.strIds,tmp);
+  //如果该action不属于这个表,报错
+  if(!hashset_contains(&tmpTbl->actions,&action)) return 0;
+  //否则加入这个表
+  struct syntax_line* newSL=malloc(sizeof(struct syntax_line));
+  newSL->next=tmpTbl->syntaxs_head.next;
+  tmpTbl->syntaxs_head.next=newSL;
+  newSL->action=action;
+  newSL->token=token;
+  newSL->symbol=symbol;
+  tmpTbl->syntax_num++;
+  return 1;
+}
+
+
+
+
+
+int gtg_showTbl(struct tblBlock *tmpTbl)
+{
+  if (tmpTbl == NULL)
+    return 0;
+  int id = tmpTbl->actionKind;
+  char *actionkind = getIdString(&block.idAllocator, id);
+  // 判断这个字符串是否存在，不可能不存在,如果不存在就是出了异常
+  if (actionkind == NULL)
+    return 0;
+  fprintf(fout, "Table of %s:\n", actionkind);
+  fprintf(fout, "default action:");
+  if (tmpTbl->defaultAction == NOT_DEFINE_ID)
+  {
+    if (block.not_define == NULL)
+      fprintf(fout, "%s", DEFAULT_NOTDEFINE_STRING);
+    else
+      fprintf(fout, "%s", block.not_define);
+  }
+  else
+  {
+    char *defaultAction = getIdString(&block.idAllocator, tmpTbl->defaultAction);
+    if(defaultAction==NULL){
+      dropIdUseTimes(&block.idAllocator,tmpTbl->defaultAction,1);
+      tmpTbl->defaultAction=NOT_DEFINE_ID;
+    }
+    else{
+      fprintf(fout, "%s", defaultAction);
+      free(defaultAction);
+    }
+  }
+  fprintf(fout, "\n");
+  gtg_showSyntaxs(tmpTbl,actionkind);
+  free(actionkind);
+  return 1;
+}
+
+int gtg_showSyntaxs(struct tblBlock* tmpTbl,char* actionkind)
+{
+  struct syntax_line *tmp_syntax_line =tmpTbl->syntaxs_head.next;
+  struct syntax_line *pre = &tmpTbl->syntaxs_head;
+  while (tmp_syntax_line != NULL)
+  {
+    char *symbol = getIdString(&block.idAllocator, tmp_syntax_line->symbol);
+    char *token = getIdString(&block.idAllocator, tmp_syntax_line->token);
+    char *action = getIdString(&block.idAllocator, tmp_syntax_line->action);
+    // 进行检查
+    int isLegal = 1; // 标记是否是个正常的syntax
+    if (symbol == NULL)
+    {
+      // 把这个id的引用次数减1
+      isLegal = 0;
+      dropIdUseTimes(&block.idAllocator, tmp_syntax_line->symbol, 1);
+    }
+    if (token == NULL)
+    {
+      // 把这个id的引用次数减1
+      isLegal = 0;
+      dropIdUseTimes(&block.idAllocator, tmp_syntax_line->token, 1);
+    }
+    if (action == NULL)
+    {
+      // 把这个id的引用次数减1
+      isLegal = 0;
+      dropIdUseTimes(&block.idAllocator, tmp_syntax_line->action, 1);
+    }
+    if (!isLegal)
+    {
+      pre->next = tmp_syntax_line->next;
+      free(tmp_syntax_line);
+      tmp_syntax_line = pre->next;
+      tmpTbl->syntax_num--;
+      continue;
+    }
+    fprintf(fout, "%s:%s,%s,%s\n", actionkind, symbol, token, action);
+    free(symbol);
+    free(token);
+    free(action);
+    pre = tmp_syntax_line;
+    tmp_syntax_line = tmp_syntax_line->next;
+  }
+}
+
+
+//获取对应actionkind的表
+struct tblBlock* getTbl(char* actionkind){
+  int id=strToId(block.strIds,actionkind);
+  if(id<0) return NULL;
+  struct tblBlock* kindof=NULL;
+  kindof=block.actions_head.next;
+  while (kindof!=NULL&&kindof->actionKind!=id) kindof=kindof->next;
+  return kindof;
+}
+
+
+
