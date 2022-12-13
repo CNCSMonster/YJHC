@@ -1,0 +1,8 @@
+syntax add A -n 3
+sa,ta,aa
+sb,tb,ab
+ac,tc,ac
+syntax add -n 3
+A:sa,tb,ab
+A:sa,tb,aa
+A:sa,tb,ac

@@ -1,1 +1,12 @@
-A 
+symbol add -n 3
+sa sb sc
+token add -n 3
+ta tb tc
+actionkind add
+A B C
+action add A
+aa ab ac
+action add B
+ba bb bc
+action add C
+ca cb cc

@@ -126,6 +126,7 @@ typedef enum ordkind{
   SYMBOL_ADD,
   SYNTAX_ADD, //syntax根据类型输入
   DEL,    //删除一个字符串
+  RUN,
   REPLACE,    //替换
   GC,     //启动垃圾回收
   EXIT,   //退出
@@ -177,7 +178,7 @@ int extractN(char* line,int* returnN);
 int extractO(char* line,char* returnPath);
 
 //处理命令,如果是不合理的命令则返回0,否则处理成功后返回非0值
-int maintainOrd(char* ord);
+int maintainOrd();
 
 //判断某个字符串是否已经使用过了,如果已经使用过了返回非0值,否则返回0
 int isUsedStr(char* str);
@@ -204,6 +205,7 @@ int token_add();
 int actionkind_add();
 
 int help();
+int run();  //运行指定文件的代码,把运行结果输出到指定位置
 int gc();
 int cls();
 int del();
@@ -242,6 +244,7 @@ int (*executeOrds[])(void)={
   [TOKEN_ADD] token_add,
   [ACTIONKIND_ADD] actionkind_add,
   [DEL] del,
+  [RUN] run,  //TODO
   [CLS] cls,    //清空屏幕之前显示的内容
   [HELP] help,
   [INIT] gtg_init,

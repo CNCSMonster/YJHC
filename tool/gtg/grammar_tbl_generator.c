@@ -128,7 +128,7 @@ int showStringsByIds(int* ids,int num){
 
 
 //处理命令,如果是不合理的命令则返回0,否则处理成功后返回非0值
-int maintainOrd(char* ord){
+int maintainOrd(){
   if(ord==NULL) return 0;
   OrdKind kind=ordKind(ord);
   //在执行前进行-o和-n信息的提取
@@ -195,6 +195,9 @@ OrdKind ordKind(char* ord){
   }
   else if(strcmp(tmp,"del")==0){
     return DEL;
+  }
+  else if(strcmp(tmp,"run")==0){
+    return RUN;
   }
   //判断是否是提示命令
   else if(strcmp(tmp,"help")==0){
@@ -287,11 +290,50 @@ int error() //错误提示,当输入没有定义的命令的时候给出错误提示
 }
 
 int gc(){
-  //垃圾回收,对于含有未定义语法块的句子进行回收
+  //垃圾回收,对于重复的语句进行回收
 
-
-
-  return error();
+  //需要维护一个表,记录已经访问过的信息
+  //每个symbol->tokens表格
+  HSet hset=hashset_cre(sizeof(long long));
+  //从每个表的开始访问
+  struct tblBlock* tbl=block.actions_head.next;
+  while(tbl!=NULL){
+    //为每个表初始一次空间
+    free_hashset(&hset);
+    //要删除掉的语句有,symbol或者token已经失效的语句,或者(symbol,token)已经在前面出现过的语句
+    struct syntax_line* next=tbl->syntaxs_head.next;
+    struct syntax_line* pre=&(tbl->syntaxs_head);
+    while(next!=NULL){
+      //首先判断该句是否是合理的
+      int symbol=next->symbol;
+      int token=next->token;
+      int action=next->action;
+      if(!hashset_contains(&block.symbols,&symbol)||!hashset_contains(&block.tokens,&token)||!hashset_contains(&tbl->actions,&action))
+      {
+        //减少token，symbol，action的引用次数并且退出
+        dropIdUseTimes(&block.idAllocator,symbol,1);
+        dropIdUseTimes(&block.idAllocator,token,1);
+        dropIdUseTimes(&block.idAllocator,action,1);
+        next=next->next;
+        pre->next=next;
+        tbl->syntax_num--;
+        continue;
+      }
+      //否则判断是否已经出现过
+      long long code=((long long)symbol)*INT_MAX+(long long)token;
+      if(hashset_contains(&hset,&code)){
+        next=next->next;
+        pre->next=next;
+        tbl->syntax_num--;
+        continue;
+      }
+      hashset_add(&hset,&code);
+      pre=next;
+      next=next->next;
+    }
+    tbl=tbl->next;
+  }
+  return 1;
 }
 
 int cls(){
@@ -413,21 +455,25 @@ int syntax_add(){
   char* track=ord;
   char tmp[1000];
   char end;
+  int ifGet=1;
   //读取actionkind属性
   end=mysgets(tmp," ",track);
   if(end==' ') track+=strlen(tmp)+1;
-  else return error();
+  else ifGet=0;
   end=mysgets(tmp," ",track);
   if(end==' ') track+=strlen(tmp)+1;
-  else return error();
-  //开始读取actionkind作为输入
-  char actionkind[200];
-  end=mysgets(actionkind," ",track);
-  int id=strToId(block.strIds,actionkind);
+  else ifGet=0;
   struct tblBlock* kindof=NULL;
-  if(id>=0){
-    kindof=block.actions_head.next;
-    while (kindof!=NULL&&kindof->actionKind!=id) kindof=kindof->next;
+  int id;
+  char actionkind[200];
+  if(ifGet){
+    //开始读取actionkind作为输入
+    end=mysgets(actionkind," ",track);
+    id=strToId(block.strIds,actionkind);
+    if(id>=0){
+      kindof=block.actions_head.next;
+      while (kindof!=NULL&&kindof->actionKind!=id) kindof=kindof->next;
+    }
   }
   //如果没有-n属性,读取该行的n个
   if(n_gtg==0){
@@ -804,6 +850,29 @@ int del(){
   return 1;
 }
 
+int run(){
+  //获取输入的文件名
+  char tmp[1000];
+  char end=mysgets(tmp," ",ord);
+  if(end!=' ') return 0;
+  end=mysgets(tmp," ",ord+strlen(tmp)+1);
+  FILE* tfin=fin;
+  fin=fopen(tmp,"r");
+  if(fin==NULL){
+    fin=tfin;
+    return 0;
+  }
+  if(ord!=NULL) free(ord);
+  ord=NULL;
+  while ((ord=fgetOrd(fin))!=NULL)
+  {
+    maintainOrd();
+    ord=NULL;
+  }
+  fclose(fin);
+  fin=tfin;
+  return 1;
+}
 
 
 int replace(){
@@ -1182,16 +1251,18 @@ int syntax_line_add(char* toAdd,struct tblBlock* tmpTbl){
   toAdd+=strlen(tmp)+1;
   int symbol=strToId(block.strIds,tmp);
   if(symbol<0||end!=',') return 0;
+  if(!hashset_contains(&block.symbols,&symbol)) return 0;
   end=mysgets(tmp,stops,toAdd);
   toAdd+=strlen(tmp)+1;
   int token=strToId(block.strIds,tmp);
   if(token<0||end!=',') return 0;
+  if(!hashset_contains(&block.tokens,&token)) return 0;
   end=mysgets(tmp,stops,toAdd);
   toAdd+=strlen(tmp)+1;
   int action=strToId(block.strIds,tmp);
   //如果该action不属于这个表,报错
   if(!hashset_contains(&tmpTbl->actions,&action)) return 0;
-  //否则加入这个表
+  //否则加入这个表,而且是从表头后第一位,压入栈顶,越晚加入的内容越靠近表头
   struct syntax_line* newSL=malloc(sizeof(struct syntax_line));
   newSL->next=tmpTbl->syntaxs_head.next;
   tmpTbl->syntaxs_head.next=newSL;

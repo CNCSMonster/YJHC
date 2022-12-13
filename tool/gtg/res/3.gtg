@@ -16,3 +16,7 @@ action add A
 aa ab ac
 set defaultAction A
 NOT_DEFINE
+syntax add A -n 6
+A:sc,tc,ac
+A:sa,tb,ac
+A:sb,tb,ab
