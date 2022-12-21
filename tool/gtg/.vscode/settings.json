@@ -1,6 +1,12 @@
 {
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "concepts": "cpp",
+        "ranges": "cpp",
+        "span": "cpp",
+        "xmemory": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
     }
 }

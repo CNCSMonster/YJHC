@@ -34,13 +34,13 @@ struct syntax_line{
 
 
 //表格块
-struct tblBlock{
+struct TblBlock{
   HSet actions;
   int defaultAction;  //默认用的action，如果编号为-1的话,说明使用全局未定义符号
   int actionKind;
   int syntax_num;     //增加的语法行的数量
   struct syntax_line syntaxs_head;  //该actionkind下的syntaxs们
-  struct tblBlock* next;
+  struct TblBlock* next;
 };
 
 
@@ -55,7 +55,7 @@ struct gtgBlock{
   //存放actionKind的空间
   HSet actionKinds; //记录actionKind对应的中间号码
   //存放不同actionkind对应的表格的链表每个表格内有default_action,actions,syntaxs信息
-  struct tblBlock actions_head;
+  struct TblBlock tbls_head;
 
   //id分配器
   struct IdAllocator idAllocator; //id分配器
@@ -159,7 +159,7 @@ int delSyntaxs(struct syntax_line* syntaxHead);
 
 
 //释放语法翻译动作指导表,无异常返回非0值,有异常返回0
-int delTblBlocks(struct tblBlock* tbls_head);
+int delTblBlocks(struct TblBlock* tbls_head);
 
 //命令行读取器,读取一行命令,而且忽略前导空格,忽略注释符后面,而且读到换行停止,命令没有长度限制,动态分配空间
 char* fgetOrd(FILE* fin);
@@ -174,7 +174,7 @@ int showStringsByIds(int* ids,int num);
 //从指令中提取-n信息(读取-n指定的参数N,一个大于0的整数),读取成功返回非0值,读取失败返回0
 int extractN(char* line,int* returnN);
 
-//从指令中读取-o属性,提取成功返回非0值，提取失败返回0
+//从指令中读取-o属性或者-g属性,提取成功返回非0值，提取失败返回0
 int extractO(char* line,char* returnPath);
 
 //处理命令,如果是不合理的命令则返回0,否则处理成功后返回非0值
@@ -232,6 +232,11 @@ int output_orders();
 //输出能够用在yjhc中的grammar语法文件
 int output_grammar();
 
+//生成某个对应数组id的enum,传入参数为enum名称以及enum的成员符号对应的id的数组
+int output_grammar_genEnum(char* enumName,int* arr,int arrSize);
+
+//gethash_from zero
+int* get_hashArr_fromZero(int* ids,int idsSize,int* returnSize);
 
 
 int (*executeOrds[])(void)={
@@ -272,13 +277,13 @@ int gtg_delString(char* tmp);
 int gtg_replaceString(char* input);
 
 //往表块中加入一条语法分析表表项
-int syntax_line_add(char* toAdd,struct tblBlock* tmpTbl);
+int syntax_line_add(char* toAdd,struct TblBlock* tmpTbl);
 
-int gtg_showTbl(struct tblBlock *tmpTbl);
+int gtg_showTbl(struct TblBlock *tmpTbl);
 
-int gtg_showSyntaxs(struct tblBlock* tmpTbl,char* actionkind);
+int gtg_showSyntaxs(struct TblBlock* tmpTbl,char* actionkind);
 
 //获取对应actionkind的表
-struct tblBlock* getTbl(char* actionkind);
+struct TblBlock* getTbl(char* actionkind);
 
 #endif

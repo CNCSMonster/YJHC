@@ -5,7 +5,7 @@
 //初始化程序数据,
 void init(){
   block.actionKinds=hashset_cre(sizeof(int));
-  block.actions_head.next=NULL;
+  block.tbls_head.next=NULL;
   block.tokens=hashset_cre(sizeof(int));
   block.symbols=hashset_cre(sizeof(int));
   block.not_define=NULL;
@@ -45,10 +45,10 @@ int delSyntaxs(struct syntax_line* syntaxHead){
 }
 
 
-int delTblBlocks(struct tblBlock* tbls_head){
+int delTblBlocks(struct TblBlock* tbls_head){
   while (tbls_head->next!=NULL)
   {
-    struct tblBlock* tmp=tbls_head->next;
+    struct TblBlock* tmp=tbls_head->next;
     tbls_head->next=tmp->next;
     int actionkind=tmp->actionKind;
     free_hashset(&tmp->actions);
@@ -296,7 +296,7 @@ int gc(){
   //每个symbol->tokens表格
   HSet hset=hashset_cre(sizeof(long long));
   //从每个表的开始访问
-  struct tblBlock* tbl=block.actions_head.next;
+  struct TblBlock* tbl=block.tbls_head.next;
   while(tbl!=NULL){
     //为每个表初始一次空间
     free_hashset(&hset);
@@ -356,7 +356,7 @@ int set_defaultAction(){
   //开始读取actionkind作为输入
   char actionkind[200];
   end=mysgets(actionkind," ",track);
-  struct tblBlock* targetTbl=getTbl(actionkind);
+  struct TblBlock* targetTbl=getTbl(actionkind);
   if(targetTbl==NULL) return 0;
   char* action=fgetWord(fin);
   //如果是要恢复到默认设置
@@ -398,7 +398,7 @@ int action_add(){
   //开始读取actionkind作为输入
   char actionkind[500];
   end=mysgets(actionkind," ",track);
-  struct tblBlock* tbl=getTbl(actionkind);
+  struct TblBlock* tbl=getTbl(actionkind);
   if(tbl==NULL) return 0;
   //如果没有附加-n属性,则读取下一行所有内容作为输入
   if(n_gtg==0){
@@ -463,7 +463,7 @@ int syntax_add(){
   end=mysgets(tmp," ",track);
   if(end==' ') track+=strlen(tmp)+1;
   else ifGet=0;
-  struct tblBlock* kindof=NULL;
+  struct TblBlock* kindof=NULL;
   int id;
   char actionkind[200];
   if(ifGet){
@@ -471,7 +471,7 @@ int syntax_add(){
     end=mysgets(actionkind," ",track);
     id=strToId(block.strIds,actionkind);
     if(id>=0){
-      kindof=block.actions_head.next;
+      kindof=block.tbls_head.next;
       while (kindof!=NULL&&kindof->actionKind!=id) kindof=kindof->next;
     }
   }
@@ -501,7 +501,7 @@ int syntax_add(){
         fprintf(fout,"fail to add syntax line \"%s\"\n",tmp);
         continue;
       }
-      struct tblBlock* tmpTbl=block.actions_head.next;
+      struct TblBlock* tmpTbl=block.tbls_head.next;
       while(tmpTbl!=NULL&&tmpTbl->actionKind!=tid) tmpTbl=tmpTbl->next;
       if(tmpTbl==NULL){
         fprintf(fout,"table missed for actionkind %s\n",actionkind);
@@ -543,7 +543,7 @@ int syntax_add(){
         free(toAdd);
         continue;
       }
-      struct tblBlock *tmpTbl = block.actions_head.next;
+      struct TblBlock *tmpTbl = block.tbls_head.next;
       while (tmpTbl != NULL && tmpTbl->actionKind != tid)
         tmpTbl = tmpTbl->next;
       if (tmpTbl == NULL)
@@ -592,13 +592,13 @@ int extractN(char* line,int* returnN){
 
 int extractO(char* line,char* returnPath){
   char end;
-  //读取-n属性
+  //读取-o属性
   while((end=mysgets(returnPath,"-",line))!='\0'){
     line+=strlen(returnPath)+1;
     end=mysgets(returnPath," ",line);
     if(end!=' '){
       return 0;
-    }else if(strcmp("o",returnPath)==0){
+    }else if(strcmp("o",returnPath)==0||strcmp("g",returnPath)==0){
       line+=strlen(returnPath)+1;
       end=mysgets(returnPath," ",line);
       return 1;
@@ -756,9 +756,9 @@ int actionkind_add(){
         putStrId(block.strIds,tmp,id);
         hashset_add(&block.actionKinds,&id);
         //加入新的actionkind块
-        struct tblBlock* addTbl=malloc(sizeof(struct tblBlock));
-        addTbl->next=block.actions_head.next;
-        block.actions_head.next=addTbl;
+        struct TblBlock* addTbl=malloc(sizeof(struct TblBlock));
+        addTbl->next=block.tbls_head.next;
+        block.tbls_head.next=addTbl;
         addTbl->actionKind=id;
         addTbl->syntax_num=0;
         addTbl->actions=hashset_cre(sizeof(int));
@@ -792,9 +792,9 @@ int actionkind_add(){
         putStrId(block.strIds,tmp,id);
         hashset_add(&block.actionKinds,&id);
         //加入新的actionkind块
-        struct tblBlock* addTbl=malloc(sizeof(struct tblBlock));
-        addTbl->next=block.actions_head.next;
-        block.actions_head.next=addTbl;
+        struct TblBlock* addTbl=malloc(sizeof(struct TblBlock));
+        addTbl->next=block.tbls_head.next;
+        block.tbls_head.next=addTbl;
         addTbl->actionKind=id;
         addTbl->actions=hashset_cre(sizeof(int));
         addTbl->syntax_num=0;
@@ -916,7 +916,7 @@ int gtg_exit(){
   //清除actionkind表并释放空间
   free_hashset(&block.actionKinds);
   //清除语法块
-  delTblBlocks(&block.actions_head);
+  delTblBlocks(&block.tbls_head);
   //释放并更换id分配器
   freeIdAllocator(&block.idAllocator);
   //释放字符串-id哈希表
@@ -939,7 +939,7 @@ int gtg_init(){
   //清除actionkind表并释放空间
   free_hashset(&block.actionKinds);
   //清除语法块
-  delTblBlocks(&block.actions_head);
+  delTblBlocks(&block.tbls_head);
   //释放并更换id分配器
   freeIdAllocator(&block.idAllocator);
   block.idAllocator=getIdAllocator();
@@ -973,7 +973,7 @@ int check_actions_ofkind(){
   if(id<0) return 0;
   if(!hashset_contains(&block.actionKinds,&id)) return 0;
   //找到目的表格
-  struct tblBlock* target=block.actions_head.next;
+  struct TblBlock* target=block.tbls_head.next;
   while(target!=NULL&&target->actionKind!=id) target=target->next;
   if(target==NULL) return 0;
   //展示actions
@@ -985,7 +985,7 @@ int check_actions_ofkind(){
 
 
 int check_actions_all(){
-  struct tblBlock* target=block.actions_head.next;
+  struct TblBlock* target=block.tbls_head.next;
   while(target!=NULL){
     char* actionkind=getIdString(&block.idAllocator,target->actionKind);
     fprintf(fout,"actionkind:%s\n",actionkind);
@@ -1050,7 +1050,7 @@ int check_syntaxs_ofkind(){
   else return 0;
   end=mysgets(tmp," ",tord);
   //然后根据actionkind找到对应的块
-  struct tblBlock* target=getTbl(tmp);
+  struct TblBlock* target=getTbl(tmp);
   if(target==NULL) return 0;
   return gtg_showTbl(target);
 }
@@ -1058,7 +1058,7 @@ int check_syntaxs_ofkind(){
 
 int check_syntaxs_all(){
   //循环打印不同actionkind的action
-  struct tblBlock* tmpTbl=block.actions_head.next;
+  struct TblBlock* tmpTbl=block.tbls_head.next;
   int jud=1;
   while(tmpTbl!=NULL){
     jud=jud&&gtg_showTbl(tmpTbl);
@@ -1082,7 +1082,7 @@ int check_default_action(){
   int id=strToId(block.strIds,tmp);
   if(id<0) return 0;
   if(!hashset_contains(&block.actionKinds,&id)) return 0;
-  struct tblBlock* tbl=getTbl(tmp);
+  struct TblBlock* tbl=getTbl(tmp);
   if(tbl==NULL) return 0; 
   char* default_action=getIdString(&block.idAllocator,tbl->defaultAction);
   fprintf(fout,"%s\n",default_action);
@@ -1110,7 +1110,7 @@ int output_orders(){
     check_actionkind();
   }
   //然后输出每个actionkind的action和syntax
-  struct tblBlock* tmpTbl=block.actions_head.next;
+  struct TblBlock* tmpTbl=block.tbls_head.next;
   while(tmpTbl!=NULL){
     //输出对应表格对应的default actionkind
     char* actionkind=getIdString(&block.idAllocator,tmpTbl->actionKind);
@@ -1148,8 +1148,99 @@ int output_orders(){
 }
 
 
-int output_grammar(){return error();
+int output_grammar(){
+  //首先进行放缩
+  gc();
+  //首先生成全局的not_define定义
+  if(block.not_define==NULL) fprintf(fout,"#define %s -1\n\n",DEFAULT_NOTDEFINE_STRING);
+  else fprintf(fout ,"#define %s -1\n\n",block.not_define);
 
+  //获取symbol和token的数量
+  int symbolsNum=block.symbols.num;
+  int tokensNum=block.tokens.num;
+  //然后生成某个ids数组到0-n的映射，TODO
+  int* symbolIds=hashset_toArr(&block.symbols);
+  int* symbols=get_hashArr_fromZero(symbolIds,symbolsNum,NULL);
+  output_grammar_genEnum("Symbol",symbolIds,symbolsNum);
+  int* tokenIds=hashset_toArr(&block.tokens);
+  int* tokens=get_hashArr_fromZero(tokenIds,tokensNum,NULL);
+  output_grammar_genEnum("Token",tokenIds,tokensNum);
+  //先生成所有actionkind的enum
+  struct TblBlock* tbl=block.tbls_head.next;
+  while (tbl!=NULL)
+  {
+    char* actionkind=getIdString(&block.idAllocator,tbl->actionKind);
+    int* ids=hashset_toArr(&tbl->actions);
+    output_grammar_genEnum(actionkind,ids,tbl->actions.num);
+    free(ids);
+    fprintf(fout,"int %s_Tbl[Symbols_NUM][Tokens_NUM]={\n",actionkind);
+    free(actionkind);
+    //生成每一行的表格内容,当然首先要准备个表格
+    int* table=malloc(sizeof(int)*symbolsNum*tokensNum);
+    //然后全部内容初始化为-1
+    memset(table,-1,symbolsNum*tokensNum*sizeof(int));
+    //然后根据syntax填写内容
+    struct syntax_line* sl=tbl->syntaxs_head.next;
+    while(sl!=NULL){
+      int x=symbols[sl->symbol];
+      int y=symbols[sl->token];
+      *(table+x*symbolsNum+y)=sl->action;
+      sl=sl->next;
+    }
+    //然后开始打印
+    for(int i=0;i<symbolsNum;i++){
+      char* name=getIdString(&block.idAllocator,symbolIds[i]);
+      int x=symbols[symbolIds[i]];
+      //记录当前的symbol与token的关系
+      fprintf(fout,"[%s] {",name);
+      free(name);
+      for(int j=0;j<tokensNum;j++){
+        int y=tokens[tokenIds[j]];
+        int actionId=*(table+x*symbolsNum+y);
+        char* action=NULL;
+        if(actionId==-1){
+          if(tbl->defaultAction==-1) action=strcpy(malloc(strlen(DEFAULT_NOTDEFINE_STRING)+1),DEFAULT_NOTDEFINE_STRING);
+          else action=getIdString(&block.idAllocator,tbl->defaultAction);
+        }else{
+          action=getIdString(&block.idAllocator,actionId);
+        }
+        name=getIdString(&block.idAllocator,tokenIds[i]);    //记录这个时候的token的名字
+        fprintf(fout,"[%s] %s",name,action);
+        if(action!=NULL) free(action);
+        if(j!=tokensNum-1) fprintf(fout,",");
+      }
+      if(i==symbolsNum-1) fprintf(fout,"}\n};\n\n");
+      else fprintf(fout,"},\n");
+    }
+    free(table);
+    tbl=tbl->next;
+  }
+  free(symbolIds);
+  free(tokenIds);
+  return 1;
+}
+
+int output_grammar_genEnum(char* enumName,int* arr,int arrSize){
+  fprintf(fout,"typedef enum enum_%s{\n",enumName);
+  for(int i=0;i<arrSize;i++){
+    char* enumItem=getIdString(&block.idAllocator,arr[i]);
+    fprintf(fout,"%s,\n",enumItem);
+    free(enumItem);
+  }
+  fprintf(fout,"%s_NUM\n}%s;\n\n",enumName,enumName);
+  return 1;
+}
+
+int* get_hashArr_fromZero(int* ids,int idsSize,int* returnSize){
+  int max=-1;
+  for(int i=0;i<idsSize;i++) if(ids[i]>max) max=ids[i];
+  int* out=malloc(sizeof(int)*(max+1));
+  int j=0;
+  for(int i=0;i<idsSize;i++){
+    out[ids[i]]=j++;
+  }
+  if(returnSize) *returnSize=max+1;
+  return out;
 }
 
 
@@ -1178,8 +1269,8 @@ int gtg_delString(char* tmp)
   else if (hashset_contains(&block.actionKinds, &id))
   {
     hashset_remove(&block.actionKinds,&id);
-    struct tblBlock *cur = block.actions_head.next;
-    struct tblBlock *pre = &block.actions_head;
+    struct TblBlock *cur = block.tbls_head.next;
+    struct TblBlock *pre = &block.tbls_head;
     // 找到actionkind对应的tbl块
     while (cur != NULL)
     {
@@ -1201,8 +1292,8 @@ int gtg_delString(char* tmp)
   else
   {
     // 遍历块,查询到是哪个块的
-    struct tblBlock *cur = block.actions_head.next;
-    struct tblBlock *pre = &block.actions_head;
+    struct TblBlock *cur = block.tbls_head.next;
+    struct TblBlock *pre = &block.tbls_head;
     // 找到actionkind对应的tbl块
     int hasDel=0;
     while (cur != NULL)
@@ -1214,6 +1305,9 @@ int gtg_delString(char* tmp)
         continue;
       }
       hashset_remove(&cur->actions,&id);
+      if(id==cur->defaultAction){
+        cur->defaultAction=-1;
+      }
       hasDel=1;
       break;
     }
@@ -1243,7 +1337,7 @@ int gtg_replaceString(char* input){
 }
 
 
-int syntax_line_add(char* toAdd,struct tblBlock* tmpTbl){
+int syntax_line_add(char* toAdd,struct TblBlock* tmpTbl){
   if(tmpTbl==NULL||toAdd==NULL) return 0;
   char* stops=",";
   char tmp[1000];
@@ -1258,8 +1352,8 @@ int syntax_line_add(char* toAdd,struct tblBlock* tmpTbl){
   if(token<0||end!=',') return 0;
   if(!hashset_contains(&block.tokens,&token)) return 0;
   end=mysgets(tmp,stops,toAdd);
-  toAdd+=strlen(tmp)+1;
   int action=strToId(block.strIds,tmp);
+  if(action<0) return 0;  //如果action未注册,报错
   //如果该action不属于这个表,报错
   if(!hashset_contains(&tmpTbl->actions,&action)) return 0;
   //否则加入这个表,而且是从表头后第一位,压入栈顶,越晚加入的内容越靠近表头
@@ -1277,7 +1371,7 @@ int syntax_line_add(char* toAdd,struct tblBlock* tmpTbl){
 
 
 
-int gtg_showTbl(struct tblBlock *tmpTbl)
+int gtg_showTbl(struct TblBlock *tmpTbl)
 {
   if (tmpTbl == NULL)
     return 0;
@@ -1313,7 +1407,7 @@ int gtg_showTbl(struct tblBlock *tmpTbl)
   return 1;
 }
 
-int gtg_showSyntaxs(struct tblBlock* tmpTbl,char* actionkind)
+int gtg_showSyntaxs(struct TblBlock* tmpTbl,char* actionkind)
 {
   struct syntax_line *tmp_syntax_line =tmpTbl->syntaxs_head.next;
   struct syntax_line *pre = &tmpTbl->syntaxs_head;
@@ -1361,14 +1455,11 @@ int gtg_showSyntaxs(struct tblBlock* tmpTbl,char* actionkind)
 
 
 //获取对应actionkind的表
-struct tblBlock* getTbl(char* actionkind){
+struct TblBlock* getTbl(char* actionkind){
   int id=strToId(block.strIds,actionkind);
   if(id<0) return NULL;
-  struct tblBlock* kindof=NULL;
-  kindof=block.actions_head.next;
+  struct TblBlock* kindof=NULL;
+  kindof=block.tbls_head.next;
   while (kindof!=NULL&&kindof->actionKind!=id) kindof=kindof->next;
   return kindof;
 }
-
-
-

@@ -1,12 +1,56 @@
-symbol add -n 3
-sa sb sc
-token add -n 3
-ta tb tc
-actionkind add
-A B C
-action add A
-aa ab ac
-action add B
-ba bb bc
-action add C
-ca cb cc
+#define NOT_DEFINE -1
+
+typedef enum enum_Symbol{
+sa,
+sb,
+sc,
+Symbol_NUM
+}Symbol;
+
+typedef enum enum_Token{
+ta,
+tb,
+tc,
+Token_NUM
+}Token;
+
+typedef enum enum_C{
+ca,
+cb,
+cc,
+-n,
+C_NUM
+}C;
+
+int C_Tbl[Symbols_NUM][Tokens_NUM]={
+[sa] {[ta] ca,[ta] ca,[ta] ca},
+[sb] {[tb] ca,[tb] ca,[tb] ca},
+[sc] {[tc] ca,[tc] ca,[tc] ca}
+};
+
+typedef enum enum_B{
+ba,
+bb,
+bc,
+B_NUM
+}B;
+
+int B_Tbl[Symbols_NUM][Tokens_NUM]={
+[sa] {[ta] bb,[ta] bb,[ta] bb},
+[sb] {[tb] bb,[tb] bb,[tb] bb},
+[sc] {[tc] bb,[tc] bb,[tc] bb}
+};
+
+typedef enum enum_A{
+ac,
+aa,
+ab,
+A_NUM
+}A;
+
+int A_Tbl[Symbols_NUM][Tokens_NUM]={
+[sa] {[ta] ac,[ta] aa,[ta] aa},
+[sb] {[tb] ab,[tb] aa,[tb] aa},
+[sc] {[tc] aa,[tc] aa,[tc] aa}
+};
+

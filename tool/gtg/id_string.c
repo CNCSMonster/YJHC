@@ -89,6 +89,7 @@ int resetIdString(IdAlp idAllocator,int id,char* newStr){
 
 //获取id对应的字符串,获取成功返回分配空间的str,获取失败返回NULL
 char* getIdString(IdAlp idAllocator,int id){
+  if(id<0) return NULL;
   if(id>=idAllocator->alcSt||idAllocator->val[id]==NULL||idAllocator->val==NULL) return NULL;
   return strcpy(malloc(strlen(idAllocator->val[id])+1),idAllocator->val[id]);
 }
