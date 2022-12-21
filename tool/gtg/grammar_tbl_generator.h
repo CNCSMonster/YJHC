@@ -6,6 +6,7 @@
 #include "mstr.h"
 #include "string_id.h"
 #include "id_string.h"
+#include "myprint.h"
 
 
 //默认工作文件,启动的时候会读取这个文件,退出的时候会写入这个文件
@@ -138,6 +139,7 @@ typedef enum ordkind{
   CHECK_DEFAULT_ACTION,
   CHECK_ACTIONKIND,
   CHECK_SYMBOL,
+  CHECK_NOTDEFINE,
   CHECK_SYNTAX_OFKIND,
   CHECK_SYNTAX_ALL,
   CHECK_TOKEN,
@@ -219,6 +221,7 @@ int check_actions_all();
 int check_default_action(); //查看指定动作类型的默认动作
 int check_symbol();
 int check_token();
+int check_notDefine();  //查看默认量对应的字符串
 int check_all();
 int check_actionkind();
 int check_syntaxs_ofkind();
@@ -261,6 +264,7 @@ int (*executeOrds[])(void)={
   [CHECK_ACTIONKIND] check_actionkind,
   [CHECK_DEFAULT_ACTION] check_default_action,
   [CHECK_SYMBOL] check_symbol,
+  [CHECK_NOTDEFINE] check_notDefine,
   [CHECK_SYNTAX_OFKIND] check_syntaxs_ofkind,
   [CHECK_SYNTAX_ALL] check_syntaxs_all,
   [CHECK_TOKEN] check_token,

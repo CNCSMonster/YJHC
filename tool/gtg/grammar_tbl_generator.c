@@ -153,6 +153,9 @@ int maintainOrd(){
 }
 
 int isUsedStr(char* str){
+  //首先判断是否和默认字符串重合
+  if(block.not_define==NULL&&strcmp(str,DEFAULT_NOTDEFINE_STRING)==0) return 1;
+  else if(block.not_define!=NULL&&strcmp(str,block.not_define)==0) return 1;
   //首先查找字符串id表中查找该字符串的编号,如果查找到了说明已经使用过了
   int jud=strToId(block.strIds,str);
   if(jud<0) return 0;
@@ -231,7 +234,7 @@ OrdKind ordKind(char* ord){
   else if(strcmp(tmp,"set")==0){
     end=mysgets(tmp,stops,ord+strlen(tmp)+1);
     if(strcmp(tmp,"defaultAction")==0) return SET_DEFAULT_ACTION;
-    else if(strcmp(tmp,"notDefine")) return SET_NOT_DEFINE;
+    else if(strcmp(tmp,"notDefine")==0) return SET_NOT_DEFINE;
   }
   //判断是否是查看命令
   else if(strcmp(tmp,"check")==0){
@@ -239,6 +242,7 @@ OrdKind ordKind(char* ord){
     if(strcmp(tmp,"actions")==0){
       return CHECK_ACTION_ALL;
     }
+    if(strcmp(tmp,"notDefine")==0) return CHECK_NOTDEFINE;
     if(strcmp(tmp,"defaultAction")==0){
       return CHECK_DEFAULT_ACTION;
     }
@@ -374,11 +378,16 @@ int set_defaultAction(){
 
 int set_not_define(){
   char* newNotDefineString=fgetWord(fin);
-  if(block.not_define==NULL) block.not_define=newNotDefineString;
-  else{
-    free(block.not_define);
-    block.not_define=newNotDefineString;
+  if(isUsedStr(newNotDefineString)){
+    free(newNotDefineString);
+    return 0;
   }
+  if(block.not_define!=NULL){
+    free(block.not_define);
+    block.not_define=NULL;
+  }
+  if(strcmp(newNotDefineString,DEFAULT_NOTDEFINE_STRING)==0) free(newNotDefineString);
+  else if(block.not_define==NULL) block.not_define=newNotDefineString;
   return 1;
 }
 
@@ -1012,23 +1021,31 @@ int check_token(){
   return jud;
 }
 
+int check_notDefine(){
+  if(block.not_define==NULL) fprintf(fout,"%s\n",DEFAULT_NOTDEFINE_STRING);
+  else fprintf(fout,"%s\n",block.not_define);
+  return 1;
+}
 
 int check_all(){
+  printLongSplit();
+  fprintf(fout,"NotDefineString:\n");
+  if(!check_notDefine()) return 0;
   fprintf(fout,"All symbols:\n");
   if(!check_symbol()) return 0;
   fprintf(fout,"All tokens:\n");
   if(!check_token()) return 0;
+  printMidSplit();
   fprintf(fout,"All actionkinds:\n");
   if(!check_actionkind()) return 0;
+  printMidSplit();
   fprintf(fout,"All actions:\n");
   if(!check_actions_all()) return 0;
+  printMidSplit();
   fprintf(fout,"All syntaxs:\n");
   if(!check_syntaxs_all()) return 0;
   return 1;
 }
-
-
-
 
 
 
@@ -1061,6 +1078,7 @@ int check_syntaxs_all(){
   struct TblBlock* tmpTbl=block.tbls_head.next;
   int jud=1;
   while(tmpTbl!=NULL){
+    printShortSplit();
     jud=jud&&gtg_showTbl(tmpTbl);
     tmpTbl=tmpTbl->next;
   }
@@ -1091,6 +1109,9 @@ int check_default_action(){
 
 int output_orders(){
   gc(); //先进行收缩
+  //然后写入notdefine
+  fprintf(fout,"set notDefine\n");
+  check_notDefine();
   //首先输出所有的symbol
   int num=block.symbols.num;
   if(num!=0){
@@ -1183,7 +1204,7 @@ int output_grammar(){
     struct syntax_line* sl=tbl->syntaxs_head.next;
     while(sl!=NULL){
       int x=symbols[sl->symbol];
-      int y=symbols[sl->token];
+      int y=tokens[sl->token];
       *(table+x*symbolsNum+y)=sl->action;
       sl=sl->next;
     }
@@ -1199,7 +1220,8 @@ int output_grammar(){
         int actionId=*(table+x*symbolsNum+y);
         char* action=NULL;
         if(actionId==-1){
-          if(tbl->defaultAction==-1) action=strcpy(malloc(strlen(DEFAULT_NOTDEFINE_STRING)+1),DEFAULT_NOTDEFINE_STRING);
+          if(tbl->defaultAction==-1&&block.not_define==NULL) action=strcpy(malloc(strlen(DEFAULT_NOTDEFINE_STRING)+1),DEFAULT_NOTDEFINE_STRING);
+          else if(tbl->defaultAction==-1) action=strcpy(malloc(strlen(block.not_define)+1),block.not_define);
           else action=getIdString(&block.idAllocator,tbl->defaultAction);
         }else{
           action=getIdString(&block.idAllocator,actionId);
@@ -1251,6 +1273,13 @@ other
 int gtg_delString(char* tmp)
 {
   if(!isUsedStr(tmp)) return 0;
+
+  //首先判断是否是notDefine对应的字符串
+  if(block.not_define!=NULL&&strcmp(block.not_define,tmp)==0){
+    free(block.not_define);
+    block.not_define=NULL;
+    return 1;
+  }
   int id=strToId(block.strIds,tmp);
   if(id<0) return 0;
   // 然后解除这个id与字符串的绑定
@@ -1354,8 +1383,8 @@ int syntax_line_add(char* toAdd,struct TblBlock* tmpTbl){
   end=mysgets(tmp,stops,toAdd);
   int action=strToId(block.strIds,tmp);
   if(action<0) return 0;  //如果action未注册,报错
-  //如果该action不属于这个表,报错
-  if(!hashset_contains(&tmpTbl->actions,&action)) return 0;
+  // //如果该action不属于这个表,不报错,因为栈动作相关的表需要symbol作为表元素
+  // if(!hashset_contains(&tmpTbl->actions,&action)) return 0;
   //否则加入这个表,而且是从表头后第一位,压入栈顶,越晚加入的内容越靠近表头
   struct syntax_line* newSL=malloc(sizeof(struct syntax_line));
   newSL->next=tmpTbl->syntaxs_head.next;
@@ -1366,9 +1395,6 @@ int syntax_line_add(char* toAdd,struct TblBlock* tmpTbl){
   tmpTbl->syntax_num++;
   return 1;
 }
-
-
-
 
 
 int gtg_showTbl(struct TblBlock *tmpTbl)

@@ -1,4 +1,4 @@
-#define NOT_DEFINE -1
+#define SB -1
 
 typedef enum enum_Symbol{
 sa,
@@ -13,6 +13,16 @@ tb,
 tc,
 Token_NUM
 }Token;
+
+typedef enum enum_StackPushAction{
+StackPushAction_NUM
+}StackPushAction;
+
+int StackPushAction_Tbl[Symbols_NUM][Tokens_NUM]={
+[sa] {[ta] SB,[ta] SB,[ta] SB},
+[sb] {[tb] SB,[tb] SB,[tb] SB},
+[sc] {[tc] SB,[tc] SB,[tc] SB}
+};
 
 typedef enum enum_C{
 ca,
@@ -30,27 +40,28 @@ int C_Tbl[Symbols_NUM][Tokens_NUM]={
 
 typedef enum enum_B{
 ba,
-bb,
 bc,
+bb,
 B_NUM
 }B;
 
 int B_Tbl[Symbols_NUM][Tokens_NUM]={
-[sa] {[ta] bb,[ta] bb,[ta] bb},
-[sb] {[tb] bb,[tb] bb,[tb] bb},
-[sc] {[tc] bb,[tc] bb,[tc] bb}
+[sa] {[ta] SB,[ta] SB,[ta] SB},
+[sb] {[tb] SB,[tb] SB,[tb] SB},
+[sc] {[tc] SB,[tc] SB,[tc] SB}
 };
 
 typedef enum enum_A{
 ac,
 aa,
 ab,
+Action,
 A_NUM
 }A;
 
 int A_Tbl[Symbols_NUM][Tokens_NUM]={
-[sa] {[ta] ac,[ta] aa,[ta] aa},
-[sb] {[tb] ab,[tb] aa,[tb] aa},
-[sc] {[tc] aa,[tc] aa,[tc] aa}
+[sa] {[ta] aa,[ta] ac,[ta] aa},
+[sb] {[tb] aa,[tb] ab,[tb] aa},
+[sc] {[tc] aa,[tc] aa,[tc] ac}
 };
 

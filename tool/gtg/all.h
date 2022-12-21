@@ -21,6 +21,9 @@
 #include "string_id.h"
 #include "string_id.c"
 
+#include "myprint.c"
+#include "myprint.h"
+
 
 
 
