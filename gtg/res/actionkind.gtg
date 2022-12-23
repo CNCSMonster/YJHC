@@ -1,0 +1,3 @@
+actionkind add -n 5
+PrintAction BlockAction StackPopAction
+StackPushAction  SplitAction

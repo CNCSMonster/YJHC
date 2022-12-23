@@ -3,6 +3,7 @@
 
 #include "action.h"
 #include "syntax_symbol.h"
+#include "token_kind.h"
 
 
 /*
@@ -137,10 +138,6 @@ q1      doBlockOut halfDoCondition  //一半的doconditon的逻辑语句
 &&      connective          //connective类型
 q2    doBlockOut DoCondtition   //完成了逻辑语句,把之前一半的逻辑语句取出,填入完成
 );    //doCondition结束标志,遇到后,则把之前的出块以及到doCondition的符号都出栈,或者说把所有do-while结构的内容出栈,这个结构的所有内容已经处理完了
-
-
-
-
 
 */
 

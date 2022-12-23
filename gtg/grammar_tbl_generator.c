@@ -67,17 +67,18 @@ char* fgetOrd(FILE* fin){
   char* out=malloc(sizeof(char)*size);
   int i=0;
   char c;
-  //忽略所有有效命令前的空格
+  //忽略所有有效命令前的空格和注释
   while((c=fgetc(fin))!=EOF){
     if(c==' ') continue;
     if(c=='#'){
-      while((c=fgetc(fin))!=EOF&&c!='\n');
+      while((c=fgetc(fin))!=EOF&&!(c=='\n'||c=='\r'));
       if(c==EOF) break;
-    }else if(c=='\n') return strcpy(malloc(1),"");
+    }else if(c=='\n'||c=='\r') return strcpy(malloc(1),"");
     else{
       break;
     }
   }
+
   if(c==EOF){
     free(out);
     return NULL;
@@ -171,9 +172,10 @@ char* fgetWord(FILE* fin){
   do{
     end=myfgets(tmp,stops,fin);
     if(end=='#'){
-      end=myfgets(tmp,"\n",fin);
+      char tmp2[1000];
+      end=myfgets(tmp2,"\n",fin);
     }
-    else if(strlen(tmp)==0) continue;
+    if(strlen(tmp)==0) continue;
     return strcpy(malloc((strlen(tmp)+1)*sizeof(char)),tmp);
   }while(end!=EOF);
   return strcpy(malloc(1),"");
@@ -378,6 +380,7 @@ int set_defaultAction(){
 
 int set_not_define(){
   char* newNotDefineString=fgetWord(fin);
+  //如果这个新要设定得字符串是已经在系统中得字符串,则设定失败
   if(isUsedStr(newNotDefineString)){
     free(newNotDefineString);
     return 0;
@@ -1109,9 +1112,11 @@ int check_default_action(){
 
 int output_orders(){
   gc(); //先进行收缩
-  //然后写入notdefine
-  fprintf(fout,"set notDefine\n");
-  check_notDefine();
+  //not_define字符串不是默认字符串时写入not_define
+  if(block.not_define!=NULL){
+    fprintf(fout,"set notDefine\n");
+    check_notDefine();
+  }
   //首先输出所有的symbol
   int num=block.symbols.num;
   if(num!=0){

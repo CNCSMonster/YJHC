@@ -83,7 +83,7 @@ const char* basetypes[]={
     "double",
     "long",
     "char",
-    "void"  //表示无类型
+    "void"  //表示非返回类型,一种特殊的类型
 };
 
 const char *typeKeyWords[] = {

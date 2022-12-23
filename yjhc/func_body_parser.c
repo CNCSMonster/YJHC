@@ -8,98 +8,106 @@
 #include "token.h"
 #include "token.c"
 
+#define ERR printf("something wrong in parser")
 
-
-
-
-#define ownerString "NULL"
-
+//第二次遍历，合并运算符
 int token_mergeOp(FILE* fin,FILE* code);
 
+//第三次遍历补充流程控制中缺省的界符
 int token_addlayer(FILE* fin,FILE* code);
+
+//第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索,TODO
+int token_guess(FILE* fin,FILE* code);
+
+//ps四次遍历过后不存在unknown类型的token,所有token都被确定为类型/界符/保留字/函数名/量名
+
 
 //读取一个括号包裹的逻辑表达式，读取成功返回非0值,否则返回0
 int readCase(FILE* fin,FILE* code);
 
-//代码段词法分析,直到遇到右花括号结束
+//代码段词法分析,读到做花括号开始,直到遇到对应右花括号结束
 int code_parse(FILE* fin,FILE* code);
-//函数头分析,直到遇到一个左括号结束
-int head_analyze(FILE *fin, FILE *head);
-//函数文件分析
-int func_analyze(FILE *fin, FILE *head, FILE *code);
-
-//字符串输出需要的结果,使用
-
-int main(int argc, char *argv[])
-{
-  if (!argc == 4)
-  {
-    printf("func analysis need and only need 3 argument!input path, func head path,and code path!");
-    exit(-1);
-  }
-  char *inputPath = argv[1];
-  char *headPath = argv[2];
-  char *codePath = argv[3];
-  // char* inputPath="../func.txt";
-  // char* headPath="../head.txt";
-  // char* codePath="../tokens.txt";
-  FILE *fin = fopen(inputPath, "r");
-  if (fin == NULL)
-  {
-    printf("fail to open %s", inputPath);
-    exit(-1);
-  }
-  FILE *head = fopen(headPath, "w");
-  if (head == NULL)
-  {
-    fclose(fin);
-    printf("fail to open %s", headPath);
-    exit(-1);
-  }
-  char tmpPath[100];
-  FILE *code = fopen(strcpy(tmpPath,"tmpTokens.tmp"), "w");
-  if (code == NULL)
-  {
-    fclose(fin);
-    fclose(head);
-    printf("fail to open %s", codePath);
-    exit(-1);
-  }
-  if (!func_analyze(fin, head, code))
-  {
-    printf("syntax error!,fail to anlyze the function");
-  }
-  fclose(fin);
-  fclose(head);
-  fclose(code);
-
-  //输出了token序列,但是token序列还可以进行优化，
-
-  //精确化token，对于一些==的运算符,上述处理会处理成两个=的token，现在要把它们合并
-  fin=fopen(tmpPath,"r");
-  char tmpPath2[100];
-  code=fopen(strcpy(tmpPath2,"tmppath2.tmp"),"w");
-
-  
-  if(!token_mergeOp(fin,code)){
-    printf("something wrong happen when merge operation symbol");
-  }
-  char tord[200];
-  strcpy(strcpy(tord,"del ")+strlen(tord),tmpPath);
-  fclose(fin);
-  fclose(code);
-  system(tord);
 
 
-  fin=fopen(tmpPath2,"r");
-  code=fopen(codePath,"w");
-  if(!token_addlayer(fin,code)){
-    printf("something wrong happen when add the layer");
+//对于经过func_split分离出的函数体信息进行词法分析,得到词法单元序列
+//基于猜测进行词法分析,可以把id根据位置猜测成类型或者变量等内容
+//使用多次遍历完成这个过程
+//编译gcc func_body_parsseer.c -o fbp
+//使用fbp bodyPath tokensPath
+int main(int argc,char* argv[]){
+  char* bodyPath=argv[1];
+  char* tokensPath=argv[2];
+  // char* bodyPath="../out/func_body.txt";
+  // char* tokensPath="../out/func_tokens.txt";
+  char prePath[300];
+  char curPath[300];
+  char ord[400];
+  int jud=sprintf(curPath,"%s1st",tokensPath);
+  if(jud<0) exit(-1);
+  FILE* body=fopen(bodyPath,"r");
+  if(body==NULL) exit(-1);
+  FILE* tokens=fopen(curPath,"w");
+  if(tokens==NULL){
+    fclose(body);exit(-1);
   }
-  strcpy(strcpy(tord,"del ")+strlen(tord),tmpPath2);
-  fclose(fin);
-  fclose(code);
-  system(tord);
+  //首先进行一次遍历
+  while(jud=code_parse(body,tokens));
+  fclose(body);
+  fclose(tokens);
+  if(!jud) ERR;
+  //然后进行第二次遍历,合并运算符
+  strcpy(prePath,curPath);
+  jud=sprintf(curPath,"%s2nd",tokensPath);
+  if(jud<0) exit(-1);
+  body=fopen(prePath,"r");
+  if(body==NULL) exit(-1);
+  tokens=fopen(curPath,"w");
+  if(tokens==NULL){
+    fclose(body);exit(-1);
+  }
+  if(!token_mergeOp(body,tokens)) ERR;
+  fclose(body);fclose(tokens);
+
+  //进行第三次遍历,补充流程控制中缺省的界符
+  strcpy(prePath,curPath);
+  jud=sprintf(curPath,"%s3rd",tokensPath);
+  if(jud<0) exit(-1);
+  body=fopen(prePath,"r");
+  if(body==NULL) exit(-1);
+  tokens=fopen(curPath,"w");
+  if(tokens==NULL){
+    fclose(body);exit(-1);
+  }
+  if(!token_addlayer(body,tokens)) ERR;
+  fclose(body);fclose(tokens);
+
+  //进行第四次遍历,对未知token进行猜测
+  if(jud<0) exit(-1);
+  body=fopen(curPath,"r");
+  if(body==NULL) exit(-1);
+  tokens=fopen(tokensPath,"w");
+  if(tokens==NULL){
+    fclose(body);exit(-1);
+  }
+  if(!token_guess(body,tokens)) ERR;
+  fclose(body);fclose(tokens);
+
+  // system("dir");
+  // printf("%s,%s",bodyPath,tokensPath);
+  //查看中间文件
+  //最后删除中间文件,
+  // sprintf(ord,"del %s1st",tokensPath);
+  // mystrReplace(ord,'/','\\');
+  // // printf("\n%s",ord);
+  // system(ord);
+  // sprintf(ord,"del %s2nd",tokensPath);
+  // // printf("\n%s",ord);
+  // mystrReplace(ord,'/','\\');
+  // system(ord);
+  // sprintf(ord,"del %s3rd",tokensPath);
+  // mystrReplace(ord,'/','\\');
+  // // printf("\n%s",ord);
+  system(ord);
   return 0;
 }
 
@@ -244,7 +252,6 @@ int token_addlayer(FILE* fin,FILE* code){
   return 1;
 }
 
-
 //读取一个括号包裹的逻辑表达式，读取成功返回非0值,否则返回0
 int readCase(FILE* fin,FILE* code){
   Token cur;
@@ -286,15 +293,100 @@ int readCase(FILE* fin,FILE* code){
   return 1;
 }
 
+//第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索,TODO
+int token_guess(FILE* fin,FILE* code){
+  //一个未知名可能是变量名也可能是常量名,也可能是类型定义,或者变量名或者函数名
+  //我们起码需要直到前面一个类型的值
+  Token pre=getToken(fin);
+  if(pre.val==NULL) return 0;
+  Token cur=(Token){
+    // .kind=UNKNOWN,
+    .val=NULL
+  };
+  Token next;
+  while((cur=getToken(fin)).val!=NULL){
+    //如果当前类型是TYPE类型,则会连接后面的所有可能的指针一起组成新的type类型,并且更新下一个量为pointer类型
+    if(cur.kind==TYPE){
+      while((next=getToken(fin)).val!=NULL&&strcmp(next.val,"*")==0){
+        Token tmpCur=connectToken(cur,next,TYPE,"");
+        delToken(cur);
+        delToken(next);
+        cur=tmpCur;
+      }
+      if(next.val!=NULL){
+        ungetToken(fin,next);delToken(next);
+      }
+      fputToken(pre,code);
+      delToken(pre);
+      pre=cur;
+      continue;
+    }
+    //否则如果当前类型不是unknown类型,则不猜测,退出当前循环
+    if(cur.kind!=UNKNOWN){
+      fputToken(pre,code);
+      delToken(pre);
+      pre=cur;
+      continue;
+    }
+    //根据当前token内容猜测属性,如果上一个token是分号或者逗号,说明这是一句话的开始
+    //或者是变量定义列表的部分,所以这里可能是定义语句
+    //比如 int m,int a,b=1;
+    next=getToken(fin); //超前搜索下一个token
+    if(next.val==NULL){
+      delToken(cur);
+      delToken(pre);
+      return 0;
+    }
+    //如果下一个token是左括号,则该next是函数名,这是唯一一种这个量是函数调用的函数名的情况
+    if(next.kind==LEFT_PARENTHESIS){
+      cur.kind=FUNC;
+    }
+    //如果curtoken是某个语句的开头而且下一个token是未知名,则这个token是类型定义,下一个token是变量名
+    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PARENTHESIS||pre.kind==COMMA)&&next.kind==UNKNOWN){
+      cur.kind=TYPE;
+      next.kind=VAR;
+    }
+    //如果cur token是开头token,而且下一个token是*,则这个token是个类型定义
+    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PARENTHESIS||pre.kind==COMMA)
+      &&strcmp(next.val,"*")==0
+    ){
+      Token tmpCur=connectToken(cur,next,TYPE,"");
+      delToken(cur);delToken(next);
+      cur=tmpCur;
+      while((next=getToken(fin)).val!=NULL&&strcmp(next.val,"*")==0){
+        tmpCur=connectToken(cur,next,TYPE,"");
+        delToken(cur);delToken(next);
+        cur=tmpCur;
+      }
+    }
+    //否则都猜测是变量
+    else{
+      cur.kind=VAR;
+    }
+    if(next.val!=NULL){
+      ungetToken(fin,next);
+      delToken(next);
+    }
+    fputToken(pre,code);
+    delToken(pre);
+    pre=cur;
+  }
+  // 写入pre的内容
+  fputToken(pre,code);
+  delToken(pre);
+  return 1;
+}
 
 
-
-//代码段词法分析,直到遇到右花括号结束
+//代码段词法分析,直到遇到右花括号结束,第一遍
 int code_parse(FILE *fin, FILE *code)
 {
+  //读取一个左花括号开始
+  if(fgetc(fin)!='{') return 0;
   //先往文件中写入一个花括号并换行
   fprintf(code, "%d %c\n", LEFT_BRACE, '{');
   int leftPar = 1;
+
   //函数token分析
   char *stops = "+-*/^|&;,.><=[]() {}\"\n"; //读到换行之前都是属于这个函数的内容
   char tmp[1000];
@@ -361,7 +453,6 @@ int code_parse(FILE *fin, FILE *code)
         return 0;
       }
     }
-
     //然后对读到的终结符号进行判断
     if(end==' '){
       end=myfgets(tmp,stops,fin);
@@ -400,120 +491,4 @@ int code_parse(FILE *fin, FILE *code)
   fprintf(code,"%d %c\n",RIGHT_BRACE,'}');
   return 1;
 }
-
-//函数头分析,直到遇到一个左括号结束
-//如果到了文件的尽头,返回EOF
-int head_analyze(FILE* fin,FILE* head){
-  char* stops=" -();,{}}\n";
-  //首先读取类型
-  char end;
-  char tmp[2000];
-  char returnType[200];
-  char owner[200];
-  char funcName[200];
-  char args[200]; //保存参数列表,这里面保存参数列表格式为type1 varname1,type2 varname2这样子,不保留前后括号
-  //首先,函数头的大小是有限的,而且以{结束,中间可能出现的成分有类型定义符,->,逗号,小括号,id
-  end=myfgets(tmp,"\n|{}",fin);
-  //如果读取到了文件尽头,返回EOF
-  if(end==EOF){
-    return EOF;
-  }
-  if(end!='{') return 0;
-  char tmp2[1000];
-  end=mysgets(tmp2,">",tmp);
-  char* pst=tmp;  //用pst记录读取的起点
-  //如果是以>结尾的,该函数是结构体方法
-  if(end=='>'){
-    int len=strlen(tmp2);
-    if(tmp2[len-1]!='-') return 0;
-    tmp2[len-1]='\0';  //整理短一位
-    if(tmp2[len-2]==' ') tmp2[len-2]='\0';
-    strcpy(owner,tmp2);
-    pst+=len+1;
-    if(*pst==' ') pst++;
-  }
-  //否则就是全局方法,主人名设置为NULL
-  else{
-    strcpy(owner,ownerString);
-    pst=tmp;
-  }
-  //然后读取返回值
-  end=mysgets(tmp2,stops,pst);
-  pst+=strlen(tmp2)+1;
-  if(end!=' ') return 0;
-  if(isTypeDefKeyWords(tmp2)){
-    int i=0;
-    strcpy(returnType,tmp2);
-    i+=strlen(tmp2);
-    returnType[i++]=' ';
-    end=mysgets(tmp2,stops,pst);
-    pst+=strlen(tmp2)+1;
-    if(end!=' ') return 0;
-    strcpy(returnType+i,tmp2);
-  }
-  //否则是基础数据类型或者typedef转的类型别名
-  else{
-    strcpy(returnType,tmp2);
-  }
-  //然后读取函数名
-  end=mysgets(tmp2,stops,pst);
-  pst+=strlen(tmp2)+1;
-  if(end==' '||end=='('){
-    if(end==' '){
-      if(*pst!='(') return 0;
-      pst++;
-    }
-    strcpy(funcName,tmp2);
-  }else return 0;
-
-  char* argsp=args;   //指向args开头的指针
-  *argsp='\0';
-  //然后读取参数列表,读取到逗号或者空格都可以
-  while((end=mysgets(tmp2,",) ",pst))!='\0'&&end!=')'){
-    pst+=strlen(tmp2)+1;
-    //如果内容不为空,写入内容
-    if(strcmp(tmp2,"")!=0){
-      argsp+=sprintf(argsp,"%s",tmp2);
-      //如果是以逗号结尾的,写入逗号,否则写入空格
-      if(end==',') argsp+=sprintf(argsp,",");
-      else argsp+=sprintf(argsp," ");
-      continue;
-    }
-    if(end==',') argsp+=sprintf(argsp,",");
-  }
-  if(end!=')') return 0;
-  //把括号前最后一次读取到的参数写入文件
-  if (strcmp(tmp2, "") != 0)
-  {
-    sprintf(argsp, "%s", tmp2);
-  }
-  //最后进行格式化写入
-  fprintf(head,"%s|%s|%s|(%s)\n",funcName,owner,returnType,args);
-  return 1;
-}
-
-
-
-//函数文件分析
-int func_analyze(FILE* fin,FILE* head,FILE* code){
-  //如果文件没有处理完就循环读取处理
-  int jud;
-  char tmp[2000];
-  char end;
-  //如果处理到了文件尽头,返回EOF,
-  //如果有内容可以正常作为函数头处理,返回1
-  //如果内容不符合函数头语法要求,返回0
-  int i=0;
-  while((jud=head_analyze(fin,head))!=EOF&&jud!=0){
-    printf("%d\n",i++);
-    if(!code_parse(fin,code)){
-      return 0;
-    }
-    printf("@%d\n",i++);
-  }
-  if(jud==0) return 0;
-  return 1;
-}
-
-
 

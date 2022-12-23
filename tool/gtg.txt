@@ -1,0 +1,6 @@
+set notDefine
+NOT_DEFINE_ACTION
+symbol add -n 3
+INIT FUNC_IN FUNC_OUT
+token add -n 3
+niaho nisho sds

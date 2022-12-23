@@ -1,0 +1,15 @@
+
+#设计符号表和token表和默认表示
+set notDefine
+NOT_DEFINE_ACTION
+#加入栈符号
+run res/symbols.gtg
+#加入词法单元
+run res/tokens.gtg
+#加入动作种类
+run res/actionkind.gtg
+#分析动作的种类和各种动作
+
+
+
+

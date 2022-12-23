@@ -12,5 +12,7 @@ exe\ps out\out2.txt out/pound.txt out/out3.txt
 exe\gr out/out3.txt out/out4.txt out/global.txt
 @REM 使用type_remove从去除宏,完成宏替换,去全局量后的文件中分离出函数以及类型定义
 exe\tr out/out4.txt out/func.txt out/type.txt   
-::使用func_analyze对func文件中提取出来的函数定义进行一阶段分析:分离函数头到head文件中,并把代码段token化,规则化到tokens文件中
-exe\fa out/func.txt out/func_head.txt out/func_tokens.txt
+::使用func_analyze对func文件中提取出来的函数定义进行一阶段分析:分离函数头到head文件中,分离函数体到body文件中
+exe\fs out/func.txt out/func_head.txt out/func_body.txt
+::使用func_body_parser对函数体文件func_body.txt的内容进行词法分析,输出token序列到func_tokens中
+exe\fbp out/func_body.txt out/func_tokens.txt

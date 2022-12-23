@@ -19,7 +19,7 @@ typedef enum score_level{    //可以处理typedef语句
     GOOD,
     BAD,
     NORMAL
-}LEVEL;
+}LEVEL,*LEVELP;
 struct student{
     double score;
     int age;
@@ -30,6 +30,7 @@ struct student{
 };
 
 void swap(int* a,int * b){
+    void (*p)(int); //定义一个函数指针,看代码如何处理
     *a=*a+*b;
     *b=*a-*b;
     *a=*a-*b;

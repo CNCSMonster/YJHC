@@ -4,4 +4,5 @@ gcc yjhc\pound_remove.c -o exe\pr
 gcc yjhc\pound_substitute.c -o exe\ps
 gcc yjhc\global_remove.c -o exe\gr
 gcc yjhc\type_remove.c -o exe\tr
-gcc yjhc\func_analyze.c -o exe\fa
+gcc yjhc\func_split.c -o exe\fs
+gcc yjhc\func_body_parser.c -o exe\fbp

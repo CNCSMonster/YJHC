@@ -24,6 +24,9 @@ Token rightBraceToken={RIGHT_BRACE,"}"};
 //从文件中读取一个token,动态分配空间
 struct token getToken(FILE* fin);
 
+//往文件中退回读取的一个token
+int ungetToken(FILE* fin,Token token);
+
 //把两个token连接起来组成新的token,使用sep字符串作为连接点内容
 struct token connectToken(Token token1,Token token2,TokenKind newKind,char* sep);
 

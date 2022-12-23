@@ -1,4 +1,4 @@
-void swap(int* a,int * b){ *a=*a+*b; *b=*a-*b; *a=*a-*b; }
+void swap(int* a,int * b){ void (*p)(int); *a=*a+*b; *b=*a-*b; *a=*a-*b; }
 struct student->double getScore(){ return score; }
 struct student->void selfIntroduce(){ printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age); }
 LEVEL judLevel(int score){ if(score>=33) return GOOD; else if(score==22){ score++; return NORMAL; }else return BAD; }

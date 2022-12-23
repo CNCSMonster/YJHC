@@ -8,14 +8,14 @@ int month;
 typedef enum score_level{ GOOD,
 BAD,
 NORMAL
-}LEVEL;
+}LEVEL,*LEVELP;
 struct student{
 double score;
 int age;
 char name[20];
 double getScore(); void selfIntroduce(); };
 void swap(int* a,int * b){
-*a=*a+*b;
+void (*p)(int); *a=*a+*b;
 *b=*a-*b;
 *a=*a-*b;
 }

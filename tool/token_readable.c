@@ -19,7 +19,7 @@ int main(int argc, char* argv[]){
     if(jud!=1) break;
     end=myfgets(tmp,"\n",fin);
     if(end!='\n') break;
-    printf("%s¡ª¡ª%s\n",tokenStrings[kind],tmp);
+    printf("(%s, %s)\n",tokenStrings[kind],tmp);
   }
   fclose(fin);
   if(end!='\n') exit(-1);

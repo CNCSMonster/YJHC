@@ -20,6 +20,20 @@ struct token getToken(FILE* fin){
   return out;
 }
 
+//往文件中退回读取的一个token
+int ungetToken(FILE* fin,Token token){
+  char re[200];
+  if(sprintf(re,"%d %s\n",token.kind,token.val)<0) return 0;
+  //退回之前读取的字符串
+  int i=strlen(re)-1;
+  while (i>=0)
+  {
+    ungetc(re[i--],fin);
+  }
+  return 1;
+}
+
+
 //把两个token连接起来组成新的token,使用sep字符串作为连接点内容
 struct token connectToken(Token token1,Token token2,TokenKind newKind,char* sep){
   //计算合并需要的空间
