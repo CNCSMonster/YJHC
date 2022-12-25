@@ -1,0 +1,22 @@
+symbol add -n 3
+sa sb sc
+token add -n 3
+ta tb tc
+actionkind add -n 3
+A B C
+action add C
+ca cb cc
+set defaultAction C
+NOT_DEFINE
+action add B
+ba bb bc
+set defaultAction B
+NOT_DEFINE
+action add A
+aa ab ac d
+set defaultAction A
+NOT_DEFINE
+syntax add A -n 3
+A:sb,tb,ab
+A:sa,tb,ac
+A:sc,tc,ac

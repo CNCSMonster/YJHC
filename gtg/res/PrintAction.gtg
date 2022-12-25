@@ -1,0 +1,5 @@
+#PrintAction的动作和语法
+action add -n 2
+PRINTENTER,PRINTSPACE
+#增加PrintAction的语法成员,使用通配进行输入
+syntax add PrintAction

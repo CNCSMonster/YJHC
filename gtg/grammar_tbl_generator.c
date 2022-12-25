@@ -314,22 +314,24 @@ int gc(){
       int symbol=next->symbol;
       int token=next->token;
       int action=next->action;
-      if(!hashset_contains(&block.symbols,&symbol)||!hashset_contains(&block.tokens,&token)||!hashset_contains(&tbl->actions,&action))
+      if(!hashset_contains(&block.symbols,&symbol)||!hashset_contains(&block.tokens,&token))
       {
         //减少token，symbol，action的引用次数并且退出
         dropIdUseTimes(&block.idAllocator,symbol,1);
         dropIdUseTimes(&block.idAllocator,token,1);
         dropIdUseTimes(&block.idAllocator,action,1);
-        next=next->next;
-        pre->next=next;
+        pre->next=next->next;
+        free(next);
+        next=pre->next;
         tbl->syntax_num--;
         continue;
       }
       //否则判断是否已经出现过
       long long code=((long long)symbol)*INT_MAX+(long long)token;
       if(hashset_contains(&hset,&code)){
-        next=next->next;
-        pre->next=next;
+        pre->next=next->next;
+        free(next);
+        next=pre->next;
         tbl->syntax_num--;
         continue;
       }
@@ -339,6 +341,9 @@ int gc(){
     }
     tbl=tbl->next;
   }
+  
+  //对于用完的hset表要回收空间
+  free_hashset(&hset);
   return 1;
 }
 
@@ -1378,10 +1383,65 @@ int syntax_line_add(char* toAdd,struct TblBlock* tmpTbl){
   char end=mysgets(tmp,stops,toAdd);
   toAdd+=strlen(tmp)+1;
   int symbol=strToId(block.strIds,tmp);
+  //如果symbol是等于*,表示能够匹配所有的symbol,则对所有的symbol进行修改
+  if(strcmp(tmp,"*")==0){
+    end=mysgets(tmp,stops,toAdd);
+    if(end!=',') return 0;
+    toAdd+=strlen(tmp)+1;
+    char action[200];
+    end=mysgets(action,stops,toAdd);
+    if(strToId(block.strIds,action)<0) return 0;
+    int* symbols=hashset_toArr(&block.symbols);
+    if(strcmp(tmp,"*")==0){
+      //把所有symbol,token都的跳转都设置为这个action
+      int* tokens=hashset_toArr(&block.tokens);
+      for(int i=0;i<block.symbols.num;i++){
+        char* symbolStr=getIdString(&block.idAllocator,symbols[i]);
+        for(int j=0;j<block.tokens.num;j++){
+          char newAdd[500];
+          char* tokenStr=getIdString(&block.idAllocator,tokens[j]);
+          sprintf(newAdd,"%s,%s,%s",symbolStr,tokenStr,action);
+          syntax_line_add(newAdd,tmpTbl);
+          free(tokenStr);
+        }
+        free(symbolStr);
+      }
+      free(tokens);
+    }
+    else{
+      for(int i=0;i<block.symbols.num;i++){
+        char newAdd[500];
+        char* symbolStr=getIdString(&block.idAllocator,symbols[i]);
+        sprintf(newAdd,"%s,%s,%s",symbolStr,tmp,action);
+        syntax_line_add(newAdd,tmpTbl);
+        free(symbolStr);
+      }
+    }
+    free(symbols);
+    return 1;
+  }
+  
   if(symbol<0||end!=',') return 0;
   if(!hashset_contains(&block.symbols,&symbol)) return 0;
   end=mysgets(tmp,stops,toAdd);
   toAdd+=strlen(tmp)+1;
+  if(strcmp(tmp,"*")==0){
+    if(end!=',')  return 0;
+    char* symbolStr=getIdString(&block.idAllocator,symbol);
+    int* tokens=hashset_toArr(&block.tokens);
+    char action[200];
+    mysgets(action,stops,toAdd);
+    for(int i=0;i<block.tokens.num;i++){
+      char newLine[500];
+      char* tokenStr=getIdString(&block.idAllocator,tokens[i]);
+      sprintf(newLine,"%s,%s,%s",symbolStr,tokenStr,action);
+      syntax_line_add(newLine,tmpTbl);
+      free(tokenStr);
+    }
+    free(tokens);
+    free(symbolStr);
+    return 1;
+  }
   int token=strToId(block.strIds,tmp);
   if(token<0||end!=',') return 0;
   if(!hashset_contains(&block.tokens,&token)) return 0;
