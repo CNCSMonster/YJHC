@@ -1,12 +1,23 @@
 #PrintAction的动作和语法
-action add -n 2
+
+#首先,增加PrintAction的动作
+action add PrintAction -n 2
 PRINTENTER PRINTSPACE
-#设置该动作种类的默认动作
+#然后设置该动作种类的默认动作
 set defaultAction PrintAction
 PRINTSPACE
 #增加PrintAction的语法成员,使用通配进行输入
-syntax add PrintAction -n
-INIT,LEFT_PAR,PRINTENTER
+### 首先是除了for结构(;;)外,一般遇到分号要换行,
+### 以及除了do_while结构while条件的开始前外所有}要换行
+### 以及所有进入遇到左花括号进入结构的情况,换行
+syntax add PrintAction -n 7
+*,LEFT_BRACE,PRINTENTER
+*,RIGHT_BRACE,PRINTENTER
+DO_WHILE_BLOCK_IN,RIGHT_BRACE,PRINTSPACE
 *,SEMICOLON,PRINTENTER
+FOR_INIT_IN,SEMICOLON,PRINTSPACE
+FOR_CONDITION_IN,SEMICOLON,PRINTSPACE
+FOR_REFRESH_IN,SEMICOLON,PRINTSPACE
+
 
 

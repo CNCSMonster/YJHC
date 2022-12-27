@@ -117,6 +117,7 @@ void free_hashset(HSetp hashset){
 //如果对小于int大小的数据使用哈希，需要修改hash函数，避免访问越界
 int hash(void* value){
     int* int1=(int*)value;
+    if(*int1<0) return (-*int1)%HASHSET_DEFAULT_ARRLEN;
     return (*int1)%HASHSET_DEFAULT_ARRLEN;
 }
 

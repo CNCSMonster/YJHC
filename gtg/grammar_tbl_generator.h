@@ -252,7 +252,7 @@ int (*executeOrds[])(void)={
   [TOKEN_ADD] token_add,
   [ACTIONKIND_ADD] actionkind_add,
   [DEL] del,
-  [RUN] run,  //TODO
+  [RUN] run,  //
   [CLS] cls,    //清空屏幕之前显示的内容
   [HELP] help,
   [INIT] gtg_init,

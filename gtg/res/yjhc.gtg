@@ -10,6 +10,9 @@ run res/tokens.gtg
 run res/actionkind.gtg
 #分析动作的种类和各种动作
 
+#首先加入打印动作指导表
+run res/PrintAction.gtg
+
 
 
 

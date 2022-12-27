@@ -341,7 +341,6 @@ int gc(){
     }
     tbl=tbl->next;
   }
-  
   //对于用完的hset表要回收空间
   free_hashset(&hset);
   return 1;
@@ -1190,8 +1189,8 @@ int output_grammar(){
   //首先进行放缩
   gc();
   //首先生成全局的not_define定义
-  if(block.not_define==NULL) fprintf(fout,"#define %s -1\n\n",DEFAULT_NOTDEFINE_STRING);
-  else fprintf(fout ,"#define %s -1\n\n",block.not_define);
+  if(block.not_define==NULL) fprintf(fout,"#define %s (-1)\n\n",DEFAULT_NOTDEFINE_STRING);
+  else fprintf(fout ,"#define %s (-1)\n\n",block.not_define);
 
   //获取symbol和token的数量
   int symbolsNum=block.symbols.num;
@@ -1222,7 +1221,7 @@ int output_grammar(){
     while(sl!=NULL){
       int x=symbols[sl->symbol];
       int y=tokens[sl->token];
-      *(table+x*symbolsNum+y)=sl->action;
+      *(table+x*tokensNum+y)=sl->action;
       sl=sl->next;
     }
     //然后开始打印
@@ -1234,7 +1233,7 @@ int output_grammar(){
       free(name);
       for(int j=0;j<tokensNum;j++){
         int y=tokens[tokenIds[j]];
-        int actionId=*(table+x*symbolsNum+y);
+        int actionId=*(table+x*tokensNum+y);
         char* action=NULL;
         if(actionId==-1){
           if(tbl->defaultAction==-1&&block.not_define==NULL) action=strcpy(malloc(strlen(DEFAULT_NOTDEFINE_STRING)+1),DEFAULT_NOTDEFINE_STRING);
@@ -1243,7 +1242,7 @@ int output_grammar(){
         }else{
           action=getIdString(&block.idAllocator,actionId);
         }
-        name=getIdString(&block.idAllocator,tokenIds[i]);    //记录这个时候的token的名字
+        name=getIdString(&block.idAllocator,tokenIds[j]);    //记录这个时候的token的名字
         fprintf(fout,"[%s] %s",name,action);
         if(action!=NULL) free(action);
         if(j!=tokensNum-1) fprintf(fout,",");

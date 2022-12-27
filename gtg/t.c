@@ -1,15 +1,12 @@
 #include <stdio.h>
+#include "gm0"
 
-int arr[2][2]={
-  [0] {[0] 1 },
-  [1] {[0] 3 }
-};
 
 int main(){
-  // for(int i=0;i<4)
-  for(int i=0;i<2;i++){
-    for(int j=0;j<2;j++)
-    printf("%d\n",arr[i][j]);
-  }
+  // printf("%d",PrintAction_Tbl)
+  // int a={
+  //   1
+  // };
+  // printf("%d",a);
   return 0;
 }
