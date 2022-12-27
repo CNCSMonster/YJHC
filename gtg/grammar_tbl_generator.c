@@ -370,15 +370,22 @@ int set_defaultAction(){
   struct TblBlock* targetTbl=getTbl(actionkind);
   if(targetTbl==NULL) return 0;
   char* action=fgetWord(fin);
-  //如果是要恢复到默认设置
-  if(strcmp(action,DEFAULT_NOTDEFINE_STRING)==0){
+  //如果是要设置默认动作为全局默认未定义字符串
+  if(
+    (block.not_define==NULL&&
+    strcmp(action,DEFAULT_NOTDEFINE_STRING)==0)
+    ||
+    (block.not_define!=NULL&&
+    strcmp(block.not_define,action)==0)
+  ){
     free(action);
     targetTbl->defaultAction=NOT_DEFINE_ID;
     return 1;
   }
   int id=strToId(block.strIds,action);
   free(action);
-  if(id<0||!hashset_contains(&targetTbl->actions,&id)) return 0;
+  if(id<0) return 0;
+  // if(id<0||!hashset_contains(&targetTbl->actions,&id)) return 0;
   targetTbl->defaultAction=id;
   return 1;
 }
@@ -1282,8 +1289,9 @@ other
 
 int gtg_delString(char* tmp)
 {
+  //不允许删除不允许删除的字符串
+  if(strcmp(tmp,DEFAULT_NOTDEFINE_STRING)==0) return 0;
   if(!isUsedStr(tmp)) return 0;
-
   //首先判断是否是notDefine对应的字符串
   if(block.not_define!=NULL&&strcmp(block.not_define,tmp)==0){
     free(block.not_define);
@@ -1296,15 +1304,17 @@ int gtg_delString(char* tmp)
   delString(&block.idAllocator, id);
   // 并把这个id从字符串id表中取出
   delStr(block.strIds, tmp);
-  // 然后判断是否是各种类型的内容,如果是,从集合中取出
+  // 然后判断是否是各种类型symbol的内容,如果是,从集合中取出
   if (hashset_contains(&block.symbols, &id))
   {
     hashset_remove(&block.symbols, &id);
   }
+  //然后判断是否是token的内容
   else if (hashset_contains(&block.tokens, &id))
   {
     hashset_remove(&block.tokens, &id);
   }
+  //然后判断是否是actionkind的内容
   else if (hashset_contains(&block.actionKinds, &id))
   {
     hashset_remove(&block.actionKinds,&id);
@@ -1326,6 +1336,7 @@ int gtg_delString(char* tmp)
       pre->next = cur;
       break;
     }
+
   }
   // 否则是actions,查找位置,删除
   else
@@ -1333,8 +1344,8 @@ int gtg_delString(char* tmp)
     // 遍历块,查询到是哪个块的
     struct TblBlock *cur = block.tbls_head.next;
     struct TblBlock *pre = &block.tbls_head;
-    // 找到actionkind对应的tbl块
-    int hasDel=0;
+    // 找到actionkind对应的tbl块,删除该action可能存在的对应的action
+    int hasDel = 0;
     while (cur != NULL)
     {
       if (!hashset_contains(&cur->actions, &id))
@@ -1343,14 +1354,26 @@ int gtg_delString(char* tmp)
         cur = pre->next;
         continue;
       }
-      hashset_remove(&cur->actions,&id);
-      if(id==cur->defaultAction){
-        cur->defaultAction=-1;
+      hashset_remove(&cur->actions, &id);
+      if (id == cur->defaultAction)
+      {
+        cur->defaultAction = -1;
       }
-      hasDel=1;
+      hasDel = 1;
       break;
     }
-    if(!hasDel) return 0;
+    if (!hasDel)
+      return 0;
+  }
+  // 遍历表块,废止所有默认action是它的情况
+  struct TblBlock *track = block.tbls_head.next;
+  while (track != NULL)
+  {
+    if (track->defaultAction == id)
+    {
+      track->defaultAction = -1;
+    }
+    track = track->next;
   }
   return 1;
 }

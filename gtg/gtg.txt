@@ -9,7 +9,7 @@ ca cb cc
 set defaultAction C
 NOT_DEFINE
 action add B
-ba bb bc
+bc
 set defaultAction B
 NOT_DEFINE
 action add A
@@ -17,6 +17,6 @@ aa ab ac d
 set defaultAction A
 NOT_DEFINE
 syntax add A -n 3
-A:sb,tb,ab
-A:sa,tb,ac
 A:sc,tc,ac
+A:sa,tb,ac
+A:sb,tb,ab

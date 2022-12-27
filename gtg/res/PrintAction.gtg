@@ -1,5 +1,12 @@
 #PrintAction的动作和语法
 action add -n 2
-PRINTENTER,PRINTSPACE
+PRINTENTER PRINTSPACE
+#设置该动作种类的默认动作
+set defaultAction PrintAction
+PRINTSPACE
 #增加PrintAction的语法成员,使用通配进行输入
-syntax add PrintAction
+syntax add PrintAction -n
+INIT,LEFT_PAR,PRINTENTER
+*,SEMICOLON,PRINTENTER
+
+
