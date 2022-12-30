@@ -7,7 +7,9 @@
         "token_kind.h": "c",
         "token_reader.h": "c",
         "istream": "c",
-        "ostream": "c"
+        "ostream": "c",
+        "action.h": "c",
+        "gm0": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

@@ -257,7 +257,7 @@ int readCase(FILE* fin,FILE* code){
   Token cur;
   cur=getToken(fin);
   if(cur.val==NULL) return 0;
-  else if(cur.kind!=LEFT_PARENTHESIS){
+  else if(cur.kind!=LEFT_PAR){
     delToken(cur);
     return 0;
   }
@@ -268,7 +268,7 @@ int readCase(FILE* fin,FILE* code){
   while (cur.val != NULL)
   {
     fputToken(cur, code);
-    if (cur.kind == RIGHT_PARENTHESIS)
+    if (cur.kind == RIGHT_PAR)
     {
       if (leftP == 1)
       {
@@ -285,7 +285,7 @@ int readCase(FILE* fin,FILE* code){
         leftP--;
       }
     }
-    else if (cur.kind == LEFT_PARENTHESIS)
+    else if (cur.kind == LEFT_PAR)
       leftP++;
     delToken(cur);
     cur = getToken(fin);
@@ -338,16 +338,16 @@ int token_guess(FILE* fin,FILE* code){
       return 0;
     }
     //如果下一个token是左括号,则该next是函数名,这是唯一一种这个量是函数调用的函数名的情况
-    if(next.kind==LEFT_PARENTHESIS){
+    if(next.kind==LEFT_PAR){
       cur.kind=FUNC;
     }
     //如果curtoken是某个语句的开头而且下一个token是未知名,则这个token是类型定义,下一个token是变量名
-    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PARENTHESIS||pre.kind==COMMA)&&next.kind==UNKNOWN){
+    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA)&&next.kind==UNKNOWN){
       cur.kind=TYPE;
       next.kind=VAR;
     }
     //如果cur token是开头token,而且下一个token是*,则这个token是个类型定义
-    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PARENTHESIS||pre.kind==COMMA)
+    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA)
       &&strcmp(next.val,"*")==0
     ){
       Token tmpCur=connectToken(cur,next,TYPE,"");

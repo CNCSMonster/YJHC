@@ -212,6 +212,7 @@ int actionkind_add();
 
 int help();
 int run();  //运行指定文件的代码,把运行结果输出到指定位置
+
 int gc();
 int cls();
 int del();
@@ -293,5 +294,8 @@ int gtg_showSyntaxs(struct TblBlock* tmpTbl,char* actionkind);
 
 //获取对应actionkind的表
 struct TblBlock* getTbl(char* actionkind);
+
+//执行一条指令,以tmpstdout为默认输出
+int runSingleOrd(FILE* tmpStdout);
 
 #endif

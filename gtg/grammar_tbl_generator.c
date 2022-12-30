@@ -290,8 +290,8 @@ OrdKind ordKind(char* ord){
 
 int error() //错误提示,当输入没有定义的命令的时候给出错误提示
 {
-  if(if_show_err) printf("your input is not defined in gtg grammar!\n");
-  if(if_show_err) printf("you could enter \"help\" to watch help messages\n");
+  if(if_show_err) fprintf(fout,"your input is not defined in gtg grammar!\n");
+  if(if_show_err) fprintf(fout,"you could enter \"help\" to watch help messages\n");
   return 1;
 }
 
@@ -887,15 +887,44 @@ int run(){
   }
   if(ord!=NULL) free(ord);
   ord=NULL;
+  FILE* tmpStdout=fout;
   while ((ord=fgetOrd(fin))!=NULL)
   {
-    maintainOrd();
+    // maintainOrd();
+    runSingleOrd(tmpStdout);
     ord=NULL;
   }
   fclose(fin);
+  fout=tmpStdout;
   fin=tfin;
   return 1;
 }
+
+//执行一条指令,以tmpstdout为默认输出
+int runSingleOrd(FILE* tmpStdout){
+  if(ord==NULL) return 0;
+  OrdKind kind=ordKind(ord);
+  //在执行前进行-o和-n信息的提取
+  //TODO,提取-o属性和-n属性
+  extractN(ord,&n_gtg);
+  char tmp[1000];
+  if(extractO(ord,tmp)){
+    fout=fopen(tmp,"w");
+    if(fout==NULL) fout=tmpStdout;
+  }else{
+    fout=tmpStdout;
+  }
+  int jud=executeOrds[kind]();
+  if(!jud){
+    printf("fail to execute such line\n");
+  }
+  if(fout!=tmpStdout) fclose(fout);
+  if(ord!=NULL)  free(ord);
+  ord=NULL;
+  n_gtg=0;    //清除之前读出的数字大小
+  return 1;
+}
+
 
 
 int replace(){

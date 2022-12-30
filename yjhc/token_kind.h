@@ -19,8 +19,8 @@ typedef enum tokenkind{
   CONST,  //常量名,包括字符串,各种数字,以及使用Const定义的常量
   SEMICOLON,      //分号
   COMMA,      //逗号
-  LEFT_PARENTHESIS,     //左圆括号
-  RIGHT_PARENTHESIS,  //右圆括号  
+  LEFT_PAR,     //左圆括号
+  RIGHT_PAR,  //右圆括号  
   LEFT_BRACKET,   //左方括号
   RIGHT_BRACKET,    //右方括号
   LEFT_BRACE,   //左花括号
@@ -29,37 +29,8 @@ typedef enum tokenkind{
   //,以及指针类型修饰符(*),需要注意符号复用的处理
   OP,
   FUNC,   //函数名
-  token_kind_num  //函数enum的数量
+  Tokens_NUM  //函数enum的数量
 }TokenKind;
-
-
-// typedef enum tokenkind{
-// TYPE,
-// CONST,
-// VAR,
-// IF,
-// ELIF,
-// ELSE,
-// DO,
-// WHILE,
-// FOR,
-// RETURN,
-// BREAK,
-// CONTINUE,
-// OP,
-// LEFT_PAR,
-// RIGHT_PAR,
-// LEFT_BRACKTET,
-// RIGHT_BRACKET,
-// LEFT_BRACE,
-// RIGHT_BRACE,
-// SEMICOLON,
-// COMMA,
-// FUNC,
-// UNKNOWN,
-// Tokens_NUM
-// }TokenKind;
-
 
 
 
@@ -82,8 +53,8 @@ const char* tokenStrings[]={
   [CONST] "const value",  //常量名
   [SEMICOLON] "semicolon",      //分号
   [COMMA] "comma",      //逗号
-  [LEFT_PARENTHESIS] "left parenthesis",     //左圆括号
-  [RIGHT_PARENTHESIS] "right parenthesis",  //右圆括号  
+  [LEFT_PAR] "left parenthesis",     //左圆括号
+  [RIGHT_PAR] "right parenthesis",  //右圆括号  
   [LEFT_BRACKET] "left bracket",   //左方括号
   [RIGHT_BRACKET] "right bracket",    //右方括号
   [LEFT_BRACE] "left brace",   //左花括号
@@ -124,7 +95,7 @@ const char *typeKeyWords[] = {
 
 
 const char seps[]      =    {';',      ',',  '(',            ')',               '[',        ']',           '{',       '}'        };
-const TokenKind sepTokens[]={SEMICOLON,COMMA,LEFT_PARENTHESIS,RIGHT_PARENTHESIS,LEFT_BRACKET,RIGHT_BRACKET,LEFT_BRACE,RIGHT_BRACE};
+const TokenKind sepTokens[]={SEMICOLON,COMMA,LEFT_PAR,RIGHT_PAR,LEFT_BRACKET,RIGHT_BRACKET,LEFT_BRACE,RIGHT_BRACE};
 
 const char operationElems[]={
   '+',

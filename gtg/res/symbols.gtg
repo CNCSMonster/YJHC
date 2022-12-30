@@ -1,15 +1,11 @@
 #加入栈符号
 symbol add -n 33
-
-
 #加入1个符号表示栈底符号
 INIT
-
 #加入6个关键字符号
 IF_SYMBOL ELIF_SYMBOL ELSE_SYMBOL
 WHILE_SYMBOL DO_SYMBOL FOR_SYMBOL
 WHILE_OF_DO
-
 #加入1个表示普通入块的符号
 BLOCK_IN
 #加入1个符号表示普通句子中符号,遇到分号弹出
@@ -22,7 +18,6 @@ LEFTPAR
 #加入4个DO_WHILE结构分析符号
 DO_WHILE_BLOCK_IN   DO_WHILE_BLOCK_OUT
 DO_WHILE_CASE_IN    DO_WHILE_CASE_OUT
-
 
 #加入9个if_elif_else结构分析符号
 IF_CASE_IN    IF_CASE_OUT   IF_BLOCK_IN   IF_BLOCK_OUT

@@ -7,22 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
-
-
-
-//返回关于翻译的指导信息,比如是否要翻译函数
-//为什么用的是struct类型而不是enum类型,是因为考虑到后面扩展语法的时候可能返回的
-//翻译指导动作是多方面的而不仅仅是是否翻译函数
-struct TranslateAction{
-  enum PrintAction pa;
-  enum FuncTranslateAction fta;
-  enum BlockAction ba;
-};
-
-
-
+//用来存储syntax符号的栈的结构体
 struct syntaxSymbolStack{
   struct syntaxSymbolStack* next;
   enum syntax_symbol kind;
@@ -39,26 +24,22 @@ typedef struct token_buffer_node{
 
 TBNode head={NULL,NULL,{0,NULL}};  //缓冲区地头节点,头节点不保存值,头节点的下一个节点作为首元节点
 
+TBNode* tail;   //最后一个值节点的位置，当没有值节点时，它定位在head的地址
 
 struct syntaxSymbolStack
 ssStack={NULL,INIT};   //栈头节点就是init,不可删除
 
+//token读取器读取token的源文件
 FILE* tb_fin;  
-
-
-
-
-
-
 
 
 //使用模块前的init方法
 void init_token_reader(FILE* fin);
 
 //返回一条语句,通过函数指针返回对块的进出情况的判断,以及输出是否要换行的判断
-TBNode* token_readsentence(enum BlockAction* blockAction,enum PrintAction* printAction,struct TranslateAction* translateAction);
+TBNode* readTokenSentence(BlockAction* blockAction,PrintAction* printAction);
 
-//释放token链表空间
+//释放语句空间,包括这个节点以及后面节点
 void del_tokenLine(TBNode* tokens);
 
 //释放剩余所有内容,该方法可以在语义分析异常结束的时候使用
