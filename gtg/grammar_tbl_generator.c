@@ -290,8 +290,8 @@ OrdKind ordKind(char* ord){
 
 int error() //错误提示,当输入没有定义的命令的时候给出错误提示
 {
-  printf("your input is not defined in gtg grammar!\n");
-  printf("you could enter \"help\" to watch help messages\n");
+  if(if_show_err) printf("your input is not defined in gtg grammar!\n");
+  if(if_show_err) printf("you could enter \"help\" to watch help messages\n");
   return 1;
 }
 
@@ -1265,7 +1265,7 @@ int output_grammar_genEnum(char* enumName,int* arr,int arrSize){
     fprintf(fout,"%s,\n",enumItem);
     free(enumItem);
   }
-  fprintf(fout,"%s_NUM\n}%s;\n\n",enumName,enumName);
+  fprintf(fout,"%ss_NUM\n}%s;\n\n",enumName,enumName);
   return 1;
 }
 
@@ -1329,10 +1329,10 @@ int gtg_delString(char* tmp)
         continue;
       }
       // 否则进行删除处理
-      cur = pre->next;
-      pre->next->next = NULL;
+      cur=pre->next->next;
+      pre->next->next=NULL;
       delTblBlocks(pre);
-      pre->next = cur;
+      pre->next=cur;
       break;
     }
 
@@ -1469,7 +1469,12 @@ int syntax_line_add(char* toAdd,struct TblBlock* tmpTbl){
   if(!hashset_contains(&block.tokens,&token)) return 0;
   end=mysgets(tmp,stops,toAdd);
   int action=strToId(block.strIds,tmp);
-  if(action<0) return 0;  //如果action未注册,报错
+  if(action<0
+  &&
+  !(
+    (block.not_define!=NULL&&strcmp(tmp,block.not_define)==0)
+    ||(block.not_define==NULL&&strcmp(tmp,DEFAULT_NOTDEFINE_STRING)==0)
+  )) return 0;  //如果action未注册,或者是属于非常规action
   // //如果该action不属于这个表,不报错,因为栈动作相关的表需要symbol作为表元素
   // if(!hashset_contains(&tmpTbl->actions,&action)) return 0;
   //否则加入这个表,而且是从表头后第一位,压入栈顶,越晚加入的内容越靠近表头

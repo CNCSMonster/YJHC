@@ -42,13 +42,13 @@
 13 ;
 20 }
 19 {
-23 printf
+22 printf
 15 (
 12 "my name is:%s,my socre is:%f,my age is:%d"
 14 ,
 11 name
 14 ,
-23 getScore
+22 getScore
 15 (
 16 )
 14 ,
@@ -112,7 +112,7 @@
 10 enum score_level
 11 L
 13 ;
-23 printf
+22 printf
 15 (
 12 "N=M=%d"
 14 ,
@@ -121,14 +121,14 @@
 13 ;
 11 stu1
 21 .
-23 selfIntroduce
+22 selfIntroduce
 15 (
 16 )
 13 ;
 10 LEVEL
 11 level
 21 =
-23 judLevel
+22 judLevel
 15 (
 11 stu1
 16 )
@@ -138,7 +138,7 @@
 21 =
 12 3
 13 ;
-23 printf
+22 printf
 15 (
 12 "student%s's score level is %d,he get %d pens!"
 14 ,

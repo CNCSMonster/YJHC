@@ -103,7 +103,7 @@ int delString(IdAlp IdAllocator,int id){
 
 
 int spaceAllocateForIdAllocator(IdAlp idAllocator){
-  void* tmp;
+  // void* tmp;
   //如果要扩张useTimes和val空间
   if(idAllocator->alcSt>ID_ALLOCATOR_EXPAND_COE*idAllocator->size){
     int newSize=idAllocator->size+ID_STRING_NUM;

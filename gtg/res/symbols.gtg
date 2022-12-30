@@ -1,5 +1,5 @@
 #加入栈符号
-symbol add -n 29
+symbol add -n 33
 
 
 #加入1个符号表示栈底符号
@@ -8,9 +8,16 @@ INIT
 #加入6个关键字符号
 IF_SYMBOL ELIF_SYMBOL ELSE_SYMBOL
 WHILE_SYMBOL DO_SYMBOL FOR_SYMBOL
+WHILE_OF_DO
 
 #加入1个表示普通入块的符号
 BLOCK_IN
+#加入1个符号表示普通句子中符号,遇到分号弹出
+SENTENCE_IN
+#加入1个表示普通句子中左花括号的符号而不是块的一部分,遇到}弹出
+LEFTBRA
+#加入1个表示普通句子中左小括号的符号,用于遇到)弹出
+LEFTPAR
 
 #加入4个DO_WHILE结构分析符号
 DO_WHILE_BLOCK_IN   DO_WHILE_BLOCK_OUT
@@ -18,7 +25,7 @@ DO_WHILE_CASE_IN    DO_WHILE_CASE_OUT
 
 
 #加入9个if_elif_else结构分析符号
-IF_CASE_IN    IF_CASE_OUT   IN_BLOCK_IN   IN_BLOCK_OUT
+IF_CASE_IN    IF_CASE_OUT   IF_BLOCK_IN   IF_BLOCK_OUT
 ELIF_CASE_IN ELIF_CASE_OUT ELIF_BLOCK_IN ELIF_BLOCK_OUT
 ELSE_BLOCK_IN
 
@@ -27,4 +34,7 @@ WHILE_CASE_IN WHILE_CASE_OUT WHILE_BLOCK_IN
 
 #加入5个FOR结构分析符号
 FOR_INIT_IN FOR_CONDITION_IN FOR_REFRESH_IN FOR_REFRESH_END
-FOR_BLOCK_IN
+FOR_BODY_IN
+
+
+#备注用是否又横杠区别symbols的LEFTPAR和token的LEFT_PAR

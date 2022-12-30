@@ -9,6 +9,7 @@
 #include "myprint.h"
 
 
+
 //默认工作文件,启动的时候会读取这个文件,退出的时候会写入这个文件
 #define DEFAULT_GTG_WORK_FILE "gtg.txt"
 
@@ -18,6 +19,9 @@
 #define NOT_DEFINE_ID (-1)
 
 #define DEFAULT_NOTDEFINE_STRING "NOT_DEFINE"
+
+
+int if_show_err=0;
 
 /*
 映射关系分析:
@@ -160,7 +164,7 @@ int delSyntaxs(struct syntax_line* syntaxHead);
 
 
 
-//释放语法翻译动作指导表,无异常返回非0值,有异常返回0
+//释放语法翻译动作指导表,释放从根表节点开始的后面所有节点的表,无异常返回非0值,有异常返回0
 int delTblBlocks(struct TblBlock* tbls_head);
 
 //命令行读取器,读取一行命令,而且忽略前导空格,忽略注释符后面,而且读到换行停止,命令没有长度限制,动态分配空间

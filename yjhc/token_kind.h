@@ -28,10 +28,41 @@ typedef enum tokenkind{
   //运算符,包括成员访问符,解引用符(*),取地址符，算术运算符(其中乘号*)以及逻辑运算符
   //,以及指针类型修饰符(*),需要注意符号复用的处理
   OP,
-  POINTER, //指针类型,需要注意的是指针类型可能指向任意的地址(为方便,不支持指针调用结构体方法)
   FUNC,   //函数名
   token_kind_num  //函数enum的数量
 }TokenKind;
+
+
+// typedef enum tokenkind{
+// TYPE,
+// CONST,
+// VAR,
+// IF,
+// ELIF,
+// ELSE,
+// DO,
+// WHILE,
+// FOR,
+// RETURN,
+// BREAK,
+// CONTINUE,
+// OP,
+// LEFT_PAR,
+// RIGHT_PAR,
+// LEFT_BRACKTET,
+// RIGHT_BRACKET,
+// LEFT_BRACE,
+// RIGHT_BRACE,
+// SEMICOLON,
+// COMMA,
+// FUNC,
+// UNKNOWN,
+// Tokens_NUM
+// }TokenKind;
+
+
+
+
 
 
 //定义token类型对应的字符串描述
@@ -58,7 +89,6 @@ const char* tokenStrings[]={
   [LEFT_BRACE] "left brace",   //左花括号
   [RIGHT_BRACE] "right brace",  //右花括号
   [OP]  "operation symbol",
-  [POINTER] "pointer var id",  //指针变量名
   [FUNC] "function"
 };
 

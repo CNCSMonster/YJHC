@@ -1,4 +1,4 @@
-token add -n 22
+token add -n 23
 #加入3个类型token和变量token
 TYPE CONST VAR
 #加入9个流程控制关键字
@@ -13,5 +13,10 @@ OP
 LEFT_PAR RIGHT_PAR LEFT_BRACKTET RIGHT_BRACKET
 LEFT_BRACE RIGHT_BRACE SEMICOLON COMMA
 
-#加入1个未知定义,不确定得名,可能是在标准库里面得量或者类型
+#加入一个函数名
+FUNC
+
+
+#实际上由于c语言的语法特性,我们经过token分析后可以确定所有token类型
+#加入1个未知定义,不确定得名,可能是在标准库里面的量或者类型
 UNKNOWN

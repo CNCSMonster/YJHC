@@ -1,7 +1,5 @@
 
-#设计符号表和token表和默认表示
-set notDefine
-NOT_DEFINE_ACTION
+
 #加入栈符号
 run res/symbols.gtg
 #加入词法单元
@@ -13,6 +11,12 @@ run res/actionkind.gtg
 #首先加入打印动作指导表
 run res/PrintAction.gtg
 
+#加入块动作指导
+run res/BlockAction.gtg
 
+#加入压弹栈动作指导
+run res/StackAction.gtg
 
+#加入分割动作指导
+run res/SplitAction.gtg
 

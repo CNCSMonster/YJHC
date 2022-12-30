@@ -1,0 +1,26 @@
+#设计上让栈动作先弹栈再压栈
+#增加弹栈动作表动作，Pop表示弹栈，Nop表示不弹
+action add StackPopAction
+Pop Nop
+#设置默认动作为弹出
+set defaultAction StackPopAction
+Pop
+
+
+#加入各种语法结构对对应的栈分析动作
+
+#普通单行语句
+run res/SA0.gtg
+
+#普通块
+run res/SA1.gtg
+
+
+#if-elif-else结构
+run res/SA2.gtg
+
+#do-while结构和while结构
+run res/SA3.gtg
+
+#for结构
+run res/SA4.gtg

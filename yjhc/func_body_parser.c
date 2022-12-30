@@ -305,7 +305,7 @@ int token_guess(FILE* fin,FILE* code){
   };
   Token next;
   while((cur=getToken(fin)).val!=NULL){
-    //如果当前类型是TYPE类型,则会连接后面的所有可能的指针一起组成新的type类型,并且更新下一个量为pointer类型
+    //如果当前类型是TYPE类型,则会连接后面的所有可能的指针一起组成新的type类型
     if(cur.kind==TYPE){
       while((next=getToken(fin)).val!=NULL&&strcmp(next.val,"*")==0){
         Token tmpCur=connectToken(cur,next,TYPE,"");

@@ -1,0 +1,35 @@
+#添加blockaction的动作,如块,保持，出块
+action add BlockAction
+BlockIn BlockKeep BlockOut
+
+#设置BlockAction的默认动作
+set defaultAction BlockAction
+BlockKeep
+
+#入块的情况
+#一般块中非句中遇到{进入一个普通块
+#if和elif和while的case语句结束后直接入块
+#else和do后面可直接入块
+#for后面左小括号入块
+syntax add BlockAction -n 11
+*,LEFT_BRACE,BlockIn
+LEFTBRA,LEFT_BRACE,BlockKeep
+LEFTPAR,LEFT_BRACE,BlockKeep
+SENTENCE_IN,LEFT_BRACE,BlockKeep
+FOR_REFRESH_END,LEFT_BRACE,BlockKeep
+IF_CASE_OUT,LEFT_BRACE,BlockIn
+ELIF_CASE_OUT,LEFT_BRACE,BlockIn
+WHILE_CASE_OUT,LEFT_BRACE,BlockIn
+ELSE_SYMBOL,LEFT_BRACE,BlockIn
+DO_SYMBOL,LEFT_BRACE,BlockIn
+FOR_SYMBOL,LEFT_PAR,BlockIn
+
+#出块的情况,在某个块中,然后遇到了右花括号
+#if块中或者right块中或者
+syntax add BlockAction -n 6
+IF_CASE_IN,RIGHT_BRACE,BlockOut
+ELIF_BLOCK_IN,RIGHT_BRACE,BlockOut
+ELSE_BLOCK_IN,RIGHT_BRACE,BlockOut
+DO_WHILE_BLOCK_IN,RIGHT_BRACE,BlockOut
+WHILE_BLOCK_IN,RIGHT_BRACE,BlockOut
+FOR_BODY_IN,RIGHT_BRACE,BlockOut
