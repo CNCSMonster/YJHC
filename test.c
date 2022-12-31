@@ -16,15 +16,20 @@ struct as{
 struct as a={"ÄãºÃ"};
 
 
+typedef int M;
 
 
 
 int main(){
-  for(int i=0;i<sizeof(arr)/sizeof(arr[0]);i++){
-    for(int j=0;j<sizeof(arr[0])/sizeof(arr[0][0]);j++){
-      printf("%d,",arr[i][j]);
-    }
-  }
+  // printf("%d",sizeof(float));
+  // for(int i=0;i<sizeof(arr)/sizeof(arr[0]);i++){
+  //   for(int j=0;j<sizeof(arr[0])/sizeof(arr[0][0]);j++){
+  //     printf("%d,",arr[i][j]);
+  //   }
+  // }
+  typedef M N;
+  N bb;
+  printf("%d",sizeof(bb));
   
   return 0;
 }

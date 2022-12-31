@@ -8,6 +8,8 @@ NORMAL
 struct student{
 double score;
 int age;
+int* agep;
+int * agep;
 char name[20];
 double getScore(); void selfIntroduce(); };
 void swap(int* a,int * b){

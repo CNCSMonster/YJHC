@@ -9,7 +9,10 @@
         "istream": "c",
         "ostream": "c",
         "action.h": "c",
-        "gm0": "cpp"
+        "gm0": "cpp",
+        "token.c": "cpp",
+        "mystring.c": "cpp",
+        "token.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
