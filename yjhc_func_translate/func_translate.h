@@ -1,0 +1,28 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+//声明translate要用到的各个文件的预编译指令
+#include "token_reader.c"
+#include "token_reader.h"
+
+#include "../yjhc_preProcess/token.h"
+#include "../yjhc_preProcess/token.c"
+
+#include "../yjhc_preProcess/mystring.h"
+#include "../yjhc_preProcess/mystring.c"
+
+#include "string_index.h"
+#include "string_index.c"
+
+#include "str_set.h"
+#include "str_set.c"
+
+#include "sentence_kind.h"
+
+#include "var_tbl.h"
+
+#include "type.h"
+#include "type.c"
+
+
+

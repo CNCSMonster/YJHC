@@ -30,6 +30,8 @@ struct student{
     void selfIntroduce();   //学生自我介绍
     
 };
+typedef int GG;
+
 
 void swap(int* a,int * b){
     void (*p)(int); //定义一个函数指针,看代码如何处理

@@ -12,6 +12,7 @@ int* agep;
 int * agep;
 char name[20];
 double getScore(); void selfIntroduce(); };
+typedef int GG;
 void swap(int* a,int * b){
 void (*p)(int); *a=*a+*b;
 *b=*a-*b;

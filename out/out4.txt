@@ -1,5 +1,6 @@
 typedef enum score_level{ GOOD, BAD, NORMAL }LEVEL,*LEVELP
 struct student{ double score; int age; int* agep; int * agep; char name[20]; double getScore(); void selfIntroduce(); }
+typedef int GG
 void swap(int* a,int * b){ void (*p)(int); *a=*a+*b; *b=*a-*b; *a=*a-*b; }
 union multiData{ int integer; double decimal; short shortInt; void doA(); }
 struct student->double getScore(){ return score; }
