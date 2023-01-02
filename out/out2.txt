@@ -10,7 +10,7 @@ double score;
 int age;
 int* agep;
 int * agep;
-char name[20];
+char name[20][22];
 double getScore(); void selfIntroduce(); };
 typedef int GG;
 void swap(int* a,int * b){

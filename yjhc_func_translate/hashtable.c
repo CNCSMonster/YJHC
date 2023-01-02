@@ -35,10 +35,10 @@ int hashtbl_put(hashtbl* htbl,void* key,void* val){
   }
   hashtable_node* add=malloc(sizeof(hashtable_node));
   add->next=htbl->nodes[index];
-  add->keyVal.val=malloc(htbl->valSize);
+  if(val!=NULL) add->keyVal.val=malloc(htbl->valSize);
+  else add->keyVal.val=NULL;
   add->keyVal.key=malloc(htbl->keySize);
   if(val!=NULL) memcpy(add->keyVal.val,val,htbl->valSize);
-  else memset(add->keyVal.val,0,htbl->valSize);
   memcpy(add->keyVal.key,key,htbl->keySize);
   htbl->nodes[index]=add;
   htbl->size++;
@@ -58,7 +58,11 @@ int hashtbl_replace(hashtbl* htbl,void* key,void* newVal){
   while (tn!=NULL)
   {
     if(keyEq(key,tn->keyVal.key)){
+      if(tn->keyVal.val==NULL){
+        tn->keyVal.val=malloc(htbl->valSize);
+      }
       if(newVal!=NULL) memcpy(tn->keyVal.val,newVal,htbl->valSize);
+      else return 0;
       return 1;
     }
     tn=tn->next;
@@ -106,7 +110,7 @@ int hashtbl_del(hashtbl* htbl,void* key){
   if(tn==NULL) return 0;  //说明没有找到目标节点
   if(pre==NULL) htbl->nodes[index]=tn->next;
   else pre->next=tn->next;
-  free(tn->keyVal.val);
+  if(tn->keyVal.val!=NULL) free(tn->keyVal.val);
   free(tn->keyVal.key);
   free(tn);
   htbl->size--;
@@ -131,7 +135,10 @@ void* hashtbl_toArr(hashtbl* htbl,void* keys,void* vals){
       if (keys != NULL)
         memcpy(keys + i * htbl->keySize, tmp->keyVal.key, htbl->keySize);
       if (vals != NULL)
-        memcpy(keys + i * htbl->valSize, tmp->keyVal.val, htbl->valSize);
+        if(tmp->keyVal.val!=NULL)
+          memcpy(vals + i * htbl->valSize, tmp->keyVal.val, htbl->valSize);
+        else
+          memset(vals+i*htbl->valSize,0,htbl->valSize);
       i++;
       tmp = tmp->next;
     } while (tmp != NULL);
@@ -154,7 +161,7 @@ void hashtbl_clear(hashtbl* htbl){
     do
     {
       htbl->nodes[j]=tmp->next;
-      free(tmp->keyVal.val);
+      if(tmp->keyVal.val!=NULL) free(tmp->keyVal.val);
       free(tmp->keyVal.key);
       free(tmp);
       i++;

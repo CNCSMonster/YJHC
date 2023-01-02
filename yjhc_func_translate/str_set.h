@@ -21,7 +21,6 @@ typedef struct str_set{
 //设置使用的哈希函数
 StrSet getStrSet(int (*hash)(const char*));
 
-
 //加入字符串,加入失败返回0,成功返回非0值
 int addStr_StrSet(StrSet* ssp,char* s);
 
@@ -35,7 +34,8 @@ int containsStr_StrSet(StrSet* ssp,char* str);
 //释放表空间,释放完后表如同刚创建的一样,没有分配空间,可以重新使用
 int initStrSet(StrSet* ssp);
 
-
+//获得字符串
+char** toStrArr_StrSet(StrSet* ssp);
 
 
 #endif

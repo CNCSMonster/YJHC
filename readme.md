@@ -277,6 +277,7 @@ cp
         int book=1;
         mm.age=11;
         strcpy(mm.name,"ggb");
+    //mm.study(book);
         _yjhc_mm_study(&mm,book);
     }
     //第二种可能,如果结构体方法内调用结构体方法,那么也要进行重构

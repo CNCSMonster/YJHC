@@ -25,7 +25,7 @@ struct student{
     int age;
     int* agep;
     int * agep;
-    char name[20];
+    char name[20][22];
     double getScore(); //学生的分数内容,其表中只能够说明类型
     void selfIntroduce();   //学生自我介绍
     

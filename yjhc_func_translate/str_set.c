@@ -2,6 +2,9 @@
 
 //设置使用的哈希函数
 StrSet getStrSet(int (*hash)(const char*)){
+  if(hash==NULL){
+    fprintf(stderr,"err");
+  }
   StrSet out;
   out.hash=hash;
   for(int i=0;i<STR_SET_DEFAULT_ARR_SIZE;i++) out.arr[i]=NULL;
@@ -57,7 +60,7 @@ int delStr_StrSet(StrSet* ssp,char* str){
   struct str_set_node* pre=NULL;
   while (tmp!=NULL)
   {
-    if(strcmp(str,tmp->s)==0) break;;
+    if(strcmp(str,tmp->s)==0) break;
     pre=tmp;
     tmp=tmp->next;
   }
@@ -103,4 +106,25 @@ int initStrSet(StrSet* ssp){
   return 1;
 }
 
+//
+char** toStrArr_StrSet(StrSet* ssp){
+  char** out;
+  out=malloc(sizeof(char*)*ssp->num);
+  int i=0;
+  int j=0;
+  while(i<ssp->num&&j<STR_SET_DEFAULT_ARR_SIZE){
+    if(ssp->arr[j]==NULL){
+      j++;
+      continue;
+    }
+    struct str_set_node* tmp=ssp->arr[j];
+    do{
+      out[i]=strcpy(malloc(strlen(tmp->s)+1),tmp->s);
+      i++;
+      tmp=tmp->next;
+    }while(tmp!=NULL);
+    j++;
+  }
+  return out;
+}
 

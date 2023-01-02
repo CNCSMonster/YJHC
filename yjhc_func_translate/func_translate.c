@@ -31,11 +31,10 @@ int main(){
   TypeTbl typeTbl=getTypeTbl(typeFin);
   //打印每个类型
   for(int i=0;i<typeTbl.size;i++){
-    printf("\n\n");
+    printf("%d\n\n",i);
     showType(&typeTbl.types[i]);
   }
   delTypeTbl(&typeTbl);
-
   fclose(typeFin);
 
   return 0;

@@ -224,12 +224,17 @@ void showType(Type* type){
   printf("fields:\n");
   for(int i=0;i<type->fields.size;i++){
     printf("%s",fields[i]);
-    if(memcmp(fieldTypes[i],0,type->fields.valSize)!=0)
+    if(fieldTypes[i]!=NULL)
       printf(" %s",fieldTypes[i]);
     printf("\n");
   }
   printf("funcs:\n");
-
+  char** funcs=toStrArr_StrSet(&type->funcs);
+  for(int i=0;i<type->funcs.num;i++){
+    printf("%s\n",funcs[i]);
+    free(funcs[i]);
+  }
+  free(funcs);
 }
 
 //extract enum,如果extract失败,返回个释放了空间的out
@@ -266,24 +271,28 @@ Type extractUnion(char* str){
   char tmp[1000];
   char end;
   int isWrong=0;
+  while(*str==' '&&*str!='\0') str++;
   do{
     end=mysgets(tmp,";",str);
     str+=strlen(tmp)+1;
-    if(strlen(tmp)==0) continue;
+    while(*str==' '&&*str!='\0') str++;
+    int len=strlen(tmp);
+    if(len==0) continue;
     //如果末尾是括号
     while(tmp[strlen(tmp)-1]==' ') tmp[strlen(tmp)-1]='\0';
     //如果是函数
     if(tmp[strlen(tmp)-1]==')'){
       //往左找到左边对应的括号
-      int right=1;
+      int right=1;  //记录右括号数量
       char* first=tmp+strlen(tmp)-2;
       while(first>=tmp){
         if(*first==')') right++;
         else if(*first=='(') right--;
-        if(right=0) break;
+        if(right==0) break;
         first--;
       }
-      if(first<=tmp) isWrong=1;
+      if(first<=tmp) 
+        isWrong=1;
       else{
         char* left=first-1;
         while(left>=tmp&&*left!=' ') left--;
@@ -294,6 +303,44 @@ Type extractUnion(char* str){
           addStr_StrSet(&out.funcs,left);
         }
       }
+    }
+    //否则是数组定义,这里把数组党成是一个指针处理
+    else if(tmp[strlen(tmp)-1]==']'){
+      int i=strlen(tmp)-2;
+      int rightBracket=1;
+      int pointerLayer=0;
+      while(tmp[i]==' '||rightBracket!=0||tmp[i]==']'){
+        if(tmp[i]==']'&&rightBracket==0) rightBracket=1;
+        else if(tmp[i]=='['&&rightBracket==1){
+          rightBracket=0;
+          pointerLayer++;
+        }
+        i--;
+        continue;
+      }
+      //获取名字
+      //首先读变量名
+      char* fieldName;
+      char* fieldType;
+      tmp[i+1]='\0';
+      //然后提取变量名
+      i=strlen(tmp)-1;
+      while (tmp[i]==' ') i--;
+      tmp[i+1]='\0';
+      while(tmp[i]!=' ') i--;
+      fieldName=strcpy(malloc(strlen(tmp+i+1)+1),tmp+i+1);
+      tmp[i]='\0';
+      //格式化变类型名
+      refectorTypeName(tmp);
+      fieldType=strcpy(malloc(strlen(tmp)+1+pointerLayer),tmp);
+      char* ts=fieldType+strlen(fieldType);
+      for(int j=0;j<pointerLayer;j++){
+        *ts='*';
+        ts++;
+      }
+      *ts='\0';
+      //加入变量名和类型名
+      hashtbl_put(&out.fields,&fieldName,&fieldType);
     }
     //否则是属性定义
     else{
@@ -331,24 +378,28 @@ Type extractStruct(char* str){
   char tmp[1000];
   char end;
   int isWrong=0;
+  while(*str==' '&&*str!='\0') str++;
   do{
     end=mysgets(tmp,";",str);
     str+=strlen(tmp)+1;
-    if(strlen(tmp)==0) continue;
+    while(*str==' '&&*str!='\0') str++;
+    int len=strlen(tmp);
+    if(len==0) continue;
     //如果末尾是括号
     while(tmp[strlen(tmp)-1]==' ') tmp[strlen(tmp)-1]='\0';
     //如果是函数
     if(tmp[strlen(tmp)-1]==')'){
       //往左找到左边对应的括号
-      int right=1;
+      int right=1;  //记录右括号数量
       char* first=tmp+strlen(tmp)-2;
       while(first>=tmp){
         if(*first==')') right++;
         else if(*first=='(') right--;
-        if(right=0) break;
+        if(right==0) break;
         first--;
       }
-      if(first<=tmp) isWrong=1;
+      if(first<=tmp) 
+        isWrong=1;
       else{
         char* left=first-1;
         while(left>=tmp&&*left!=' ') left--;
@@ -359,6 +410,44 @@ Type extractStruct(char* str){
           addStr_StrSet(&out.funcs,left);
         }
       }
+    }
+    //否则是数组定义,这里把数组党成是一个指针处理
+    else if(tmp[strlen(tmp)-1]==']'){
+      int i=strlen(tmp)-2;
+      int rightBracket=1;
+      int pointerLayer=0;
+      while(tmp[i]==' '||rightBracket!=0||tmp[i]==']'){
+        if(tmp[i]==']'&&rightBracket==0) rightBracket=1;
+        else if(tmp[i]=='['&&rightBracket==1){
+          rightBracket=0;
+          pointerLayer++;
+        }
+        i--;
+        continue;
+      }
+      //获取名字
+      //首先读变量名
+      char* fieldName;
+      char* fieldType;
+      tmp[i+1]='\0';
+      //然后提取变量名
+      i=strlen(tmp)-1;
+      while (tmp[i]==' ') i--;
+      tmp[i+1]='\0';
+      while(tmp[i]!=' ') i--;
+      fieldName=strcpy(malloc(strlen(tmp+i+1)+1),tmp+i+1);
+      tmp[i]='\0';
+      //格式化变类型名
+      refectorTypeName(tmp);
+      fieldType=strcpy(malloc(strlen(tmp)+1+pointerLayer),tmp);
+      char* ts=fieldType+strlen(fieldType);
+      for(int j=0;j<pointerLayer;j++){
+        *ts='*';
+        ts++;
+      }
+      *ts='\0';
+      //加入变量名和类型名
+      hashtbl_put(&out.fields,&fieldName,&fieldType);
     }
     //否则是属性定义
     else{
