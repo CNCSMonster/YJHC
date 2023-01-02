@@ -8,10 +8,17 @@ int arr[3][3]={
   [2] {7,8,9}
 };
 
-
-struct as{
-  char* str;
+union test
+{
+  int a;
+  int b;
 };
+
+
+
+typedef struct as{
+  char* str;
+}AS,*ASP,**ASPP;
 
 struct as a={"ÄãºÃ"};
 

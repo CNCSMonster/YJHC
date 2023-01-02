@@ -17,6 +17,11 @@ int isBaseType(char* s);
 
 int myfgets(char* buf,char* stops,FILE* fin);
 
+int myStrHash(const char* str);
+
+
+
+
 //从字符串根据指定终结符读取一个字符串
 int mysgets(char* buf,const char* stops,const char* src);
 

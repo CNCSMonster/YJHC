@@ -127,3 +127,13 @@ int isOp(char c){
   return 0;
 }
 
+
+//进行一个普普通通的哈希
+int myStrHash(const char* str){
+  int out=0;
+  int size=strlen(str)/sizeof(out);
+  int* m=(int*) str;
+  for(int i=0;i<size;i++) out^=m[i];
+  out+=(strlen(str)-size*sizeof(out))*size;
+  return out;
+}

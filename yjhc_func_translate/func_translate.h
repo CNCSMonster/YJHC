@@ -17,6 +17,12 @@
 #include "str_set.h"
 #include "str_set.c"
 
+#include "vector.h"
+#include "vector.c"
+
+#include "hashtable.h"
+#include "hashtable.c"
+
 #include "sentence_kind.h"
 
 #include "var_tbl.h"

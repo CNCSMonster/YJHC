@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
 #define VECTOR_ARR_BASE_SIZE 100
 //空间扩大参数,占有率超过这个参数就扩大
 #define VECTOR_EXPAND_LIMIT 0.8
@@ -52,8 +51,6 @@ void vector_clear(vector* vec);
 
 //把值转为二维数组返回,返回的数组里的值是实际值的浅拷贝
 void* vector_toArr(vector* vec);
-
-
 
 #endif
 

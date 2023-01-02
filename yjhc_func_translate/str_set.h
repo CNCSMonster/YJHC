@@ -21,6 +21,7 @@ typedef struct str_set{
 //设置使用的哈希函数
 StrSet getStrSet(int (*hash)(const char*));
 
+
 //加入字符串,加入失败返回0,成功返回非0值
 int addStr_StrSet(StrSet* ssp,char* s);
 

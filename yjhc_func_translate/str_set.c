@@ -2,9 +2,6 @@
 
 //设置使用的哈希函数
 StrSet getStrSet(int (*hash)(const char*)){
-  if(hash==NULL){
-    fprintf(stderr,"err");
-  }
   StrSet out;
   out.hash=hash;
   for(int i=0;i<STR_SET_DEFAULT_ARR_SIZE;i++) out.arr[i]=NULL;

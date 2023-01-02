@@ -33,6 +33,9 @@ return score; }
 struct student->void selfIntroduce(){
 printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age);
 }
+union multiData->void doA(){
+return ;
+}
 LEVEL judLevel(int score){
 if(score>=33)
 return GOOD;

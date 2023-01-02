@@ -1,5 +1,6 @@
 swap|NULL|void|(int* a,int * b)
 getScore|struct student|double|()
 selfIntroduce|struct student|void|()
+doA|union multiData|void|()
 judLevel|NULL|LEVEL|(int score)
 main|NULL|int|()

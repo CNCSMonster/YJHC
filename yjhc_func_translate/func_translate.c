@@ -5,8 +5,9 @@
 int main(){
   //读取，然后打印每个块的语句
   char* tokensPath="..\\out\\func_tokens.txt";
+  char* typesPath="..\\out\\type.txt";
   FILE* fin=fopen(tokensPath,"r");
-  
+  FILE* typeFin=fopen(typesPath,"r");
   init_token_reader(fin);
   TBNode* tmp;
   BlockAction ba;
@@ -25,6 +26,17 @@ int main(){
   }
   del_rest();
   fclose(fin);
+
+  //读取类型,然后打印
+  TypeTbl typeTbl=getTypeTbl(typeFin);
+  //打印每个类型
+  for(int i=0;i<typeTbl.size;i++){
+    printf("\n\n");
+    showType(&typeTbl.types[i]);
+  }
+  delTypeTbl(&typeTbl);
+
+  fclose(typeFin);
 
   return 0;
 }
