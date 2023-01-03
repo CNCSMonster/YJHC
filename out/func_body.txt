@@ -1,3 +1,4 @@
+{ printf("%s",mm); }
 { void (*p)(int); *a=*a+*b; *b=*a-*b; *a=*a-*b; }
 { return score; }
 { printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age); }

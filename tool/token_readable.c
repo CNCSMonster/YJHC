@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../yjhc/mystring.h"
-#include "../yjhc/mystring.c"
+#include "../yjhc_preProcess/mystring.h"
+#include "../yjhc_preProcess/mystring.c"
 
 //输入token编码以及字符字面值文件,然后输出对应格式的字符分析结果到控制台中
 int main(int argc, char* argv[]){

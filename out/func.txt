@@ -1,3 +1,4 @@
+void funcA(const char* mm){ printf("%s",mm); }
 void swap(int* a,int * b){ void (*p)(int); *a=*a+*b; *b=*a-*b; *a=*a-*b; }
 struct student->double getScore(){ return score; }
 struct student->void selfIntroduce(){ printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age); }

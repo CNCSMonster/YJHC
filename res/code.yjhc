@@ -14,6 +14,10 @@ const double pi = 3.1415926;
 int year;
 int month;
 
+void funcA(const char* mm){
+    printf("%s",mm);
+}
+
 //然后是各种自定义类型定义
 typedef enum score_level{    //可以处理typedef语句
     GOOD,

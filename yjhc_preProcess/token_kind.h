@@ -3,33 +3,31 @@
 
 //在该头文件中定义token编号,分类不是很细致,因为实际上用不了分太多
 typedef enum tokenkind{
-  UNKNOWN,        //未知名称,没有确定类型的id,可能是typedef定义的类型别名
-  //控制关键字也分割成小部分
-  IF, 
-  ELIF, 
-  ELSE, 
-  FOR, 
-  DO, 
-  WHILE, 
-  CONTINUE,  
-  BREAK, 
-  RETURN, 
-  TYPE,     //类型名
-  VAR,      //变量名
-  CONST,  //常量名,包括字符串,各种数字,以及使用Const定义的常量
-  SEMICOLON,      //分号
-  COMMA,      //逗号
-  LEFT_PAR,     //左圆括号
-  RIGHT_PAR,  //右圆括号  
-  LEFT_BRACKET,   //左方括号
-  RIGHT_BRACKET,    //右方括号
-  LEFT_BRACE,   //左花括号
-  RIGHT_BRACE,  //右花括号
-  //运算符,包括成员访问符,解引用符(*),取地址符，算术运算符(其中乘号*)以及逻辑运算符
-  //,以及指针类型修饰符(*),需要注意符号复用的处理
+  TYPE,
+  CONST,
+  VAR,
+  CONST_KEYWORD,
+  IF,
+  ELIF,
+  ELSE,
+  DO,
+  WHILE,
+  FOR,
+  RETURN,
+  BREAK,
+  CONTINUE,
   OP,
-  FUNC,   //函数名
-  Tokens_NUM  //函数enum的数量
+  LEFT_PAR,
+  RIGHT_PAR,
+  LEFT_BRACKET,
+  RIGHT_BRACKET,
+  LEFT_BRACE,
+  RIGHT_BRACE,
+  SEMICOLON,
+  COMMA,
+  FUNC,
+  UNKNOWN,
+  Tokens_NUM
 }TokenKind;
 
 
@@ -40,6 +38,7 @@ typedef enum tokenkind{
 const char* tokenStrings[]={
   [UNKNOWN] "unknown",
   [IF]    "keyword if",
+  [CONST_KEYWORD] "keyword const",
   [ELIF]  "keyword else if",
   [ELSE]  "keyword else",
   [FOR] "keyword for",

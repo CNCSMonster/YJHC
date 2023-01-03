@@ -1,6 +1,10 @@
-token add -n 23
+token add -n 24
 #加入3个类型token和变量token
 TYPE CONST VAR
+
+#加入常量定义关键字*1
+CONST_KEYWORD
+
 #加入9个流程控制关键字
 IF ELIF ELSE 
 DO WHILE FOR 

@@ -1,3 +1,4 @@
+funcA|NULL|void|(const char* mm)
 swap|NULL|void|(int* a,int * b)
 getScore|struct student|double|()
 selfIntroduce|struct student|void|()
