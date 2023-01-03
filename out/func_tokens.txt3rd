@@ -122,6 +122,18 @@
 0 union multiData
 23 md
 20 ;
+3 const
+0 int
+23 m
+13 =
+1 5
+20 ;
+3 const
+23 ht
+23 mm
+13 =
+1 5
+20 ;
 0 enum score_level
 23 L
 20 ;

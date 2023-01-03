@@ -293,7 +293,7 @@ int readCase(FILE* fin,FILE* code){
   return 1;
 }
 
-//第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索,TODO
+//第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索
 int token_guess(FILE* fin,FILE* code){
   //一个未知名可能是变量名也可能是常量名,也可能是类型定义,或者变量名或者函数名
   //我们起码需要直到前面一个类型的值
@@ -342,12 +342,12 @@ int token_guess(FILE* fin,FILE* code){
       cur.kind=FUNC;
     }
     //如果curtoken是某个语句的开头而且下一个token是未知名,则这个token是类型定义,下一个token是变量名
-    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA)&&next.kind==UNKNOWN){
+    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA||pre.kind==CONST_KEYWORD)&&next.kind==UNKNOWN){
       cur.kind=TYPE;
       next.kind=VAR;
     }
     //如果cur token是开头token,而且下一个token是*,则这个token是个类型定义
-    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA)
+    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA||pre.kind==CONST_KEYWORD)
       &&strcmp(next.val,"*")==0
     ){
       Token tmpCur=connectToken(cur,next,TYPE,"");
@@ -405,7 +405,10 @@ int code_parse(FILE *fin, FILE *code)
       {
         fprintf(code, "%d %s\n", TYPE, tmp);
       }
-      //判断是否是类型定义关键字
+      //判断是否是常量类型修饰符const
+      else if(strcmp(tmp,"const")==0){
+        fprintf(code,"%d %s\n",CONST_KEYWORD,tmp);
+      }
       //如果是类型定义关键字,则与后面的一个字符串一起组成类型名
       else if (isTypeDefKeyWords(tmp))
       {
