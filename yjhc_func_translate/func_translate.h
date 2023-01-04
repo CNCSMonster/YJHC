@@ -28,8 +28,13 @@
 #include "val_tbl.h"
 #include "val_tbl.c"
 
+#include "func.h"
+#include "func.c"
+
 #include "type.h"
 #include "type.c"
 
+#include "bitmap.h"
+#include "bitmap.c"
 
 

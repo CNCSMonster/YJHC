@@ -100,3 +100,21 @@ val:(null)
 typeName:int
 fields:
 funcs:
+keys:doA#38654705664,name:doA,onwer:union multiData
+
+keys:funcA#0,name:funcA,onwer:(null)
+arg1. name:mm,isConst:0,typeId:0
+
+keys:judLevel#0,name:judLevel,onwer:(null)
+arg1. name:score,isConst:0,typeId:4294967296
+
+keys:getScore#34359738368,name:getScore,onwer:struct student
+
+keys:swap#0,name:swap,onwer:(null)
+arg1. name:a,isConst:0,typeId:4294967297
+arg2. name:b,isConst:0,typeId:4294967297
+
+keys:selfIntroduce#34359738368,name:selfIntroduce,onwer:struct student
+
+keys:main#0,name:main,onwer:(null)
+

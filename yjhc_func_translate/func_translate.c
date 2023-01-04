@@ -7,9 +7,11 @@ int main(){
   char* tokensPath="..\\out\\func_tokens.txt";
   char* typesPath="..\\out\\type.txt";
   char* globalPath="..\\out\\global.txt";
+  char* funcHeadsPath="..\\out\\func_head.txt";
   FILE* fin=fopen(tokensPath,"r");
   FILE* typeFin=fopen(typesPath,"r");
   FILE* globalFin=fopen(globalPath,"r");
+  FILE* funcHeadFin=fopen(funcHeadsPath,"r");
   init_token_reader(fin);
   TBNode* tmp;
   BlockAction ba;
@@ -62,10 +64,16 @@ int main(){
     vector_get(&valTbl.typeTbl.types,index,&type);
     showType(&type);
   }
+
+  //打印函数信息表
+  FuncTbl funcTbl=getFuncTbl(&typeTbl);
+  loadFile_functbl(&funcTbl,funcHeadFin);
+  //然后打印信息,首先打印所有信息,所有的keyVal
+  del_functbl(&funcTbl);
   del_valTbl(&valTbl);
   fclose(typeFin);
   fclose(globalFin);
-
+  fclose(funcHeadFin);
   return 0;
 }
 
