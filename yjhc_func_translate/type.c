@@ -1,169 +1,46 @@
 #include "type.h"
 
-
-//从文件中读取建立类型表,注意,类型表的前面内容要设置为基础类型
-TypeTbl getTypeTbl(FILE* fin){
+TypeTbl getTypeTbl(){
   TypeTbl out;
   out.strIds=getStrIdTable();
-  out.size=0;
-  out.types=NULL;
-  //读取typeTbl里面的内容
-  vector vec=getVector(sizeof(Type));
-  //先加入个未知类型放在底部
+  out.types=getVector(sizeof(Type));
+  //out的第一位保存unknown
   Type unknownType;
   unknownType.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
-  unknownType.kind=UNKNOWN;
-  unknownType.funcs=getStrSet(myStrHash);  //设置使用的哈希函数为NULL,因为不会用到
-  vector_push_back(&vec,&unknownType);
+  unknownType.kind=TYPE_UNKNOW;
+  unknownType.funcs=getStrSet(myStrHash);  
+  vector_push_back(&out.types,&unknownType);
+  return out;
+}
+
+
+//从文件中读取建立类型表,注意,类型表的前面内容要设置为基础类型
+TypeTbl loadFile_typeTbl(FILE* fin){
+
+  TypeTbl out=getTypeTbl();
   //加入基础数据类型
   for(int i=0;i<sizeof(baseTypeNames)/sizeof(baseTypeNames[0]);i++){
-    
-    if(baseTypeNames[i]==NULL) continue;
+    if(i==TYPE_STRUCT||i==TYPE_ENUM||i==TYPE_UNION||i==TYPE_UNKNOW) continue;
     Type toAdd;
     toAdd.kind=i;
     toAdd.funcs=getStrSet(myStrHash);
     toAdd.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
     //放进去的字符串要动态分配空间
     char* key=strcpy(malloc(strlen(baseTypeNames[i])+1),baseTypeNames[i]);
-    putStrId(out.strIds,key,getTypeId(vec.size,0));
-    vector_push_back(&vec,&toAdd);
+    putStrId(out.strIds,key,getTypeId(out.types.size,0));
+    vector_push_back(&out.types,&toAdd);
   }
   int isErr=0;  //用来记录读取过程中是否出现异常
   do{
     //首先判断是否是typedef,如果第一位是typedef,则后面还要读取别名
-    char tmp[2000];
-    char end=myfgets(tmp,"\n",fin);
-    if(end==EOF&&tmp[0]=='\0') break;
-    if(strlen(tmp)==0) continue;
-    char tmp2[100];
-    end=mysgets(tmp2," ",tmp);
-    if(strcmp(tmp2,"typedef")==0){
-      //如果先读到左括号，说明是重命名
-      //如果先读到分号,说明是对已知类型进行重命名
-      end=mysgets(tmp2,"{",tmp);
-      char* track=tmp+strlen("typedef")+1;
-      //如果没有{符,说明这里typedef语句仅仅是给已知类型起别名
-      if(end=='\0'){
-        char oldName[400];
-        char newName[400];
-        //截取旧名,然后读取新名
-        int last=strlen(tmp)-1;
-        //首先从后往前读取掉所有空格来到第一个非空格的字符处
-        while(tmp[last]==' ') last--;
-        tmp[last+1]='\0';
-        //继续往前找到最后一个单词前面第一个空格
-        while(tmp[last]!=' ') last--;
-        //这个位置往后就是新名的名字
-        strcpy(newName,tmp+last+1);
-        tmp[last]='\0';
-        strcpy(oldName,tmp+strlen("typedef")+1);
-        refectorTypeName(oldName);  //格式化旧的名字
-        //然后查找旧的名字对应的id是否存在
-        int id=strToId(out.strIds,oldName);
-        //如果返回-1,说明这个id不存在,设置为对应的unknownid
-        if(id<0){
-          putStrId(out.strIds,oldName,0); //设置绑定该字符为0下标
-          id=0;
-        }
-        //如果返回的id是非负数,则说明存在,绑定新的名字到旧的名字对应的id上
-        putStrId(out.strIds,newName,id);
-      }
-      //读到{先,则{前的名字为类型本名
-      else if(end=='{'){
-        //首先读取到类型名前面,得到类型的本名
-        char baseName[400];
-        end=mysgets(baseName,"{",track);
-        track+=strlen(baseName)+1;
-        refectorTypeName(baseName);
-        //然后注册基础名字
-        putStrId(out.strIds,baseName,getTypeId(vec.size,0));
-        //然后判断类型,读取后面的类型信息
-        mysgets(tmp2," ",baseName);
-        Type type1; //准备一个type
-        char typeStr[800];
-        end=mysgets(typeStr,"}",track);
-        if(end!='}'){
-          isErr=1;
-          break;
-        }
-        track+=strlen(typeStr)+1;
-        if(strcmp(tmp2,"enum")==0){
-          //读取花括号中间enum的信息
-          type1=extractEnum(typeStr);
-        }
-        else if(strcmp(tmp2,"struct")==0){
-          //读取花括号中间struct的信息
-          type1=extractStruct(typeStr);
-        }
-        else if(strcmp(tmp2,"union")==0){
-          //读取花括号间union的信息
-          type1=extractUnion(typeStr);
-        }
-        else{
-          isErr=1;
-          break;
-        }
-        //然后读取type的别名和可能的指针别名,直到读到尽头为止
-        while((end=mysgets(tmp2,",",track))!='\0'){
-          //首先判断前面多少个*号,判断是多少层的别名
-          //首先读取前面*的数量
-          int layer=0;
-          int i=0;
-          while(tmp2[i]!='\0'&&(tmp2[i]==' '||tmp2[i]=='*')){
-            if(tmp2[i]=='*') layer++;
-            i++;
-          }
-          //格式化名字
-          refectorTypeName(tmp2+i);
-          //然后注册
-          int id=getTypeId(vec.size,layer);
-          putStrId(out.strIds,tmp2+i,id);
-          track+=strlen(tmp2)+1;
-        }
-        //处理最后一个部分
-        if(strlen(tmp2)!=0){
-          int layer=0;
-          int i=0;
-          while(tmp2[i]!='\0'&&(tmp2[i]==' '||tmp2[i]=='*')){
-            if(tmp2[i]=='*') layer++;
-            i++;
-          }
-          //格式化名字
-          refectorTypeName(tmp2+i);
-          //然后注册
-          int id=getTypeId(vec.size,layer);
-          putStrId(out.strIds,tmp2+i,id);
-          track+=strlen(tmp2)+1;
-        }
-        vector_push_back(&vec,&type1);
-      }
-    }
-    //首先判断是否是结构体,然后判断是否是普通类型定义
-    else{
-      char name[300];
-      end=mysgets(name,"{",tmp);
-      char* typeStr=tmp+strlen(name)+1;
-      refectorTypeName(name);
-      putStrId(out.strIds,name,getTypeId(vec.size,0));
-      char* end=tmp;
-      while(end<tmp+strlen(tmp)&&*end!='}') end++;
-      *end='\0';
-      Type toAdd;
-      if(strcmp(tmp2,"enum")==0){
-        toAdd=extractEnum(typeStr);
-      }
-      else if(strcmp(tmp2,"struct")==0){
-        toAdd=extractStruct(typeStr);
-      }
-      //然后判断是否是
-      else if(strcmp(tmp2,"union")==0){
-        toAdd=extractUnion(typeStr);
-      }
-      else{
-        isErr=1;
-        break;
-      }
-      vector_push_back(&vec,&toAdd);
+    char str[2000];
+    char end=myfgets(str,"\n",fin);
+    if(end==EOF&&str[0]=='\0') break;
+    if(strlen(str)==0) continue;
+    int jud=loadLine_typetbl(&out,str);
+    if(!jud){
+      isErr=1;
+      break;
     }
     //最后超前读取一位判断是否读取结束
     char c=fgetc(fin);
@@ -173,16 +50,10 @@ TypeTbl getTypeTbl(FILE* fin){
   //如果分析过程中出现异常,删除
   if(isErr){
     printf("err in get typeTbl\n");
-    //删除每个type
-    Type* types=vector_toArr(&vec);
-    for(int i=0;i<vec.size;i++) delType(types+i);
-    free(types);
-    vector_clear(&vec);
+    //清空空间
+    delTypeTbl(&out);
     return out;
   }
-  out.types=vector_toArr(&vec);
-  out.size=vec.size;
-  vector_clear(&vec); //删除里面内容的表面
   return out;
 }
 
@@ -213,6 +84,161 @@ int typeFieldEq(const void* name1,const void* name2){
   char* s1=*(char**)name1;
   char* s2=*(char**)name2;
   return strcmp(s1,s2)==0?1:0;
+}
+
+//类型表加载字符串的类型信息,成功返回非0值,失败返回0
+int loadLine_typetbl(TypeTbl* tbl,char* str){
+  char tmp[100];
+  char end = mysgets(tmp, " ", str);
+  if (strcmp(tmp, "typedef") == 0)
+  {
+    // 如果先读到左括号，说明是重命名
+    // 如果先读到分号,说明是对已知类型进行重命名
+    end = mysgets(tmp, "{", str);
+    char *track = str + strlen("typedef") + 1;
+    // 如果没有{符,说明这里typedef语句仅仅是给已知类型起别名
+    if (end == '\0')
+    {
+      char oldName[400];
+      char newName[400];
+      // 截取旧名,然后读取新名
+      int last = strlen(str) - 1;
+      // 首先从后往前读取掉所有空格来到第一个非空格的字符处
+      while (str[last] == ' ')
+        last--;
+      str[last + 1] = '\0';
+      // 继续往前找到最后一个单词前面第一个空格
+      while (str[last] != ' ')
+        last--;
+      // 这个位置往后就是新名的名字
+      strcpy(newName, str + last + 1);
+      str[last] = '\0';
+      strcpy(oldName, str + strlen("typedef") + 1);
+      refectorTypeName(oldName); // 格式化旧的名字
+      // 然后查找旧的名字对应的id是否存在
+      int id = strToId(tbl->strIds, oldName);
+      // 如果返回-1,说明这个id不存在,设置为对应的unknownid
+      if (id < 0)
+      {
+        putStrId(tbl->strIds, oldName, 0); // 设置绑定该字符为0下标
+        id = 0;
+      }
+      // 如果返回的id是非负数,则说明存在,绑定新的名字到旧的名字对应的id上
+      putStrId(tbl->strIds, newName, id);
+    }
+    // 读到{先,则{前的名字为类型本名
+    else if (end == '{')
+    {
+      // 首先读取到类型名前面,得到类型的本名
+      char baseName[400];
+      end = mysgets(baseName, "{", track);
+      track += strlen(baseName) + 1;
+      refectorTypeName(baseName);
+      // 然后注册基础名字
+      putStrId(tbl->strIds, baseName, getTypeId(tbl->types.size, 0));
+      // 然后判断类型,读取后面的类型信息
+      mysgets(tmp, " ", baseName);
+      Type type1; // 准备一个type
+      char typeStr[800];
+      end = mysgets(typeStr, "}", track);
+      if (end != '}')
+      {
+        return 0;
+      }
+      track += strlen(typeStr) + 1;
+      if (strcmp(tmp, "enum") == 0)
+      {
+        // 读取花括号中间enum的信息
+        type1 = extractEnum(typeStr);
+      }
+      else if (strcmp(tmp, "struct") == 0)
+      {
+        // 读取花括号中间struct的信息
+        type1 = extractStruct(typeStr);
+      }
+      else if (strcmp(tmp, "union") == 0)
+      {
+        // 读取花括号间union的信息
+        type1 = extractUnion(typeStr);
+      }
+      else
+      {
+        return 0;
+      }
+      // 然后读取type的别名和可能的指针别名,直到读到尽头为止
+      while ((end = mysgets(tmp, ",", track)) != '\0')
+      {
+        // 首先判断前面多少个*号,判断是多少层的别名
+        // 首先读取前面*的数量
+        int layer = 0;
+        int i = 0;
+        while (tmp[i] != '\0' && (tmp[i] == ' ' || tmp[i] == '*'))
+        {
+          if (tmp[i] == '*')
+            layer++;
+          i++;
+        }
+        // 格式化名字
+        refectorTypeName(tmp + i);
+        // 然后注册
+        int id = getTypeId(tbl->types.size, layer);
+        putStrId(tbl->strIds, tmp + i, id);
+        track += strlen(tmp) + 1;
+      }
+      // 处理最后一个部分
+      if (strlen(tmp) != 0)
+      {
+        int layer = 0;
+        int i = 0;
+        while (tmp[i] != '\0' && (tmp[i] == ' ' || tmp[i] == '*'))
+        {
+          if (tmp[i] == '*')
+            layer++;
+          i++;
+        }
+        // 格式化名字
+        refectorTypeName(tmp + i);
+        // 然后注册
+        int id = getTypeId(tbl->types.size, layer);
+        putStrId(tbl->strIds, tmp + i, id);
+        track += strlen(tmp) + 1;
+      }
+      vector_push_back(&tbl->types, &type1);
+    }
+  }
+  // 首先判断是否是结构体,然后判断是否是普通类型定义
+  else
+  {
+    char name[300];
+    end = mysgets(name, "{", str);
+    char *typeStr = str + strlen(name) + 1;
+    refectorTypeName(name);
+    putStrId(tbl->strIds, name, getTypeId(tbl->types.size, 0));
+    char *end = str;
+    while (end < str + strlen(str) && *end != '}')
+      end++;
+    *end = '\0';
+    Type toAdd;
+    if (strcmp(tmp, "enum") == 0)
+    {
+      toAdd = extractEnum(typeStr);
+    }
+    else if (strcmp(tmp, "struct") == 0)
+    {
+      toAdd = extractStruct(typeStr);
+    }
+    // 然后判断是否是
+    else if (strcmp(tmp, "union") == 0)
+    {
+      toAdd = extractUnion(typeStr);
+    }
+    else
+    {
+      return 0;
+    }
+    vector_push_back(&tbl->types, &toAdd);
+  }
+  return 1;
 }
 
 //展示type
@@ -515,8 +541,6 @@ void refectorTypeName(char* str){
 }
 
 
-
-//根据类型名字查询一个类型,返回该类型在类型表中的下标
 int findType(TypeTbl* tbl,char* typeName,int* layerRet){
   long long id;
   int typeIndex;
@@ -525,10 +549,9 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
   id=strToId(tbl->strIds,typeName);
   if(id>=0){
     getTypeIndexAndPointerLayer(id,&typeIndex,&pLayer);
-    *layerRet=pLayer;
+    if(layerRet!=NULL) *layerRet=pLayer;
     return typeIndex;
   }
-
   //获取不到则获取类型名字的格式化
   char* ts=strcpy(malloc(strlen(typeName)+1),typeName);
   refectorTypeName(ts);
@@ -542,13 +565,20 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
   ts[i+1]='\0';
   id=strToId(tbl->strIds,ts);
   ts[i+1]='*';
-  getTypeIndexAndPointerLayer(id,&typeIndex,&pLayer);
-  pLayer+=pointerLayer;
-  id=getTypeId(typeIndex,pLayer);
+  //如果找不到这个字符串对应的id,则绑定unknow
+  if(id<0){
+    id=getTypeId(0,pLayer);
+  }else{
+    getTypeIndexAndPointerLayer(id,&typeIndex,&pLayer);
+    pLayer+=pointerLayer;
+    id=getTypeId(typeIndex,pLayer);
+  }
+  //绑定格式化串
   putStrId(tbl->strIds,ts,id);
+  //绑定原始串与id
   putStrId(tbl->strIds,typeName,id);
   free(ts);
-  *layerRet=pLayer;
+  if(layerRet!=NULL) *layerRet=pLayer;
   return typeIndex;
 }
 
@@ -557,6 +587,16 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
 //清空一个type的所有内容
 void delType(Type* type){
   initStrSet(&type->funcs);
+  //TODO,释放fields中hashtbl fields的内容
+  char** keys=malloc(type->fields.keySize*type->fields.size);
+  char**  vals=malloc(type->fields.valSize*type->fields.size);
+  hashtbl_toArr(&type->fields,keys,vals);
+  for(int i=0;i<type->fields.size;i++){
+    free(keys[i]);
+    free(vals[i]);
+  }
+  free(keys);
+  free(vals);
   hashtbl_release(&type->fields);
 }
 
@@ -565,12 +605,14 @@ void delType(Type* type){
 int delTypeTbl(TypeTbl* tbl){
   delStrIdTable(tbl->strIds);
   free(tbl->strIds);
-  for(int i=0;i<tbl->size;i++){
-    delType(&tbl->types[i]);
+  tbl->strIds=NULL;
+  Type* types=vector_toArr(&tbl->types);
+  for(int i=0;i<tbl->types.size;i++){
+    delType(types+i);
   }
-  free(tbl->types);
+  free(types);
+  vector_clear(&tbl->types);
   return 1;
 }
-
 
 

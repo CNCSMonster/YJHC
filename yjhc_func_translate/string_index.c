@@ -16,7 +16,10 @@ int string_id_hash(char* str){
   for(int i=0;i<len;i++){
     hash^=str[i]; //使用位运算大概获得每个位置的特征
   }
-  return (int)hash+len;
+  int tmp=(int)hash+len;
+  tmp%=STRRING_ID_TABLE_ARR_SIZE;
+  tmp=(tmp+STRRING_ID_TABLE_ARR_SIZE)%STRRING_ID_TABLE_ARR_SIZE;
+  return tmp;
 }
 
 

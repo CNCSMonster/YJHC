@@ -25,6 +25,12 @@ int myStrHash(const char* str);
 //从字符串根据指定终结符读取一个字符串
 int mysgets(char* buf,const char* stops,const char* src);
 
+//对字符串去除前后不必要字符
+int myStrStrip(char* str,const char* prefexs,const char* suffixs);
+
+//判断字符串中是否有个字符,如果是返回非0值,如果不是返回0
+int myIsCharInStr(char* str,char c);
+
 int mystrReplace(char* s,char old,char new);
 
 //返回字符传到输入中

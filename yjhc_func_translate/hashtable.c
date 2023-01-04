@@ -197,16 +197,4 @@ void hashtbl_release(hashtbl* htbl){
   }
   free(htbl->nodes);
   htbl->size=0;
-
-
-
-
-
-
-
-
-
-
-
-
 }

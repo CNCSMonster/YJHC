@@ -127,6 +127,36 @@ int isOp(char c){
   return 0;
 }
 
+//对字符串去除前后不必要字符
+int myStrStrip(char* str,const char* prefexs,const char* suffixs){
+  char* st=str;
+  char* end=str+strlen(str)-1;
+  for (int j = 0; j < strlen(prefexs)&&st<=end; j++)
+  {
+    if (*st != prefexs[j])
+      continue;
+    st++;
+    j=-1;
+  }
+  for (int j = 0; j < strlen(suffixs)&&st<=end; j++)
+  {
+    if (*end != suffixs[j])
+      continue;
+    *end = '\0';
+    end--;
+    j=-1;
+  }
+  strcpy(str,st);
+  return 1;
+}
+
+
+//判断字符串中是否有个字符,如果是返回非0值,如果不是返回0
+int myIsCharInStr(char* str,char c){
+  for(int i=0;i<strlen(str);i++) if(c==str[i]) return 1;
+  return 0;
+}
+
 
 //进行一个普普通通的哈希
 int myStrHash(const char* str){

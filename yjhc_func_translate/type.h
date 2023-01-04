@@ -37,6 +37,21 @@ char* baseTypeNames[]={
   [TYPE_UNKNOW] NULL
 };
 
+//准备基础数据类型的默认值
+char* defaultValueOfBaseTypes[]={
+  [TYPE_INT] "0",
+  [TYPE_LONG] "0L",
+  [TYPE_DOUBLE] "0.0L",
+  [TYPE_SHORT] "0",
+  [TYPE_LONGLONG] "0LL",
+  [TYPE_FLOAT] "0.0",
+  [TYPE_ENUM] "0",
+  [TYPE_STRUCT] "{0}",  //虽然但是有的编译器不支持
+  [TYPE_UNION] "{0}",
+  [TYPE_UNKNOW] NULL
+};
+
+
 
 //仅仅支持enum以及非
 typedef struct struct_type{
@@ -47,18 +62,23 @@ typedef struct struct_type{
   StrSet funcs;
 }Type;
 
+//notice,规定第0位保存的内容为unknown类型
 //要求,能够根据字符串快速查找到对应的类型
 typedef struct struct_type_table
 {
   /* data */
-  Type* types;  //动态数组存储table的数量
-  int size;   //记录已经容纳地size的数量
+  vector types;
   //使用一个哈希表绑定类型字符串与对应的(类型,指针层次)对。每对用一个long来保存,long的前32位是类型下标,后32位是指针层次
   StrIdTable strIds;  
 }TypeTbl;
 
+//获取一个只有0位置的unknown数据类型的类型表
+TypeTbl getTypeTbl();
+
+// 获取含有基础数据类型的全局量表
+
 //从文件中读取建立类型表,注意,类型表的前面内容要设置为基础类型
-TypeTbl getTypeTbl(FILE* fin);
+TypeTbl loadFile_typeTbl(FILE* fin);
 
 //根据从strid中取出的long long id分解出对应的kind下标以及指针维数
 //指针维数为0表示就是这个类型本身
@@ -72,6 +92,9 @@ long long getTypeId(int typeIndex,int pointerLayer);
 int typeFieldNameHash(const void* name);
 
 int typeFieldEq(const void* name1,const void* name2);
+
+//类型表加载字符串的类型信息,成功返回非0值,失败返回0
+int loadLine_typetbl(TypeTbl* tbl,char* str);
 
 
 void showType(Type* type);
@@ -89,7 +112,8 @@ Type extractStruct(char* str);
 //格式化类型字符串
 void refectorTypeName(char* str);
 
-//根据类型名字查询一个类型,返回该类型在类型表中的下标
+//根据类型名字查询一个类型,返回该类型在类型表中的下标以及该类型名对应的该类型的指针层次
+//如果查找成功,返回的类型下标为正数,如果查找失败,返回为0,而0位置保存unknown类型
 int findType(TypeTbl* tbl,char* typeName,int* layerRet);
 
 //清空一个type的所有内容

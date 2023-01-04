@@ -10,7 +10,7 @@
 struct string_index_node{
   struct string_index_node* next;
   char* str;
-  int id;
+  long long id;
 };
 
 //×Ö·û´®ÏÂ±ê±í

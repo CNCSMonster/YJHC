@@ -7,14 +7,14 @@
 #define STRRING_ID_TABLE_ARR_SIZE 200
 
 //该表用来
-struct string_index_node{
-  struct string_index_node* next;
+struct string_id_node{
+  struct string_id_node* next;
   char* str;
   int id;
 };
 
-typedef struct string_index_table{
-  struct string_index_node* string_id_arr[STRRING_ID_TABLE_ARR_SIZE];
+typedef struct string_id_table{
+  struct string_id_node* string_id_arr[STRRING_ID_TABLE_ARR_SIZE];
 }*StrIdTable;
 
 //获得新哈希表

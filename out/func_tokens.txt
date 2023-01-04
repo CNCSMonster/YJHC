@@ -128,12 +128,6 @@
 13 =
 1 5
 20 ;
-3 const
-0 ht
-2 mm
-13 =
-1 5
-20 ;
 0 enum score_level
 2 L
 20 ;

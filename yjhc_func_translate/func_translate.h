@@ -25,7 +25,8 @@
 
 #include "sentence_kind.h"
 
-#include "var_tbl.h"
+#include "val_tbl.h"
+#include "val_tbl.c"
 
 #include "type.h"
 #include "type.c"

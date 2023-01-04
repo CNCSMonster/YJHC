@@ -3,6 +3,9 @@
 #define N a=M;
 #define M 3
 #define T printf("N=M=%d",M); const double pi = 3.1415926;
+const int minutePerHour=60;
+const float ggb;
+const double* mm;
 int year;
 int month;
 void funcA(const char* mm){
@@ -53,7 +56,6 @@ do int a=1; while(0);
 struct student stu1;
 union multiData md;
 const int m=5;
-const ht mm=5;
 enum score_level L;
 T
 stu1.selfIntroduce();

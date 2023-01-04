@@ -1,0 +1,58 @@
+#ifndef _VAR_TBL_H
+#define _VAR_TBL_H
+
+#include "vector.h"
+#include "hashtable.h"
+#include "type.h"
+
+//准备量表数据结构,该结构用来保存全局变量名常量名以及对应量的类型
+
+
+//首先准备量类型
+typedef struct struct_val{
+  char* name;   //记录量的名字
+  int isConst;  //记录是常量还是变量,该值为非0值表示是常量，为0表示是变量
+  char* val;  //如果是常量,则保存常量的值
+}Val;
+
+
+//然后准备量表类型
+typedef struct struct_val_tbl{
+  //用一个可变长数组以及一个从字符串映射到下标的数据结构保存val信息
+  vector vals;
+  StrIdTable valIds;
+  //再保存一个变量名与类型名的映射
+  hashtbl valToType;
+  //局部类型表
+  TypeTbl typeTbl;  //可以定义一个空的类型表
+
+  //局部类型表,对于局部定义的类型可以在这里查询,TODO,但是笔者不打算实现局部类型
+  struct struct_val_tbl* pre;   //上一个量表
+  struct struct_val_tbl* next;  //下一个量表
+}ValTbl;
+
+
+//创建一个量表,创建该量表时要指定使用的类型表
+ValTbl getValTbl(TypeTbl typeTbl);
+
+//从文件加载全局变量信息表,成功返回非0值，失败返回0
+int loadFromFile_valtbl(ValTbl* valTbl,FILE* fin);
+
+//从一个量定义语句中加载量到量表中，成功返回非0值，失败返回0
+int loadLine_valtbl(ValTbl* val_tbl,char* str);
+
+//获取一个量
+Val getVal(char* name,int isConst,char* defaultVal);
+
+
+//往量表中加入值
+void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName);
+
+//删除一个量表
+void del_valTbl(ValTbl* valTbl);
+
+//删除一个量
+void delVal(Val* val);
+
+
+#endif
