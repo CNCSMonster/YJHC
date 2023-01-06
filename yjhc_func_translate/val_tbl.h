@@ -21,8 +21,10 @@ typedef struct struct_val_tbl{
   //用一个可变长数组以及一个从字符串映射到下标的数据结构保存val信息
   vector vals;
   StrIdTable valIds;
+
   //再保存一个变量名与类型名的映射
   hashtbl valToType;
+  
   //局部类型表
   TypeTbl typeTbl;  //可以定义一个空的类型表
 
@@ -43,6 +45,14 @@ int loadLine_valtbl(ValTbl* val_tbl,char* str);
 
 //获取一个量
 Val getVal(char* name,int isConst,char* defaultVal);
+
+//从局部变量表开始从局部变量根据变量名查找变量的信息,包括变量类型以及变量的名字,值等信息
+//查找成功返回非0值,查找失败返回0
+//通过retVal指针返回val的基本信息,通过retType返回type的基本信息,通过typeLayer返回type对应的基本type的指针层次
+//比如查找int* a;语句定义的变量a
+//返回的基本类型为int,返回的指针层次为0
+int findVal(ValTbl* curTbl,char* valName,Val* retVal,Type* retType,int* typeLayer);
+
 
 
 //往量表中加入值

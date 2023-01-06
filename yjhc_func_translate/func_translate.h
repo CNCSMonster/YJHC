@@ -1,40 +1,39 @@
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef _FUNC_TRANSLATE_H
+#define _FUNC_TRANSLATE_H
 
-//声明translate要用到的各个文件的预编译指令
-#include "token_reader.c"
-#include "token_reader.h"
-
-#include "../yjhc_preProcess/token.h"
-#include "../yjhc_preProcess/token.c"
-
-#include "../yjhc_preProcess/mystring.h"
-#include "../yjhc_preProcess/mystring.c"
-
-#include "string_index.h"
-#include "string_index.c"
 
 #include "str_set.h"
-#include "str_set.c"
-
-#include "vector.h"
-#include "vector.c"
-
-#include "hashtable.h"
-#include "hashtable.c"
-
-#include "sentence_kind.h"
-
-#include "val_tbl.h"
-#include "val_tbl.c"
-
+#include "string_index.h"
+#include "syntax_symbol.h"
 #include "func.h"
-#include "func.c"
-
 #include "type.h"
-#include "type.c"
+#include "val_tbl.h"
+#include "token_reader.h"
 
-#include "bitmap.h"
-#include "bitmap.c"
+FILE* ft_fout;  //函数使用的输出
+
+//一些函数翻译用到的内容
+//然后是正式开始翻译过程
+
+int func_translate(FILE* funcFout,ValTbl* gloableValTbl,FuncTbl* funcTbl);
 
 
+//单句翻译,传入的参数为tokens,funcFout,还有局部块partialValTbl,以及全局函数表funcTbl
+int func_translateSingleSentence(TBNode* tokens,FILE* funcFout,ValTbl* gloableValTbl,ValTbl* partialValTbl,FuncTbl* funcTbl);
+
+
+/*
+不同类型句子的翻译方法
+*/
+
+
+//翻译结束后动作
+
+
+
+
+
+
+
+
+#endif

@@ -50,6 +50,9 @@ int loadLine_functbl(FuncTbl* funcTbl,char* str);
 //查找函数,查找到返回函数指针,没有查找到返回NULL
 Func* findFunc(FuncTbl* funcTbl,char* funcName,char* owner);
 
+//展示一个函数
+void showFunc(Func* func);
+
 void del_func(Func* func);
 
 //释放函数表空间

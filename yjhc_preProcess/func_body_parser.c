@@ -313,6 +313,10 @@ int token_guess(FILE* fin,FILE* code){
         delToken(next);
         cur=tmpCur;
       }
+      //处理typedef可能的情况
+      if(pre.kind==TYPEDEF_KEYWORD&&next.kind==UNKNOWN&&next.val!=NULL){
+        next.kind=TYPE;
+      }
       if(next.val!=NULL){
         ungetToken(fin,next);delToken(next);
       }
@@ -340,6 +344,11 @@ int token_guess(FILE* fin,FILE* code){
     //如果下一个token是左括号,则该next是函数名,这是唯一一种这个量是函数调用的函数名的情况
     if(next.kind==LEFT_PAR){
       cur.kind=FUNC;
+    }
+    //如果上一个词是typedef,则该类型是type，下一个类型是type
+    else if(pre.kind==TYPEDEF_KEYWORD){
+      cur.kind=TYPE;
+      next.kind=TYPE;
     }
     //如果curtoken是某个语句的开头而且下一个token是未知名,则这个token是类型定义,下一个token是变量名
     else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA||pre.kind==CONST_KEYWORD)&&next.kind==UNKNOWN){
@@ -408,6 +417,10 @@ int code_parse(FILE *fin, FILE *code)
       //判断是否是常量类型修饰符const
       else if(strcmp(tmp,"const")==0){
         fprintf(code,"%d %s\n",CONST_KEYWORD,tmp);
+      }
+      //判断是否是类型重命名关键字typedef
+      else if(strcmp(tmp,"typedef")==0){
+        fprintf(code,"%d %s\n",TYPEDEF_KEYWORD,tmp);
       }
       //如果是类型定义关键字,则与后面的一个字符串一起组成类型名
       else if (isTypeDefKeyWords(tmp))

@@ -8,6 +8,3 @@ gcc yjhc_preProcess\func_split.c -o exe\fs
 gcc yjhc_preProcess\func_body_parser.c -o exe\fbp
 @REM 准备read工具到out中
 gcc tool\token_readable.c -o out\read
-@REM 编译函数编译器
-gcc yjhc_func_translate\func_translate.c -o yjhc_func_translate\func_translate
-

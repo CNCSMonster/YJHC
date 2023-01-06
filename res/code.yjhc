@@ -98,6 +98,9 @@ int main(){
     struct student stu1;
     union multiData md;
     const int m=5;
+    typedef int MyInt;
+    MyInt th;
+    typedef union multiData MD;
     enum score_level L;
     T
     stu1.selfIntroduce();

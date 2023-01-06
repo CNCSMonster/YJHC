@@ -1,5 +1,25 @@
 #include "type.h"
 
+//获取全局类型表,里面有基础数据类型
+TypeTbl getGlobalTypeTbl(){
+  TypeTbl out=getTypeTbl();
+  //加入基础数据类型
+  for(int i=0;i<sizeof(baseTypeNames)/sizeof(baseTypeNames[0]);i++){
+    if(i==TYPE_STRUCT||i==TYPE_ENUM||i==TYPE_UNION||i==TYPE_UNKNOW) continue;
+    Type toAdd;
+    toAdd.kind=i;
+    toAdd.funcs=getStrSet(myStrHash);
+    toAdd.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
+    //放进去的字符串要动态分配空间
+    char* key=strcpy(malloc(strlen(baseTypeNames[i])+1),baseTypeNames[i]);
+    putStrId(out.strIds,key,getTypeId(out.types.size,0));
+    vector_push_back(&out.types,&toAdd);
+  }
+  return out;
+}
+
+
+
 TypeTbl getTypeTbl(){
   TypeTbl out;
   out.strIds=getStrIdTable();
@@ -15,21 +35,7 @@ TypeTbl getTypeTbl(){
 
 
 //从文件中读取建立类型表,注意,类型表的前面内容要设置为基础类型
-TypeTbl loadFile_typeTbl(FILE* fin){
-
-  TypeTbl out=getTypeTbl();
-  //加入基础数据类型
-  for(int i=0;i<sizeof(baseTypeNames)/sizeof(baseTypeNames[0]);i++){
-    if(i==TYPE_STRUCT||i==TYPE_ENUM||i==TYPE_UNION||i==TYPE_UNKNOW) continue;
-    Type toAdd;
-    toAdd.kind=i;
-    toAdd.funcs=getStrSet(myStrHash);
-    toAdd.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
-    //放进去的字符串要动态分配空间
-    char* key=strcpy(malloc(strlen(baseTypeNames[i])+1),baseTypeNames[i]);
-    putStrId(out.strIds,key,getTypeId(out.types.size,0));
-    vector_push_back(&out.types,&toAdd);
-  }
+int loadFile_typeTbl(TypeTbl* tbl, FILE* fin){
   int isErr=0;  //用来记录读取过程中是否出现异常
   do{
     //首先判断是否是typedef,如果第一位是typedef,则后面还要读取别名
@@ -37,7 +43,7 @@ TypeTbl loadFile_typeTbl(FILE* fin){
     char end=myfgets(str,"\n",fin);
     if(end==EOF&&str[0]=='\0') break;
     if(strlen(str)==0) continue;
-    int jud=loadLine_typetbl(&out,str);
+    int jud=loadLine_typetbl(tbl,str);
     if(!jud){
       isErr=1;
       break;
@@ -49,12 +55,10 @@ TypeTbl loadFile_typeTbl(FILE* fin){
   }while(1);
   //如果分析过程中出现异常,删除
   if(isErr){
-    printf("err in get typeTbl\n");
-    //清空空间
-    delTypeTbl(&out);
-    return out;
+    printf("err in loadFile\n");
+    return 0;
   }
-  return out;
+  return 1;
 }
 
 //根据从strid中取出的long long id分解出对应的kind下标以及指针维数
@@ -243,6 +247,9 @@ int loadLine_typetbl(TypeTbl* tbl,char* str){
 
 //展示type
 void showType(Type* type){
+  //打印类型名字
+  printf("%s\n",typeKindName[type->kind]);
+
   //取出所有变量还有类型以便于打印
   char** fields=malloc(sizeof(char*)*type->fields.size);
   char** fieldTypes=malloc(sizeof(char*)*type->fields.size);

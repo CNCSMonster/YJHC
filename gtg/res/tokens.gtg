@@ -1,6 +1,9 @@
-token add -n 24
+token add -n 25
 #加入3个类型token和变量token
 TYPE CONST VAR
+
+#加入类型重定义关键键字
+TYPEDEF_KEYWORD
 
 #加入常量定义关键字*1
 CONST_KEYWORD

@@ -130,7 +130,12 @@ Func* findFunc(FuncTbl* funcTbl,char* funcName,char* owner){
   //查找主人的编号
   long long typeId;
   int retLayer;
-  int typeIndex=findType(funcTbl->globalTypeTbl,owner,&retLayer);
+  int typeIndex;
+  if(owner!=NULL)
+    typeIndex=findType(funcTbl->globalTypeTbl,owner,&retLayer);
+  else{
+    typeIndex=0;
+  }
   if(typeIndex==0){
     typeId=getTypeId(typeIndex,0);
   }
@@ -146,18 +151,26 @@ Func* findFunc(FuncTbl* funcTbl,char* funcName,char* owner){
 }
 
 void del_func(Func* func){
-  printf("name:%s,onwer:%s\n",func->func_name,func->owner);
+  // showFunc(func);
   if(func->owner!=NULL) free(func->owner);
   free(func->func_name);
   for(int i=0;i<func->args.size;i++){
     Arg arg;
     vector_get(&func->args,i,&arg);
-    printf("arg%d. name:%s,isConst:%d,typeId:%lld\n",i+1,arg.name,arg.isConst,arg.typeId);
     if(arg.name!=NULL) free(arg.name);
   }
   vector_clear(&func->args);
 }
 
+//展示一个函数
+void showFunc(Func* func){
+  printf("name:%s,onwer:%s\n",func->func_name,func->owner);
+  for(int i=0;i<func->args.size;i++){
+    Arg arg;
+    vector_get(&func->args,i,&arg);
+    printf("arg%d. name:%s,isConst:%d,typeId:%lld\n",i+1,arg.name,arg.isConst,arg.typeId);
+  }
+}
 
 
 //释放函数表空间
@@ -168,10 +181,11 @@ void del_functbl(FuncTbl* funcTbl){
   hashtbl_toArr(&funcTbl->funcs,keys,funcs);
   for(int i=0;i<funcTbl->funcs.size;i++){
     //TODO，调试语句,在删除的时候查看信息
-    printf("keys:%s,",keys[i]);
+    // printf("keys:%s,",keys[i]);
     free(keys[i]);
     del_func(funcs[i]);
-    printf("\n");
+    free(funcs[i]);
+    // printf("\n");
   }
   free(keys);
   free(funcs);

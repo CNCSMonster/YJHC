@@ -37,6 +37,20 @@ char* baseTypeNames[]={
   [TYPE_UNKNOW] NULL
 };
 
+char* typeKindName[]={
+  [TYPE_INT] "int",
+  [TYPE_SHORT] "short",
+  [TYPE_LONG] "long",
+  [TYPE_LONGLONG] "long long",
+  [TYPE_FLOAT] "float",
+  [TYPE_DOUBLE] "double",
+  [TYPE_ENUM] "enum",
+  [TYPE_STRUCT] "struct",
+  [TYPE_UNION] "union",
+  [TYPE_UNKNOW] "unknown"
+};
+
+
 //准备基础数据类型的默认值
 char* defaultValueOfBaseTypes[]={
   [TYPE_INT] "0",
@@ -72,13 +86,17 @@ typedef struct struct_type_table
   StrIdTable strIds;  
 }TypeTbl;
 
+//获取全局类型表,里面有基础数据类型
+TypeTbl getGlobalTypeTbl();
+
 //获取一个只有0位置的unknown数据类型的类型表
 TypeTbl getTypeTbl();
 
 // 获取含有基础数据类型的全局量表
 
 //从文件中读取建立类型表,注意,类型表的前面内容要设置为基础类型
-TypeTbl loadFile_typeTbl(FILE* fin);
+//加载成功返回非0值,加载失败返回0
+int loadFile_typeTbl(TypeTbl* tbl,FILE* fin);
 
 //根据从strid中取出的long long id分解出对应的kind下标以及指针维数
 //指针维数为0表示就是这个类型本身

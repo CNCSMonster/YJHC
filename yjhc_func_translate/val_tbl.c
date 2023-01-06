@@ -124,6 +124,43 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
   }
 }
 
+
+//从局部变量表开始从局部变量根据变量名查找变量的信息,包括变量类型以及变量的名字,值等信息
+//查找成功返回非0值,查找失败返回0
+//通过retVal指针返回val的基本信息,通过retType返回type的基本信息,通过typeLayer返回type对应的基本type的指针层次
+//比如查找int* a;语句定义的变量a
+//返回的基本类型为int,返回的指针层次为0
+int findVal(ValTbl* curTbl,char* valName,Val* retVal,Type* retType,int* typeLayer){
+  //首先查找变量,从当前表开始往上逐层查找
+  while(curTbl!=NULL){
+    //第一步,根据变量名字查找对应的下标
+    int id=strToId(curTbl->valIds,valName);
+    //如果id小于0,说明这个表没有这个量
+    if(id<0){
+      //往之前的表查找这个量
+      curTbl=curTbl->pre;
+      continue;
+    }
+    vector_get(&curTbl->vals,id,retVal);
+    //获取类型名
+    char* typeName; //获取类型名
+    hashtbl_get(&curTbl->valToType,&valName,&typeName);
+    //从类型表查找类型,首先查找类型名,然后根据类型名查找
+    int typeIndex=0;
+    do{
+      int typeIndex=findType(&curTbl->typeTbl,typeName,typeLayer);
+      vector_get(&curTbl->typeTbl.types,typeIndex,retType);
+      curTbl=curTbl->pre;
+    }while(retType->kind==UNKNOWN&&curTbl!=NULL);
+    return 1;
+  }
+  return 0; //没有查找成功
+}
+
+
+
+
+
 //获取一个量
 Val getVal(char* name,int isConst,char* defaultVal){
   Val val;

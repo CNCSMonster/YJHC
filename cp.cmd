@@ -17,7 +17,4 @@ exe\fs out/func.txt out/func_head.txt out/func_body.txt
 ::使用func_body_parser对函数体文件func_body.txt的内容进行词法分析,输出token序列到func_tokens中
 exe\fbp out/func_body.txt out/func_tokens.txt
 
-chdir yjhc_func_translate
-func_translate>0.txt
-chdir ..
 
