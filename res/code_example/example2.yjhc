@@ -1,0 +1,7 @@
+
+void doA(){
+}
+
+int main(){
+    return 1;
+}

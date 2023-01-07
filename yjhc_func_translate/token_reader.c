@@ -7,10 +7,15 @@ void init_token_reader(FILE* fin){
   head.last=NULL;
   head.next=NULL;
   tail=&head;
+  ifSplitAfterAdd=0;
+  token_reader_blocks=0;
 }
 
 //返回一条语句,通过函数指针返回对块的进出情况的判断,以及输出是否要换行的判断
-TBNode* readTokenSentence(BlockAction* blockAction,PrintAction* printAction){
+TBNode* readTokenSentence(ActionSet* actionSet){
+  PrintAction* printAction=&(actionSet->printAction);
+  BlockAction blockAction;
+  //直接返回的情况,结束后分割
   //语法制导翻译-part1:分割+打印+块动作翻译
   while(1){
     int symbol=ssStack.next==NULL?ssStack.kind:ssStack.next->kind;
@@ -24,12 +29,6 @@ TBNode* readTokenSentence(BlockAction* blockAction,PrintAction* printAction){
       return ret;
     }
     //否则正常进行
-    //先把token放进链表里面
-    tail->next=malloc(sizeof(TBNode));
-    tail->next->last=tail;
-    tail=tail->next;
-    tail->next=NULL;
-    tail->token=newToken;
 
     int token=newToken.kind;
     enum BlockAction* m;
@@ -39,7 +38,10 @@ TBNode* readTokenSentence(BlockAction* blockAction,PrintAction* printAction){
       *printAction=PrintAction_Tbl[symbol][token];
     //然后块动作分析
     if(BlockAction_Tbl[symbol][token]!=NOT_DEFINE)
-      *blockAction=BlockAction_Tbl[symbol][token];
+      blockAction=BlockAction_Tbl[symbol][token];
+    if(blockAction==BlockIn) token_reader_blocks++;
+    else if(blockAction==BlockOut) token_reader_blocks--;
+    actionSet->blocks=token_reader_blocks;
     //然后栈动作分析
     //先判断是否弹出
     if(StackPopAction_Tbl[symbol][token]==Pop){
@@ -57,17 +59,41 @@ TBNode* readTokenSentence(BlockAction* blockAction,PrintAction* printAction){
       add->next=ssStack.next;
       ssStack.next=add;
     }
+    TBNode* ret=NULL;
     //最后判断是否分割,如果分割，就返回并退出函数
-    if(SplitAction_Tbl[symbol][token]==SPLIT){
-      TBNode* ret=head.next;
+    if((SplitPreAction_Tbl[symbol][token]==SPLITPRE||ifSplitAfterAdd)&&head.next!=NULL){
+      ret=head.next;
       head.next=NULL;
       tail=&head;
-      return ret;
+      if(ifSplitAfterAdd) ifSplitAfterAdd=0;
     }
+    //根据splitAfterAction判断下一轮的SplitAfterAction
+    if(SplitAfterAction_Tbl[symbol][token]==SPLITAFTER){
+      ifSplitAfterAdd=1;
+    }
+    //然后把token放进链表里面
+    tail->next=malloc(sizeof(TBNode));
+    tail->next->last=tail;
+    tail=tail->next;
+    tail->next=NULL;
+    tail->token=newToken;
+    //最后判断是否要分割
+    if(ret!=NULL) return ret;
   }
   return NULL;  //返回NULL表示读取结束
 }
 
+
+//打印tokenLine的语句信息
+void show_tokenLine(TBNode* tokens){
+  //从左到右打印
+  TBNode* track=tokens;
+  while(track->next!=NULL){
+    printf("%s ",track->token.val);
+    track=track->next;
+  }
+  if(track!=NULL) printf("%s",track->token.val);
+}
 
 
 void del_tokenLine(TBNode* tokens){
@@ -86,5 +112,11 @@ void del_tokenLine(TBNode* tokens){
 void del_rest_token_reader(){
   if(head.next!=NULL){
     del_tokenLine(head.next);
+  }
+  //同时要释放栈里的所有内容
+  while(ssStack.next!=NULL){
+    struct syntaxSymbolStack* tmp=ssStack.next;
+    ssStack.next=tmp->next;
+    free(tmp);
   }
 }

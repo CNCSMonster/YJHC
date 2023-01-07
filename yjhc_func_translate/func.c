@@ -73,37 +73,8 @@ int loadLine_functbl(FuncTbl* funcTbl,char* str){
     str += strlen(tmp) + 1;
     if (strlen(tmp) == 0)
       continue;
-    // 首先把这个字符串分成两个部分,一个部分是参数名,一个部分是参数类型
-    char tmp2[100];
-    char end2=mysgets(tmp2," ",tmp);
-    int isConst=0;
-    if(strcmp(tmp2,"const")==0){
-      strcpy(tmp,tmp+strlen(tmp2)+1);
-    }
-    int i=strlen(tmp)-1;
-    while(tmp[i]!=' '&&tmp[i]!='*') i--;
-    char typeName[200];
-    char oldChar=tmp[i+1];
-    tmp[i+1]='\0';
-    strcpy(typeName,tmp);
-    refectorTypeName(typeName);
-    long long typeId;
-    int retLayer;
-    int index=findType(funcTbl->globalTypeTbl,typeName,&retLayer);
-    if(index==0){
-      typeId=getTypeId(index,0);
-    }
-    else{
-      typeId=getTypeId(index,retLayer);
-    }
-    tmp[i+1]=oldChar;
-    char valName[200];
-    strcpy(valName,tmp+i+1);
-    Arg arg={
-      .name=strcpy(malloc(strlen(valName)+1),valName),
-      .isConst=isConst,
-      .typeId=typeId
-    };
+    Arg arg;
+    extractArgFromLine(funcTbl->globalTypeTbl,&arg,tmp);
     vector_push_back(&toAdd->args,&arg);
   } while (end != ')');
   //然后注册函数
@@ -124,6 +95,63 @@ int loadLine_functbl(FuncTbl* funcTbl,char* str){
   return 1;
 }
 
+
+//从一个字符串里面提取参数定义信息,使用到一个类型表
+int extractArgFromLine(TypeTbl *typeTbl, Arg *retArg, char* argStr)
+{
+  // 首先把这个字符串分成两个部分,一个部分是参数名,一个部分是参数类型
+  char tmp2[100];
+  char end2 = mysgets(tmp2, " ", argStr);
+  int isConst = 0;
+  if (strcmp(tmp2, "const") == 0)
+  {
+    strcpy(argStr, argStr + strlen(tmp2) + 1);
+    isConst=1;
+  }
+  int i = strlen(argStr) - 1;
+  while (argStr[i] != ' ' && argStr[i] != '*')
+    i--;
+  char typeName[200];
+  char oldChar = argStr[i + 1];
+  argStr[i + 1] = '\0';
+  strcpy(typeName, argStr);
+  refectorTypeName(typeName);
+  long long typeId;
+  int retLayer;
+  int index = findType(typeTbl, typeName, &retLayer);
+  argStr[i + 1] = oldChar;
+  char valName[200];
+  strcpy(valName, argStr + i + 1);
+  i=strlen(valName)-1;
+  int baseLayer=0;  //考虑到传入数组的情况
+  if(valName[i]==']'){
+    int rightBracketNum=1;
+    valName[i]='\0';
+    i--;
+    while(i>=0&&(rightBracketNum!=0||valName[i]!=']')){
+      if(valName[i]=='['){
+        baseLayer++;
+        rightBracketNum--;
+      }
+      else if(valName[i]==']') rightBracketNum++;
+      valName[i]='\0';
+      i--;
+    }
+  }
+  retLayer+=baseLayer;
+  if (index == 0)
+  {
+    typeId = getTypeId(index, 0);
+  }
+  else
+  {
+    typeId = getTypeId(index, retLayer);
+  }
+  retArg->name=strcpy(malloc(strlen(valName) + 1), valName);
+  retArg->isConst=isConst;
+  retArg->typeId=typeId;
+
+}
 
 //查找函数,查找到返回函数指针,没有查找到返回NULL
 Func* findFunc(FuncTbl* funcTbl,char* funcName,char* owner){
@@ -165,10 +193,18 @@ void del_func(Func* func){
 //展示一个函数
 void showFunc(Func* func){
   printf("name:%s,onwer:%s\n",func->func_name,func->owner);
+  //打印返回类型
+  int retIndex;
+  int retLayer;
+  getTypeIndexAndPointerLayer(func->retTypeId,&retIndex,&retLayer);
+  printf("retTypeIndex:%d,retTypeLayer:%d\n",retIndex,retLayer);
   for(int i=0;i<func->args.size;i++){
     Arg arg;
     vector_get(&func->args,i,&arg);
-    printf("arg%d. name:%s,isConst:%d,typeId:%lld\n",i+1,arg.name,arg.isConst,arg.typeId);
+    int typeIndex;
+    int pointerLayer;
+    getTypeIndexAndPointerLayer(arg.typeId,&typeIndex,&pointerLayer);
+    printf("arg%d. name:%s,isConst:%d,typeIndex:%d,pointerLayer:%d\n",i+1,arg.name,arg.isConst,typeIndex,pointerLayer);
   }
 }
 

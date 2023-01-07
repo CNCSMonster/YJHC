@@ -1,10 +1,15 @@
- const double pi = 3.1415926;
+ void addA(){
+}
+void addB(){
+}
+const double pi = 3.1415926;
 const int minutePerHour=60;
 const float ggb;
 const double* mm;
 int year;
 int month;
 void funcA(const char* mm){
+for(int i=1;i<10;i++) int m=i;
 printf("%s",mm);
 }
 typedef enum score_level{ GOOD,
@@ -47,7 +52,7 @@ return NORMAL;
 }else
 return BAD;
 }
-int main(){
+int main(int argc,char* argv[]){
 do int a=1; while(0);
 struct student stu1;
 union multiData md;

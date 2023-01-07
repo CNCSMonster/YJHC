@@ -1,0 +1,39 @@
+
+#初始化
+init
+
+#加入栈符号
+run symbols.gtg
+#加入词法单元
+run tokens.gtg
+#加入动作种类
+run actionkind.gtg
+#分析动作的种类和各种动作
+
+
+#首先加入打印动作指导表
+run PrintAction.gtg
+
+
+
+#加入块动作指导
+run BlockAction.gtg
+
+
+#加入压弹栈动作指导
+run StackAction.gtg
+
+
+#加入新token加入前分割动作指导
+run SplitPreAction.gtg
+
+
+
+#加入新token加入后分割动作指导
+run SplitAfterAction.gtg
+
+#导出语法表
+output -g yjhc.tbl
+
+#退出程序
+exit

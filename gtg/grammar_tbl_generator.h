@@ -2,10 +2,10 @@
 #define _GRAMMAR_TBL_GENERATOR_H
 
 
-#include "hashset.h"
+#include "..\\mystl\\hashset.h"
 #include "mstr.h"
-#include "string_id.h"
-#include "id_string.h"
+#include "..\\mystl\\string_id.h"
+#include "..\\mystl\\id_string.h"
 #include "myprint.h"
 
 

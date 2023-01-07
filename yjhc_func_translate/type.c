@@ -247,8 +247,9 @@ int loadLine_typetbl(TypeTbl* tbl,char* str){
 
 //展示type
 void showType(Type* type){
-  //打印类型名字
-  printf("%s\n",typeKindName[type->kind]);
+  //打印类型种类名字
+  printf("typeKindName:%s\n",typeKindName[type->kind]);
+  //然后打印类型名字
 
   //取出所有变量还有类型以便于打印
   char** fields=malloc(sizeof(char*)*type->fields.size);

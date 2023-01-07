@@ -12,7 +12,18 @@
         "gm0": "cpp",
         "token.c": "cpp",
         "mystring.c": "cpp",
-        "token.h": "c"
+        "token.h": "c",
+        "hashset.c": "cpp",
+        "string_id.c": "cpp",
+        "hashset.h": "c",
+        "string_id.h": "c",
+        "id_string.h": "c",
+        "myprint.h": "c",
+        "string_index.c": "cpp",
+        "str_set.c": "cpp",
+        "vector.h": "c",
+        "hashtable.h": "c",
+        "val_tbl.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

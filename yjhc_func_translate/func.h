@@ -1,9 +1,7 @@
 #ifndef _FUNC_H
 #define _FUNC_H
 
-#include "vector.h"
-#include "hashtable.h"
-#include "bitmap.h"
+#include "stluse.h"
 #include "type.h"
 
 //形式参数信息
@@ -46,6 +44,9 @@ int loadFile_functbl(FuncTbl* funcTbl,FILE* fin);
 
 //加载一个字符串
 int loadLine_functbl(FuncTbl* funcTbl,char* str);
+
+//从一个字符串里面提取参数定义信息,使用到一个类型表
+int extractArgFromLine(TypeTbl *typeTbl, Arg *retArg, char* argStr);
 
 //查找函数,查找到返回函数指针,没有查找到返回NULL
 Func* findFunc(FuncTbl* funcTbl,char* funcName,char* owner);

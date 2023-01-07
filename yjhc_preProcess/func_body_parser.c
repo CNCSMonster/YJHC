@@ -1,12 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "mystring.h"
-#include "mystring.c"
-#include "token_kind.h"
-#include "string.h"
-#include "token.h"
-#include "token.c"
+#include "func_body_parser.h"
+
 
 #define ERR printf("something wrong in parser")
 
@@ -18,6 +11,9 @@ int token_addlayer(FILE* fin,FILE* code);
 
 //第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索,TODO
 int token_guess(FILE* fin,FILE* code);
+
+//第五遍扫描,确定函数指针,给函数指针变量标记为函数
+int token_findFuncPointer();
 
 //ps四次遍历过后不存在unknown类型的token,所有token都被确定为类型/界符/保留字/函数名/量名
 
@@ -293,7 +289,7 @@ int readCase(FILE* fin,FILE* code){
   return 1;
 }
 
-//第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索
+//第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索,去除所有未知token
 int token_guess(FILE* fin,FILE* code){
   //一个未知名可能是变量名也可能是常量名,也可能是类型定义,或者变量名或者函数名
   //我们起码需要直到前面一个类型的值
@@ -385,6 +381,13 @@ int token_guess(FILE* fin,FILE* code){
   delToken(pre);
   return 1;
 }
+
+//第五遍扫描,确定函数指针,给函数指针变量标记为函数
+int token_findFuncPointer(){
+  //TODO
+}
+
+
 
 
 //代码段词法分析,直到遇到右花括号结束,第一遍

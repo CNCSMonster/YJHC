@@ -2,7 +2,7 @@
 
 StrIdTable getStrIdTable(){
   StrIdTable table=malloc(sizeof(struct string_id_table));
-  memset(table->string_id_arr,NULL,sizeof(table->string_id_arr));
+  memset(table->string_id_arr,0,sizeof(table->string_id_arr));
   return table;
 }
 

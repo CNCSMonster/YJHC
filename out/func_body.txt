@@ -1,4 +1,6 @@
-{ printf("%s",mm); }
+{ }
+{ }
+{ for(int i=1;i<10;i++) int m=i; printf("%s",mm); }
 { void (*p)(int); *a=*a+*b; *b=*a-*b; *a=*a-*b; }
 { return score; }
 { printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age); }

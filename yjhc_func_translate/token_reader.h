@@ -4,8 +4,12 @@
 #include "../yjhc_preProcess/token_kind.h"
 #include "yjhc_grammar.h"
 #include "../yjhc_preProcess/token.h"
+#include "action.h"
+#include "syntax_symbol.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+int token_reader_blocks=0;
 
 //用来存储syntax符号的栈的结构体
 struct syntaxSymbolStack{
@@ -20,6 +24,8 @@ typedef struct token_buffer_node{
   struct token token;
 }TBNode;
 
+int ifSplitAfterAdd=0;  //标记是否在新加入token后分割的情况
+ActionSet oldActionSet; //用来记录之前的一些动作
 
 
 TBNode head={NULL,NULL,{0,NULL}};  //缓冲区地头节点,头节点不保存值,头节点的下一个节点作为首元节点
@@ -37,7 +43,10 @@ FILE* tb_fin;
 void init_token_reader(FILE* fin);
 
 //返回一条语句,通过函数指针返回对块的进出情况的判断,以及输出是否要换行的判断
-TBNode* readTokenSentence(BlockAction* blockAction,PrintAction* printAction);
+TBNode* readTokenSentence(ActionSet* actionSet);
+
+//打印tokenLine的语句信息
+void show_tokenLine(TBNode* tokens);
 
 //释放语句空间,包括这个节点以及后面节点
 void del_tokenLine(TBNode* tokens);

@@ -1,10 +1,8 @@
 #ifndef _TYPE_H
 #define _TYPE_H
 
-#include "string_index.h"
-#include "str_set.h"
+#include "stluse.h"
 #include "../yjhc_preProcess/mystring.h"
-#include "vector.h"
 
 //准备类型表数据结构
 //类型包括自定义类型以及基础数据类型
@@ -15,6 +13,7 @@ typedef enum enum_type_kind{
   TYPE_INT,
   TYPE_SHORT,
   TYPE_LONG,
+  TYPE_CHAR,
   TYPE_LONGLONG,
   TYPE_FLOAT,
   TYPE_DOUBLE,
@@ -26,6 +25,7 @@ typedef enum enum_type_kind{
 
 char* baseTypeNames[]={
   [TYPE_INT] "int",
+  [TYPE_CHAR] "char",
   [TYPE_SHORT] "short",
   [TYPE_LONG] "long",
   [TYPE_LONGLONG] "long long",
@@ -40,6 +40,7 @@ char* baseTypeNames[]={
 char* typeKindName[]={
   [TYPE_INT] "int",
   [TYPE_SHORT] "short",
+  [TYPE_CHAR] "char",
   [TYPE_LONG] "long",
   [TYPE_LONGLONG] "long long",
   [TYPE_FLOAT] "float",
@@ -54,6 +55,7 @@ char* typeKindName[]={
 //准备基础数据类型的默认值
 char* defaultValueOfBaseTypes[]={
   [TYPE_INT] "0",
+  [TYPE_CHAR] "\'\\0\'",
   [TYPE_LONG] "0L",
   [TYPE_DOUBLE] "0.0L",
   [TYPE_SHORT] "0",

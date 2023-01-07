@@ -6,11 +6,11 @@
 
 
 
-#include "hashset.h"
-#include "hashset.c"
+#include "..\\mystl\\hashset.h"
+#include "..\\mystl\\hashset.c"
 
-#include "id_string.c"
-#include "id_string.h"
+#include "..\\mystl\\id_string.c"
+#include "..\\mystl\\id_string.h"
 
 #include "grammar_tbl_generator.h"
 #include "grammar_tbl_generator.c"
@@ -18,8 +18,8 @@
 #include "mstr.h"
 #include "mstr.c"
 
-#include "string_id.h"
-#include "string_id.c"
+#include "..\\mystl\\string_id.h"
+#include "..\\mystl\\string_id.c"
 
 #include "myprint.c"
 #include "myprint.h"

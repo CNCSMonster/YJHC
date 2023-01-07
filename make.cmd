@@ -8,3 +8,6 @@ gcc yjhc_preProcess\func_split.c -o exe\fs
 gcc yjhc_preProcess\func_body_parser.c -o exe\fbp
 @REM 准备read工具到out中
 gcc tool\token_readable.c -o out\read
+
+@REM 准备gtg工具到exe中
+gcc gtg\main.c -o exe\gtg
