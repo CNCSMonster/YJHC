@@ -13,7 +13,7 @@ int token_addlayer(FILE* fin,FILE* code);
 int token_guess(FILE* fin,FILE* code);
 
 //第五遍扫描,确定函数指针,给函数指针变量标记为函数
-int token_findFuncPointer();
+int token_findFuncPointer(FILE* fin,FILE* code);
 
 //ps四次遍历过后不存在unknown类型的token,所有token都被确定为类型/界符/保留字/函数名/量名
 
@@ -33,6 +33,7 @@ int code_parse(FILE* fin,FILE* code);
 int main(int argc,char* argv[]){
   char* bodyPath=argv[1];
   char* tokensPath=argv[2];
+  //下面是调试用的路径
   // char* bodyPath="../out/func_body.txt";
   // char* tokensPath="../out/func_tokens.txt";
   char prePath[300];
@@ -46,7 +47,7 @@ int main(int argc,char* argv[]){
   if(tokens==NULL){
     fclose(body);exit(-1);
   }
-  //首先进行一次遍历
+  //首先进行第一次遍历,该遍历需要循环进行,每次处理一个函数
   while(jud=code_parse(body,tokens));
   fclose(body);
   fclose(tokens);
@@ -78,20 +79,33 @@ int main(int argc,char* argv[]){
   fclose(body);fclose(tokens);
 
   //进行第四次遍历,对未知token进行猜测
+  strcpy(prePath,curPath);
+  jud=sprintf(curPath,"%s4rd",tokensPath);
   if(jud<0) exit(-1);
-  body=fopen(curPath,"r");
+  body=fopen(prePath,"r");
   if(body==NULL) exit(-1);
-  tokens=fopen(tokensPath,"w");
+  tokens=fopen(curPath,"w");
   if(tokens==NULL){
     fclose(body);exit(-1);
   }
   if(!token_guess(body,tokens)) ERR;
   fclose(body);fclose(tokens);
 
+  //进行第五次遍历,也是最后一次遍历
+  body=fopen(curPath,"r");
+  if(body==NULL) exit(-1);
+  tokens=fopen(tokensPath,"w");
+  if(tokens==NULL){
+    fclose(body);exit(-1);
+  }
+  if(!token_findFuncPointer(body,tokens)) ERR;
+  fclose(body);fclose(tokens);
+
+
   // system("dir");
   // printf("%s,%s",bodyPath,tokensPath);
   //查看中间文件
-  //最后删除中间文件,
+  // 最后删除中间文件,
   // sprintf(ord,"del %s1st",tokensPath);
   // mystrReplace(ord,'/','\\');
   // // printf("\n%s",ord);
@@ -103,7 +117,11 @@ int main(int argc,char* argv[]){
   // sprintf(ord,"del %s3rd",tokensPath);
   // mystrReplace(ord,'/','\\');
   // // printf("\n%s",ord);
-  system(ord);
+  // system(ord);
+  // sprintf(ord,"del %s4rd",tokensPath);
+  // mystrReplace(ord,'/','\\');
+  // // printf("\n%s",ord);
+  // system(ord);
   return 0;
 }
 
@@ -382,9 +400,149 @@ int token_guess(FILE* fin,FILE* code){
   return 1;
 }
 
+//TODO,测试第五遍扫描
 //第五遍扫描,确定函数指针,给函数指针变量标记为函数
-int token_findFuncPointer(){
-  //TODO
+//debug发现.第四次扫描后可能猜测函数指针定义种的返回位置类型token猜测为unknown
+int token_findFuncPointer(FILE* fin,FILE* code){
+  //首先找到每个Type开头的句子开头
+  Token cur;
+  Token pre={
+    .val=NULL
+  };
+  Token tmpToken;
+  int isRight=1;
+  vector vec=getVector(sizeof(Token));
+  while((cur=getToken(fin)).val!=NULL){
+    //如果当前类型是type,而且前面是句子开头前
+    if((cur.kind!=TYPE&&cur.kind!=FUNC)||pre.val==NULL){
+      if(pre.val!=NULL){
+        fputToken(pre,code);
+      }
+      pre=cur;
+      continue;
+    }
+    //如果前面是句子开头,则进行判断,
+    if(pre.kind==LEFT_BRACE||pre.kind==SEMICOLON||pre.kind==LEFT_BRACE||pre.kind==COMMA){
+      //首先读取到分号
+      while((tmpToken=getToken(fin)).val!=NULL&&tmpToken.kind!=SEMICOLON){
+        vector_push_back(&vec,&tmpToken);
+      }
+      if(tmpToken.val==NULL){
+        isRight=0;
+        break;
+      }
+      Token* tokens=vector_toArr(&vec);
+      int tokensSize=vec.size;
+      vector_clear(&vec);
+      int isFuncPointerDef=1;   //判断是否是定义函数指针的句子
+      //然后判断这个句子是否是合适的句子
+      if(!isFuncPointerDef||tokens[0].kind!=LEFT_PAR){
+        isFuncPointerDef=0;
+      }
+      if(!isFuncPointerDef||tokens[1].kind!=OP){
+        isFuncPointerDef=0;
+      }
+      if(!isFuncPointerDef||tokens[2].kind!=VAR){
+        isFuncPointerDef=0;
+      }
+      if(!isFuncPointerDef||tokens[3].kind!=RIGHT_PAR){
+        isFuncPointerDef=0;
+      }
+      if(!isFuncPointerDef||tokens[4].kind!=LEFT_PAR){
+        isFuncPointerDef=0;
+      }
+      if(!isFuncPointerDef||tokens[tokensSize-1].kind!=RIGHT_PAR){
+        isFuncPointerDef=0;
+      }
+      //如果有不合理的逗号,则说明格式不是函数指针定义语句
+      if(!isFuncPointerDef||tokens[tokensSize-2].kind==COMMA){
+        isFuncPointerDef=0;
+      }
+      //如果不是函数定义语句,则打印该句子并释放空间
+      if(!isFuncPointerDef){
+        fputToken(pre,code);
+        fputToken(cur,code);
+        delToken(pre);
+        delToken(cur);
+        for(int i=0;i<tokensSize;i++){
+          fputToken(tokens[i],code);
+          delToken(tokens[i]);
+        }
+        free(tokens);
+        pre=tmpToken;
+        continue;
+      }
+      //然后是括号判断,直到读到右括号为止
+      //对删掉的token进行标记,使用位图实现
+      //
+      BitMapUtil bmu={
+        .mapSize=tokensSize/4+1
+      };
+      BitMap bm=getBitMap(&bmu);  //创建一个位图
+      //该位图用来标记删除的token
+      for(int i=5;i<tokensSize-1;i++){
+        //中间遇到的符号只能是变量或者运算符
+        if(tokens[i].kind==TYPE||tokens[i].kind==VAR){
+          tokens[i].kind=TYPE;
+          //然后合并后面的所有*和字符到这里
+          Token token1;
+          int j=i+1;
+          while(j<tokensSize-1&&tokens[j].kind!=COMMA){
+            if(strcmp(tokens[j].val,"*")==0){
+              token1=connectToken(tokens[i],tokens[j],TYPE,"");
+              delToken(tokens[i]);
+              tokens[i]=token1;
+              put_bitmap(&bmu,&bm,j);
+            }else{
+              isFuncPointerDef=0;
+              break;
+            }
+          }
+          i=j;
+        }else{
+          isFuncPointerDef=0;
+        }
+      }
+      cur.kind=TYPE;
+      tokens[2].kind=FUNC;
+      //打印以及释放空间
+      fputToken(pre,code);delToken(pre);pre.val=NULL;
+      fputToken(cur,code);delToken(cur);cur.val=NULL;
+      for(int i=0;i<tokensSize;i++){
+        int jud=in_bitmap(&bmu,&bm,i);
+        //如果没有删除才打印
+        if(!jud){
+          fputToken(tokens[i],code);
+        }
+        delToken(tokens[i]);
+      }
+      free(tokens);
+      //位图用完后释放空间
+      delBitMap(&bm);
+      pre=tmpToken;
+      //如果是错误的函数指针定义,退出并返回0
+      if(!isFuncPointerDef){
+        isRight=0;
+        break;
+      }
+    }
+  }
+  if(!isRight){
+    //删除vector
+    Token* tokens=vector_toArr(&vec);
+    for(int i=0;i<vec.size;i++) delToken(tokens[i]);
+    free(tokens);
+    if(cur.val!=NULL) delToken(cur);
+    if(pre.val!=NULL) delToken(pre);
+    return 0;
+  }
+  if(pre.val!=NULL){
+    fputToken(pre,code);delToken(pre);
+  }
+  if(cur.val!=NULL){
+    fputToken(cur,code);delToken(cur);
+  }
+  return 1;
 }
 
 
@@ -393,8 +551,9 @@ int token_findFuncPointer(){
 //代码段词法分析,直到遇到右花括号结束,第一遍
 int code_parse(FILE *fin, FILE *code)
 {
+  char end;
   //读取一个左花括号开始
-  if(fgetc(fin)!='{') return 0;
+  if((end=fgetc(fin))!='{') return 0;
   //先往文件中写入一个花括号并换行
   fprintf(code, "%d %c\n", LEFT_BRACE, '{');
   int leftPar = 1;
@@ -402,14 +561,13 @@ int code_parse(FILE *fin, FILE *code)
   //函数token分析
   char *stops = "+-*/^|&;,.><=[]() {}\"\n"; //读到换行之前都是属于这个函数的内容
   char tmp[1000];
-  char end;
   int tmpI; //暂存用的int
   end = myfgets(tmp, stops, fin);
   while (end != '}' || leftPar > 1)
   {
     printf("^%s$\n",tmp);
     //对读取到的内容进行词法分析
-    //仅仅读到的内容不为的时候才需要进行词法分析
+    //仅仅读到的内容不为空的时候才需要进行词法分析
     if (strcmp(tmp, "") != 0)
     {
       //判断是否是基础数据类型
@@ -495,6 +653,7 @@ int code_parse(FILE *fin, FILE *code)
     else if(isOp(end)){
       fprintf(code,"%d %c\n",OP,end);
     }
+    
     else{
       return 0;
     }

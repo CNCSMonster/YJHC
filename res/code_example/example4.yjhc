@@ -1,0 +1,7 @@
+
+typedef int M;
+typedef char N;
+//该文件用来测试函数指针的识别
+void test(){
+    M (*add)(N**,N**);
+}

@@ -10,7 +10,7 @@
 #define T printf("N=M=%d",M);   //宏替换不应该替换字符串里面的内容
 
 void addA(){
-
+    void (*pp)(enum score_level*,struct student*);
 }
 void addB(){
 

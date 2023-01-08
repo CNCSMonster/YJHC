@@ -17,5 +17,8 @@
 #include "../mystl/str_set.h"
 #include "../mystl/str_set.c"
 
+#include "../mystl/bitmap.h"
+#include "../mystl/bitmap.c"
+
 
 #endif

@@ -4,6 +4,7 @@
 
 int main()
 {
+    int c=o123;
     
     volatile const int a=5;
     printf("%p\n",&a);

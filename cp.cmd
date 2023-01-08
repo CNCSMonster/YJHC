@@ -3,7 +3,7 @@ pause
 ggb
 cls
 @REM 使用doc_del把注释和多余空格换行去除
-exe\dd res\code_example\example1.yjhc out\out1.txt      
+exe\dd res\code_example\example4.yjhc out\out1.txt      
 @REM 使用pound_remove 从源程序中分离出pound(#)语句
 exe\pr out\out1.txt out/out2.txt out/pound.txt  
 @REM 使用pound_substitue使用分离出的pound语句中的宏替换语句对文件进行符合语法要求的宏替换
@@ -16,6 +16,9 @@ exe\tr out/out4.txt out/func.txt out/type.txt
 exe\fs out/func.txt out/func_head.txt out/func_body.txt
 ::使用func_body_parser对函数体文件func_body.txt的内容进行词法分析,输出token序列到func_tokens中
 exe\fbp out/func_body.txt out/func_tokens.txt
+
+::阅读out中的token化结果
+out\read out/func_tokens.txt> out/func_read_tokens.txt
 
 @REM 使用exe/gtg运行res中的gtg脚本产生语法分析动作指导表到out中
 chdir res/grammar_tbl
