@@ -8,6 +8,7 @@
 typedef struct struct_action_set{
   int blocks;
   PrintAction printAction;
+  PrintTblAction printTblAction;
 }ActionSet;
 
 

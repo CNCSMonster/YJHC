@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <conio.h>
 
 //声明translate要用到的各个文件的预编译指令
 #include "token_reader.c"

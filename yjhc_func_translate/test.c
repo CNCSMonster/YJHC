@@ -108,33 +108,6 @@
 //   return 1;
 // }
 
-//测试格式化输出token
-//测试token_reader的分段读功能
-int main(){
-  FILE* fin=fopen("..\\out\\func_tokens.txt","r");
-  init_token_reader(fin);
-  TBNode* nodes;
-  ActionSet actionSet;
-  int preblocks=0;
-  while((nodes=readTokenSentence(&actionSet))!=NULL){
-    //如果是进入函数,先换行
-    show_tokenLine(nodes);
-    if(actionSet.printAction==PRINTENTER){
-      printf("\n");
-      //如果打印enter了,打印和块数相当的缩进符号
-      int n=actionSet.blocks;
-      // if(strcmp(nodes->token.val,"}")==0) n--;
-      for(int i=0;i<n;i++) printf("\t");
-    }
-    else printf(" ");
-    preblocks=actionSet.blocks;
-    del_tokenLine(nodes);
-  }
-  fclose(fin);
-  del_rest_token_reader();
-  return 1;
-}
-
 
 
 

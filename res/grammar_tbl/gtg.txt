@@ -11,8 +11,28 @@ ELIF ELSE DO WHILE FOR RETURN
 BREAK CONTINUE OP LEFT_PAR RIGHT_PAR LEFT_BRACKET
 RIGHT_BRACKET LEFT_BRACE RIGHT_BRACE SEMICOLON COMMA FUNC
 UNKNOWN
-actionkind add -n 6
+actionkind add -n 7
 PrintAction BlockAction StackPopAction StackPushAction SplitPreAction SplitAfterAction
+PrintTblAction
+action add PrintTblAction
+PRINT_TBL_PRE PRINT_TBL_AFTER
+set defaultAction PrintTblAction
+NOT_DEFINE
+syntax add PrintTblAction -n 14
+PrintTblAction:ELIF_BLOCK_OUT,ELSE,PRINT_TBL_PRE
+PrintTblAction:ELIF_BLOCK_OUT,ELIF,PRINT_TBL_PRE
+PrintTblAction:IF_BLOCK_OUT,ELSE,PRINT_TBL_PRE
+PrintTblAction:IF_BLOCK_OUT,ELIF,PRINT_TBL_PRE
+PrintTblAction:ELSE_SYMBOL,LEFT_BRACE,PRINT_TBL_PRE
+PrintTblAction:WHILE_SYMBOL,LEFT_PAR,PRINT_TBL_PRE
+PrintTblAction:DO_SYMBOL,LEFT_BRACE,PRINT_TBL_PRE
+PrintTblAction:ELIF_SYMBOL,LEFT_PAR,PRINT_TBL_PRE
+PrintTblAction:IF_SYMBOL,LEFT_PAR,PRINT_TBL_PRE
+PrintTblAction:FOR_SYMBOL,LEFT_PAR,PRINT_TBL_PRE
+PrintTblAction:SENTENCE_IN,SEMICOLON,PRINT_TBL_PRE
+PrintTblAction:DO_WHILE_BLOCK_IN,RIGHT_BRACE,PRINT_TBL_AFTER
+PrintTblAction:FOR_BODY_IN,RIGHT_BRACE,PRINT_TBL_AFTER
+PrintTblAction:ELSE_BLOCK_IN,RIGHT_BRACE,PRINT_TBL_AFTER
 action add SplitAfterAction
 SPLITAFTER
 set defaultAction SplitAfterAction
@@ -59,7 +79,7 @@ action add SplitPreAction
 SPLITPRE
 set defaultAction SplitPreAction
 NOT_DEFINE
-syntax add SplitPreAction -n 302
+syntax add SplitPreAction -n 303
 SplitPreAction:DO_WHILE_BLOCK_IN,FOR,SPLITPRE
 SplitPreAction:WHILE_BLOCK_IN,FOR,SPLITPRE
 SplitPreAction:FOR_BODY_IN,FOR,SPLITPRE
@@ -181,6 +201,7 @@ SplitPreAction:FOR_REFRESH_IN,RIGHT_PAR,SPLITPRE
 SplitPreAction:FOR_CONDITION_IN,SEMICOLON,SPLITPRE
 SplitPreAction:FOR_INIT_IN,SEMICOLON,SPLITPRE
 SplitPreAction:FOR_SYMBOL,LEFT_PAR,SPLITPRE
+SplitPreAction:ELSE_SYMBOL,LEFT_BRACE,SPLITPRE
 SplitPreAction:ELIF_SYMBOL,LEFT_PAR,SPLITPRE
 SplitPreAction:IF_SYMBOL,LEFT_PAR,SPLITPRE
 SplitPreAction:WHILE_OF_DO,LEFT_PAR,SPLITPRE
@@ -915,7 +936,7 @@ StackPopAction:ELIF_BLOCK_IN,SEMICOLON,Nop
 StackPopAction:IF_BLOCK_IN,SEMICOLON,Nop
 StackPopAction:BLOCK_IN,SEMICOLON,Nop
 action add BlockAction
-BlockIn BlockKeep BlockOut
+BlockIn BlockKeep BlockOut BlockInAfter
 set defaultAction BlockAction
 BlockKeep
 syntax add BlockAction -n 14
@@ -926,13 +947,13 @@ BlockAction:FOR_BODY_IN,RIGHT_BRACE,BlockOut
 BlockAction:ELSE_BLOCK_IN,RIGHT_BRACE,BlockOut
 BlockAction:ELIF_BLOCK_IN,RIGHT_BRACE,BlockOut
 BlockAction:IF_BLOCK_IN,RIGHT_BRACE,BlockOut
-BlockAction:FOR_SYMBOL,LEFT_PAR,BlockIn
-BlockAction:WHILE_CASE_OUT,LEFT_BRACE,BlockIn
-BlockAction:DO_SYMBOL,LEFT_BRACE,BlockIn
-BlockAction:ELSE_SYMBOL,LEFT_BRACE,BlockIn
-BlockAction:ELIF_CASE_OUT,LEFT_BRACE,BlockIn
-BlockAction:IF_CASE_OUT,LEFT_BRACE,BlockIn
-BlockAction:INIT,LEFT_BRACE,BlockIn
+BlockAction:FOR_SYMBOL,LEFT_PAR,BlockInAfter
+BlockAction:WHILE_CASE_OUT,LEFT_BRACE,BlockInAfter
+BlockAction:DO_SYMBOL,LEFT_BRACE,BlockInAfter
+BlockAction:ELSE_SYMBOL,LEFT_BRACE,BlockInAfter
+BlockAction:ELIF_CASE_OUT,LEFT_BRACE,BlockInAfter
+BlockAction:IF_CASE_OUT,LEFT_BRACE,BlockInAfter
+BlockAction:INIT,LEFT_BRACE,BlockInAfter
 action add PrintAction
 PRINTENTER PRINTSPACE
 set defaultAction PrintAction

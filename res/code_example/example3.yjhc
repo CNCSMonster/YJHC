@@ -1,0 +1,13 @@
+//进行if结构的处理
+
+void doA(){
+    int a=1;
+    if ( a>2 ){
+        a++;
+    }else{
+        a--;
+    }
+}
+int main(){
+    return 1;
+}

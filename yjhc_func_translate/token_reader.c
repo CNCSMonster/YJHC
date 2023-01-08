@@ -13,8 +13,7 @@ void init_token_reader(FILE* fin){
 
 //返回一条语句,通过函数指针返回对块的进出情况的判断,以及输出是否要换行的判断
 TBNode* readTokenSentence(ActionSet* actionSet){
-  PrintAction* printAction=&(actionSet->printAction);
-  BlockAction blockAction;
+
   //直接返回的情况,结束后分割
   //语法制导翻译-part1:分割+打印+块动作翻译
   while(1){
@@ -29,19 +28,17 @@ TBNode* readTokenSentence(ActionSet* actionSet){
       return ret;
     }
     //否则正常进行
-
     int token=newToken.kind;
-    enum BlockAction* m;
     //进行各种动作分析
     //首先打印动作分析
     if(PrintAction_Tbl[symbol][token]!=NOT_DEFINE) 
-      *printAction=PrintAction_Tbl[symbol][token];
+      oldActionSet.printAction=PrintAction_Tbl[symbol][token];
     //然后块动作分析
-    if(BlockAction_Tbl[symbol][token]!=NOT_DEFINE)
-      blockAction=BlockAction_Tbl[symbol][token];
-    if(blockAction==BlockIn) token_reader_blocks++;
-    else if(blockAction==BlockOut) token_reader_blocks--;
-    actionSet->blocks=token_reader_blocks;
+    if(BlockAction_Tbl[symbol][token]==BlockIn)
+      oldActionSet.blocks++;
+    else if(BlockAction_Tbl[symbol][token]==BlockOut) oldActionSet.blocks--;
+    //然后更新是否打印换行动作
+    oldActionSet.printTblAction=PrintTblAction_Tbl[symbol][token];
     //然后栈动作分析
     //先判断是否弹出
     if(StackPopAction_Tbl[symbol][token]==Pop){
@@ -71,12 +68,18 @@ TBNode* readTokenSentence(ActionSet* actionSet){
     if(SplitAfterAction_Tbl[symbol][token]==SPLITAFTER){
       ifSplitAfterAdd=1;
     }
+    //加入token前把内容复制给actionset
+    memcpy(actionSet,&oldActionSet,sizeof(ActionSet));
     //然后把token放进链表里面
     tail->next=malloc(sizeof(TBNode));
     tail->next->last=tail;
     tail=tail->next;
     tail->next=NULL;
     tail->token=newToken;
+    //压入后动作
+    if(BlockAction_Tbl[symbol][token]==BlockInAfter){
+      oldActionSet.blocks++;
+    }
     //最后判断是否要分割
     if(ret!=NULL) return ret;
   }
@@ -93,6 +96,16 @@ void show_tokenLine(TBNode* tokens){
     track=track->next;
   }
   if(track!=NULL) printf("%s",track->token.val);
+}
+
+void fshow_tokenLine(FILE* fout,TBNode* tokens){
+  //从左到右打印
+  TBNode* track=tokens;
+  while(track->next!=NULL){
+    fprintf(fout,"%s ",track->token.val);
+    track=track->next;
+  }
+  if(track!=NULL) fprintf(fout,"%s",track->token.val);
 }
 
 

@@ -23,6 +23,9 @@ run BlockAction.gtg
 #加入压弹栈动作指导
 run StackAction.gtg
 
+#加入是否打印语句前打印制表符动作
+run PrintTblAction.gtg
+
 
 #加入新token加入前分割动作指导
 run SplitPreAction.gtg

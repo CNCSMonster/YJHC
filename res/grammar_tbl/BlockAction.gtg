@@ -1,6 +1,6 @@
 #添加blockaction的动作,如块,保持，出块
 action add BlockAction
-BlockIn BlockKeep BlockOut
+BlockIn BlockKeep BlockOut BlockInAfter
 
 #设置BlockAction的默认动作
 set defaultAction BlockAction
@@ -9,16 +9,17 @@ BlockKeep
 #在块中流程控制结构时候要入块
 
 
-#入块的情况,遇到括号入块
+#入块的情况,一般是括号后第一个句子后入块
 syntax add BlockAction -n 7
-INIT,LEFT_BRACE,BlockIn
-IF_CASE_OUT,LEFT_BRACE,BlockIn
-ELIF_CASE_OUT,LEFT_BRACE,BlockIn
-ELSE_SYMBOL,LEFT_BRACE,BlockIn
-DO_SYMBOL,LEFT_BRACE,BlockIn
-WHILE_CASE_OUT,LEFT_BRACE,BlockIn
+INIT,LEFT_BRACE,BlockInAfter
+IF_CASE_OUT,LEFT_BRACE,BlockInAfter
+ELIF_CASE_OUT,LEFT_BRACE,BlockInAfter
+ELSE_SYMBOL,LEFT_BRACE,BlockInAfter
+DO_SYMBOL,LEFT_BRACE,BlockInAfter
+WHILE_CASE_OUT,LEFT_BRACE,BlockInAfter
 #for结构则是init中第一个句子入块
-FOR_SYMBOL,LEFT_PAR,BlockIn
+FOR_SYMBOL,LEFT_PAR,BlockInAfter
+
 
 
 #出块的情况

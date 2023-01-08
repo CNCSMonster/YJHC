@@ -45,6 +45,8 @@ void init_token_reader(FILE* fin);
 //返回一条语句,通过函数指针返回对块的进出情况的判断,以及输出是否要换行的判断
 TBNode* readTokenSentence(ActionSet* actionSet);
 
+void fshow_tokenLine(FILE* fout,TBNode* tokens);
+
 //打印tokenLine的语句信息
 void show_tokenLine(TBNode* tokens);
 

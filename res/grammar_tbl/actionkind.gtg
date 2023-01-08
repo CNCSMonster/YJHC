@@ -1,3 +1,4 @@
-actionkind add -n 6
+actionkind add -n 7
 PrintAction BlockAction StackPopAction
 StackPushAction SplitPreAction SplitAfterAction
+PrintTblAction

@@ -21,3 +21,7 @@ exe\fbp out/func_body.txt out/func_tokens.txt
 chdir res/grammar_tbl
 ..\..\exe\gtg err<yjhc.gtg>0err
 chdir ../..
+
+@REM 使用refector工具获得代码的格式化放置到out中
+exe\refector out/func_tokens.txt out/func_refector.txt
+
