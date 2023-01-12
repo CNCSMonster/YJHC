@@ -29,6 +29,6 @@ int main(int argc,char* argv[]){
   }
   fclose(fin);
   fclose(fout);
-  del_rest_token_reader();
+  release_token_reader();
   return 1;
 }

@@ -129,16 +129,17 @@ int isOp(char c){
 
 //对字符串去除前后不必要字符
 int myStrStrip(char* str,const char* prefexs,const char* suffixs){
+  if(str==NULL) return 0;
   char* st=str;
   char* end=str+strlen(str)-1;
-  for (int j = 0; j < strlen(prefexs)&&st<=end; j++)
+  for (int j = 0;prefexs!=NULL&& j < strlen(prefexs)&&st<=end; j++)
   {
     if (*st != prefexs[j])
       continue;
     st++;
     j=-1;
   }
-  for (int j = 0; j < strlen(suffixs)&&st<=end; j++)
+  for (int j = 0;suffixs!=NULL&& j < strlen(suffixs)&&st<=end; j++)
   {
     if (*end != suffixs[j])
       continue;
@@ -150,9 +151,29 @@ int myStrStrip(char* str,const char* prefexs,const char* suffixs){
   return 1;
 }
 
+//过滤去除字符串中的某些字符,返回的是过滤后的字符指针,为了返回链式编程
+//该函数会删除字符串中在toRemoves出现的字符,后续字符向前补位
+char* myStrFilter(char* str,const char* toRemoves){
+  //,试图给参数减少一些前缀,保存参数本身的时候
+  int i=0;
+  for(int j=0;j<strlen(str);j++){
+    int isToRemove=0;
+    for(int k=0;k<strlen(toRemoves);k++){
+      if(str[j]==toRemoves[k]){
+        isToRemove=1;
+        break;
+      }
+    }
+    if(isToRemove) continue;
+    str[i++]=str[j];
+  }
+  str[i]='\0';
+  return str;
+}
+
 
 //判断字符串中是否有个字符,如果是返回非0值,如果不是返回0
-int myIsCharInStr(char* str,char c){
+int myIsCharInStr(const char* str,const char c){
   for(int i=0;i<strlen(str);i++) if(c==str[i]) return 1;
   return 0;
 }

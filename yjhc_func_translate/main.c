@@ -61,7 +61,7 @@ int main(){
   }
   //读取类型,全局量表,同样打印
   ValTbl valTbl=getValTbl(typeTbl);   //加载量表
-  if(!loadFromFile_valtbl(&valTbl,globalFin)){
+  if(!loadFile_valtbl(&valTbl,globalFin)){
     del_valTbl(&valTbl);
     closeFileAndExit(tokenFin,typeFin,globalFin,funcHeadFin,funcFout);
   }
@@ -90,7 +90,7 @@ int main(){
     tmpValTbl=valTbl.next;
   }
   del_valTbl(&valTbl);
-  del_rest_token_reader();  //回收token读取器资源
+  release_token_reader();  //回收token读取器资源
   //关闭剩下所有文件
   fclose(tokenFin);
   fclose(funcFout);

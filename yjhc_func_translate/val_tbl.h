@@ -37,7 +37,7 @@ typedef struct struct_val_tbl{
 ValTbl getValTbl(TypeTbl typeTbl);
 
 //从文件加载全局变量信息表,成功返回非0值，失败返回0
-int loadFromFile_valtbl(ValTbl* valTbl,FILE* fin);
+int loadFile_valtbl(ValTbl* valTbl,FILE* fin);
 
 //从一个量定义语句中加载量到量表中，成功返回非0值，失败返回0
 int loadLine_valtbl(ValTbl* val_tbl,char* str);

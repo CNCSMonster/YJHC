@@ -4,6 +4,8 @@
 #include "stluse.h"
 #include "../yjhc_preProcess/mystring.h"
 
+// 该模块准备了类型单表的数据结构
+
 //准备类型表数据结构
 //类型包括自定义类型以及基础数据类型
 //基础数据类型包括int,long,short,double,float
@@ -20,6 +22,7 @@ typedef enum enum_type_kind{
   TYPE_ENUM,
   TYPE_STRUCT,
   TYPE_UNION,
+  TYPE_FUNC_POINTER,  //补充函数指针类型
   TYPE_UNKNOW     //未知类型
 }TypeKind;
 
@@ -48,6 +51,7 @@ char* typeKindName[]={
   [TYPE_ENUM] "enum",
   [TYPE_STRUCT] "struct",
   [TYPE_UNION] "union",
+  [TYPE_FUNC_POINTER] "func pointer",
   [TYPE_UNKNOW] "unknown"
 };
 
@@ -64,6 +68,7 @@ char* defaultValueOfBaseTypes[]={
   [TYPE_ENUM] "0",
   [TYPE_STRUCT] "{0}",  //虽然但是有的编译器不支持
   [TYPE_UNION] "{0}",
+  [TYPE_FUNC_POINTER] "((void*)0)",
   [TYPE_UNKNOW] NULL
 };
 
@@ -75,7 +80,8 @@ typedef struct struct_type{
   //需要一个哈希表来保存fields,建立<key,val>为<fieldName,fieldTypeName>的哈希表
   hashtbl fields;
   //funcs用来快速地判断一个函数名是否存在该类型中
-  StrSet funcs;
+  StrSet funcs; //funcs保存的是结构体方法,是所有结构体共有的
+  StrSet funcPointerFields; //funcField保存的是类型的函数指针类型的属性名,该属性名允许修改
 }Type;
 
 //notice,规定第0位保存的内容为unknown类型
@@ -100,6 +106,9 @@ TypeTbl getTypeTbl();
 //加载成功返回非0值,加载失败返回0
 int loadFile_typeTbl(TypeTbl* tbl,FILE* fin);
 
+//提取出加载typedefline信息的内容
+int loadTypedefLine_typetbl(TypeTbl* tbl,char* str);
+
 //根据从strid中取出的long long id分解出对应的kind下标以及指针维数
 //指针维数为0表示就是这个类型本身
 //long long前32位为对应基础type的下标,后32位为这个类型对应的指针层次
@@ -116,6 +125,11 @@ int typeFieldEq(const void* name1,const void* name2);
 //类型表加载字符串的类型信息,成功返回非0值,失败返回0
 int loadLine_typetbl(TypeTbl* tbl,char* str);
 
+//函数指针的重命名
+int loadTypedefFuncPointer_typetbl(TypeTbl* tbl,char* str);
+
+//获得规格化的函数指针类型名,获取成功返回对应函数指针,获取失败返回NULL
+char* refectorFuncPointerName(char* str);
 
 void showType(Type* type);
 
@@ -129,8 +143,17 @@ Type extractUnion(char* str);
 Type extractStruct(char* str);
 
 
-//格式化类型字符串
-void refectorTypeName(char* str);
+//格式化类型字符串,格式化成功返回非0值,格式化出现异常返回0
+int refectorTypeName(char* str);
+
+//判断语句是否是函数指针类型属性定义语句,是返回非0值,不是返回0
+int isFuncPointerFieldDef(char* str);
+
+//判断是否是函数指针类型名或者函数指针参数名,如果是返回非0值,如果不是返回0
+int isFuncPointerType(const char* str);
+
+//加载函数指针定义语句信息到类型中,加载成功返回1,加载失败返回0
+int loadFuncPointerFieldDef(Type* typep,char* str);
 
 //根据类型名字查询一个类型,返回该类型在类型表中的下标以及该类型名对应的该类型的指针层次
 //如果查找成功,返回的类型下标为正数,如果查找失败,返回为0,而0位置保存unknown类型

@@ -14,7 +14,7 @@ ValTbl getValTbl(TypeTbl typeTbl){
 }
 
 //从文件加载全局变量信息表
-int loadFromFile_valtbl(ValTbl* valTbl, FILE* fin){
+int loadFile_valtbl(ValTbl* valTbl, FILE* fin){
   //每次读取一行信息
   char tmp[1000];
   char end;

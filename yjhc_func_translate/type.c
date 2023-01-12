@@ -5,11 +5,12 @@ TypeTbl getGlobalTypeTbl(){
   TypeTbl out=getTypeTbl();
   //加入基础数据类型
   for(int i=0;i<sizeof(baseTypeNames)/sizeof(baseTypeNames[0]);i++){
-    if(i==TYPE_STRUCT||i==TYPE_ENUM||i==TYPE_UNION||i==TYPE_UNKNOW) continue;
+    if(i==TYPE_STRUCT||i==TYPE_ENUM||i==TYPE_UNION||i==TYPE_UNKNOW||i==TYPE_FUNC_POINTER) continue;
     Type toAdd;
     toAdd.kind=i;
     toAdd.funcs=getStrSet(myStrHash);
     toAdd.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
+    toAdd.funcPointerFields=getStrSet(myStrHash);
     //放进去的字符串要动态分配空间
     char* key=strcpy(malloc(strlen(baseTypeNames[i])+1),baseTypeNames[i]);
     putStrId(out.strIds,key,getTypeId(out.types.size,0));
@@ -28,8 +29,16 @@ TypeTbl getTypeTbl(){
   Type unknownType;
   unknownType.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
   unknownType.kind=TYPE_UNKNOW;
+  unknownType.funcPointerFields=getStrSet(myStrHash);
   unknownType.funcs=getStrSet(myStrHash);  
   vector_push_back(&out.types,&unknownType);
+  //第二个位置,也就是下标0处保存func_pointer类型
+  Type funcPointerType;
+  funcPointerType.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
+  funcPointerType.kind=TYPE_FUNC_POINTER;
+  funcPointerType.funcPointerFields=getStrSet(myStrHash);
+  funcPointerType.funcs=getStrSet(myStrHash);
+  vector_push_back(&out.types,&funcPointerType);
   return out;
 }
 
@@ -96,119 +105,8 @@ int loadLine_typetbl(TypeTbl* tbl,char* str){
   char end = mysgets(tmp, " ", str);
   if (strcmp(tmp, "typedef") == 0)
   {
-    // 如果先读到左括号，说明是重命名
-    // 如果先读到分号,说明是对已知类型进行重命名
-    end = mysgets(tmp, "{", str);
-    char *track = str + strlen("typedef") + 1;
-    // 如果没有{符,说明这里typedef语句仅仅是给已知类型起别名
-    if (end == '\0')
-    {
-      char oldName[400];
-      char newName[400];
-      // 截取旧名,然后读取新名
-      int last = strlen(str) - 1;
-      // 首先从后往前读取掉所有空格来到第一个非空格的字符处
-      while (str[last] == ' ')
-        last--;
-      str[last + 1] = '\0';
-      // 继续往前找到最后一个单词前面第一个空格
-      while (str[last] != ' ')
-        last--;
-      // 这个位置往后就是新名的名字
-      strcpy(newName, str + last + 1);
-      str[last] = '\0';
-      strcpy(oldName, str + strlen("typedef") + 1);
-      refectorTypeName(oldName); // 格式化旧的名字
-      // 然后查找旧的名字对应的id是否存在
-      int id = strToId(tbl->strIds, oldName);
-      // 如果返回-1,说明这个id不存在,设置为对应的unknownid
-      if (id < 0)
-      {
-        putStrId(tbl->strIds, oldName, 0); // 设置绑定该字符为0下标
-        id = 0;
-      }
-      // 如果返回的id是非负数,则说明存在,绑定新的名字到旧的名字对应的id上
-      putStrId(tbl->strIds, newName, id);
-    }
-    // 读到{先,则{前的名字为类型本名
-    else if (end == '{')
-    {
-      // 首先读取到类型名前面,得到类型的本名
-      char baseName[400];
-      end = mysgets(baseName, "{", track);
-      track += strlen(baseName) + 1;
-      refectorTypeName(baseName);
-      // 然后注册基础名字
-      putStrId(tbl->strIds, baseName, getTypeId(tbl->types.size, 0));
-      // 然后判断类型,读取后面的类型信息
-      mysgets(tmp, " ", baseName);
-      Type type1; // 准备一个type
-      char typeStr[800];
-      end = mysgets(typeStr, "}", track);
-      if (end != '}')
-      {
-        return 0;
-      }
-      track += strlen(typeStr) + 1;
-      if (strcmp(tmp, "enum") == 0)
-      {
-        // 读取花括号中间enum的信息
-        type1 = extractEnum(typeStr);
-      }
-      else if (strcmp(tmp, "struct") == 0)
-      {
-        // 读取花括号中间struct的信息
-        type1 = extractStruct(typeStr);
-      }
-      else if (strcmp(tmp, "union") == 0)
-      {
-        // 读取花括号间union的信息
-        type1 = extractUnion(typeStr);
-      }
-      else
-      {
-        return 0;
-      }
-      // 然后读取type的别名和可能的指针别名,直到读到尽头为止
-      while ((end = mysgets(tmp, ",", track)) != '\0')
-      {
-        // 首先判断前面多少个*号,判断是多少层的别名
-        // 首先读取前面*的数量
-        int layer = 0;
-        int i = 0;
-        while (tmp[i] != '\0' && (tmp[i] == ' ' || tmp[i] == '*'))
-        {
-          if (tmp[i] == '*')
-            layer++;
-          i++;
-        }
-        // 格式化名字
-        refectorTypeName(tmp + i);
-        // 然后注册
-        int id = getTypeId(tbl->types.size, layer);
-        putStrId(tbl->strIds, tmp + i, id);
-        track += strlen(tmp) + 1;
-      }
-      // 处理最后一个部分
-      if (strlen(tmp) != 0)
-      {
-        int layer = 0;
-        int i = 0;
-        while (tmp[i] != '\0' && (tmp[i] == ' ' || tmp[i] == '*'))
-        {
-          if (tmp[i] == '*')
-            layer++;
-          i++;
-        }
-        // 格式化名字
-        refectorTypeName(tmp + i);
-        // 然后注册
-        int id = getTypeId(tbl->types.size, layer);
-        putStrId(tbl->strIds, tmp + i, id);
-        track += strlen(tmp) + 1;
-      }
-      vector_push_back(&tbl->types, &type1);
-    }
+    if(!loadTypedefLine_typetbl(tbl,str)) return 0;
+    else return 1;
   }
   // 首先判断是否是结构体,然后判断是否是普通类型定义
   else
@@ -245,12 +143,281 @@ int loadLine_typetbl(TypeTbl* tbl,char* str){
   return 1;
 }
 
+//提取出加载typedefline信息的内容
+int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
+  char tmp[200];
+  char end;
+  // 如果先读到左括号，说明是重命名
+  // 如果先读到分号,说明是对已知类型进行重命名
+  end = mysgets(tmp, "{(", str);
+  char *track = str + strlen("typedef") + 1;
+  // 如果先遇到(,说明是给函数指针类型起别名
+  if(end=='('){
+    //给函数指针起别名,
+    //提取名
+    //TODO
+    char funcPointerType[1000];
+    strcpy(funcPointerType,track);
+    //首先提取字符串
+    char newName[300];
+    int i=0;
+    while(track[i]!='('&&track[i]!='\0') i++;
+    if(track[i]=='\0') return 0;
+    else i++;
+    while(track[i]!='*'&&track[i]!='\0') i++;
+    if(track[i]=='\0') return 0;
+    else i++;
+    //获取终点
+    int num=1;
+    while(track[i+num]!='\0'&&!myIsCharInStr("*()",track[i+num])){
+      num++;
+    }
+    strncpy(newName,track+i,num);
+    if(!refectorTypeName(funcPointerType)) return 0;
+    putStrId(tbl->strIds,newName,getTypeId(1,0));
+    return 1;
+  }
+  //如果不能找到(或者{,说明是给已知类型起别名
+  else if (end == '\0')
+  {
+    char oldName[400];
+    char newName[400];
+    // 截取旧名,然后读取新名
+    int last = strlen(str) - 1;
+    // 首先从后往前读取掉所有空格来到第一个非空格的字符处
+    while (str[last] == ' ')
+      last--;
+    str[last + 1] = '\0';
+    // 继续往前找到最后一个单词前面第一个空格
+    while (str[last] != ' ')
+      last--;
+    // 这个位置往后就是新名的名字
+    strcpy(newName, str + last + 1);
+    str[last] = '\0';
+    strcpy(oldName, str + strlen("typedef") + 1);
+    refectorTypeName(oldName); // 格式化旧的名字
+    // 然后查找旧的名字对应的id是否存在
+    long long id = strToId(tbl->strIds, oldName);
+    // 如果返回-1,说明这个id不存在,设置为对应的unknownid
+    if (id < 0)
+    {
+      putStrId(tbl->strIds, oldName, 0); // 设置绑定该字符为0下标
+      id = 0;
+    }
+    // 如果返回的id是非负数,则说明存在,绑定新的名字到旧的名字对应的id上
+    putStrId(tbl->strIds, newName, id);
+  }
+  // 读到{先,则{前的名字为类型本名
+  else if (end == '{')
+  {
+    // 首先读取到类型名前面,得到类型的本名
+    char baseName[400];
+    end = mysgets(baseName, "{", track);
+    track += strlen(baseName) + 1;
+    refectorTypeName(baseName);
+    // 然后注册基础名字
+    putStrId(tbl->strIds, baseName, getTypeId(tbl->types.size, 0));
+    // 然后判断类型,读取后面的类型信息
+    mysgets(tmp, " ", baseName);
+    Type type1; // 准备一个type
+    char typeStr[800];
+    end = mysgets(typeStr, "}", track);
+    if (end != '}')
+    {
+      return 0;
+    }
+    track += strlen(typeStr) + 1;
+    if (strcmp(tmp, "enum") == 0)
+    {
+      // 读取花括号中间enum的信息
+      type1 = extractEnum(typeStr);
+    }
+    else if (strcmp(tmp, "struct") == 0)
+    {
+      // 读取花括号中间struct的信息
+      type1 = extractStruct(typeStr);
+    }
+    else if (strcmp(tmp, "union") == 0)
+    {
+      // 读取花括号间union的信息
+      type1 = extractUnion(typeStr);
+    }
+    else
+    {
+      return 0;
+    }
+    // 然后读取type的别名和可能的指针别名,直到读到尽头为止
+    while ((end = mysgets(tmp, ",", track)) != '\0')
+    {
+      // 首先判断前面多少个*号,判断是多少层的别名
+      // 首先读取前面*的数量
+      int layer = 0;
+      int i = 0;
+      while (tmp[i] != '\0' && (tmp[i] == ' ' || tmp[i] == '*'))
+      {
+        if (tmp[i] == '*')
+          layer++;
+        i++;
+      }
+      // 格式化名字
+      refectorTypeName(tmp + i);
+      // 然后注册
+      int id = getTypeId(tbl->types.size, layer);
+      putStrId(tbl->strIds, tmp + i, id);
+      track += strlen(tmp) + 1;
+    }
+    // 处理最后一个部分
+    if (strlen(tmp) != 0)
+    {
+      int layer = 0;
+      int i = 0;
+      while (tmp[i] != '\0' && (tmp[i] == ' ' || tmp[i] == '*'))
+      {
+        if (tmp[i] == '*')
+          layer++;
+        i++;
+      }
+      // 格式化名字
+      refectorTypeName(tmp + i);
+      // 然后注册
+      int id = getTypeId(tbl->types.size, layer);
+      putStrId(tbl->strIds, tmp + i, id);
+      track += strlen(tmp) + 1;
+    }
+    vector_push_back(&tbl->types, &type1);
+  }
+  return 1;
+}
+
+//函数指针的重命名
+int loadTypedefFuncPointer_typetbl(TypeTbl* tbl,char* str){
+  //首先来到typedef之后的位置
+  str+=strlen("typedef")+1; //越过第一个位置的typedef,并越过typedef后面的一个空格
+  // refectorTypeName();
+  //往右查找名字
+  int i=0;
+  char end;
+  char newName[200];
+  
+  //首先查找新名字
+  //首先找到第一个(处,然后查找后面的名字
+  while(str[i]!='('&&str[i]!='\0') i++;
+  if(str[i]=='\0') return 0;
+  else i++;
+  while(str[i]!='\0'&&myIsCharInStr("()* ",str[i])) i++;
+  if(str[i]=='\0') return 0;
+  int num=1;
+  while(str[i+num]!='\0'&&!myIsCharInStr("(*)",str[i])) num++;
+  if(str[i+num]=='\0') return 0;
+  strncpy(newName,str+i,num);
+  //获取简化的函数指针类型名称,
+  char funcPointerSimplyType[1000];
+  strcpy(funcPointerSimplyType,str);
+  char* t=refectorFuncPointerName(funcPointerSimplyType);
+  //加入到tbl中
+  //首先绑定到typeTbl,tbl的滴二个位置,也就是下标0处是func_type的位置
+  int typeIndex=1;
+  int layer=0;
+  long long typeId=getTypeId(typeIndex,layer);
+  putStrId(tbl->strIds,t,typeId);
+  putStrId(tbl->strIds,newName,typeId);
+  return 1;
+}
+
+//获得规格化的函数指针类型名
+char* refectorFuncPointerName(char* str){
+  myStrStrip(str," "," ");  //去掉前后空格
+  vector argTypes=getVector(sizeof(char*)); //保存参数类型名称
+  //保存返回类型名
+  char retType[200];
+  char end=mysgets(retType," (",str);
+  refectorTypeName(retType); //规范设定返回类型不能以函数指针的形式给出,
+  //开始搜索类型名
+  if(str[strlen(str)-1]!=')') return NULL;
+  int toIndex=strlen(str)-2;
+  int fromIndex=toIndex-1;
+  //修改fromIndex的内容
+  int except=1; //是否期待遇到一个参数类型
+  int isRight=1;
+  while(except){
+    //往左找到参数类型的尽头
+    int rightPar=0; //一个完整的类型字符串,哪怕是函数指针类型字符串
+    //里面的左右括号应该是成对出现的
+    while(fromIndex>=0&&(str[fromIndex]!=','&&(str[fromIndex]!='('))||rightPar!=0){
+      if(str[fromIndex]=='(') rightPar--;
+      else if(str[fromIndex]==')') rightPar++;
+      if(rightPar<0){
+        isRight=0;
+        break;
+      }
+      fromIndex--;
+    }
+    if(fromIndex==0){
+      isRight=0;
+    }
+    if(!isRight){
+      break;
+    }
+    //如果是左括号,说明前面已经加入完了
+    if(str[fromIndex]=='('){
+      except=0;
+    }
+    //否则加入这次要加入的字符串
+    char tmpType[300];
+    strncpy(tmpType,str+fromIndex+1,toIndex-fromIndex);
+    refectorTypeName(tmpType);
+    char* tmpStr=strcpy(malloc(strlen(tmpType)+1),tmpType);
+    vector_push_back(&argTypes,&tmpStr);
+    toIndex=fromIndex-1;
+    fromIndex=toIndex-1;
+  }
+  //如果没有正确执行该语句,进行错误处理
+  if(!isRight){
+    //错误处理
+    printf("err in refector funcpointerName\n");  //打印提示语句
+    //释放空间
+    for(int i=0;i<argTypes.size;i++){
+      char* t;
+      vector_get(&argTypes,i,&t);
+      free(t);
+    }
+    vector_clear(&argTypes);
+    return 0;
+  }
+  //正确情形,把函数指针类型名重组完成
+  char* track=str;
+  sprintf(track,"%s(*)(",retType);
+  track+=strlen(retType)+strlen("(*)(");
+  char* argType;
+  for(int i=0;i<argTypes.size-1;i++){
+    vector_get(&argTypes,i,&argType);
+    sprintf(track,"%s,",argType);
+    track+=strlen(track);
+    free(argType);
+  }
+  if(argTypes.size>=1){
+    vector_get(&argTypes,argTypes.size-1,&argType);
+    sprintf(track,"%s)",argType);
+    free(argType);
+  }
+  vector_clear(&argTypes);
+  return str;
+}
+
+
+
 //展示type
 void showType(Type* type){
   //打印类型种类名字
   printf("typeKindName:%s\n",typeKindName[type->kind]);
-  //然后打印类型名字
-
+  //然后打印类型拥有的函数指针类型变量
+  printf("func pointer fields:\n");
+  //打印函数指针属性
+  char** strArr=toStrArr_StrSet(&type->funcPointerFields);
+  for(int i=0;i<type->funcPointerFields.num;i++){
+    printf("%d.%s\n",i+1,strArr[i]);
+  }
+  free(strArr);
   //取出所有变量还有类型以便于打印
   char** fields=malloc(sizeof(char*)*type->fields.size);
   char** fieldTypes=malloc(sizeof(char*)*type->fields.size);
@@ -301,6 +468,7 @@ Type extractUnion(char* str){
   out.kind=TYPE_UNION;
   out.fields=getHashTbl(30,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
   out.funcs=getStrSet(myStrHash);
+  out.funcPointerFields=getStrSet(myStrHash);
   //enum里面只能有成员
   char tmp[1000];
   char end;
@@ -312,6 +480,14 @@ Type extractUnion(char* str){
     while(*str==' '&&*str!='\0') str++;
     int len=strlen(tmp);
     if(len==0) continue;
+    //判断是否是函数指针定义,如果是返回1
+    if(isFuncPointerFieldDef(tmp)){
+      if(!loadFuncPointerFieldDef(&out,tmp)){
+        isWrong=1;
+        break;
+      }
+      continue;
+    }
     //如果末尾是括号
     while(tmp[strlen(tmp)-1]==' ') tmp[strlen(tmp)-1]='\0';
     //如果是函数
@@ -408,6 +584,7 @@ Type extractStruct(char* str){
   out.kind=TYPE_STRUCT;
   out.fields=getHashTbl(30,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
   out.funcs=getStrSet(myStrHash);
+  out.funcPointerFields=getStrSet(myStrHash);
   //enum里面只能有成员
   char tmp[1000];
   char end;
@@ -419,9 +596,17 @@ Type extractStruct(char* str){
     while(*str==' '&&*str!='\0') str++;
     int len=strlen(tmp);
     if(len==0) continue;
-    //如果末尾是括号
+    //处理可能是函数指针定义语句
+    if(isFuncPointerFieldDef(tmp)){
+      if(!loadFuncPointerFieldDef(&out,tmp)){
+        isWrong=1;
+        break;
+      }
+      continue;
+    }
+    //首先去掉末尾多余空格
     while(tmp[strlen(tmp)-1]==' ') tmp[strlen(tmp)-1]='\0';
-    //如果是函数
+    //如果末尾是右括号,说明是函数
     if(tmp[strlen(tmp)-1]==')'){
       //往左找到左边对应的括号
       int right=1;  //记录右括号数量
@@ -511,7 +696,11 @@ Type extractStruct(char* str){
 
 
 //格式化类型字符串
-void refectorTypeName(char* str){
+int refectorTypeName(char* str){
+  //如果判断是函数指针类型字符串,则格式函数指针类型字符串
+  if(isFuncPointerType(str)){
+    return refectorFuncPointerName(str)==NULL?0:1;
+  }
   vector vec=getVector(sizeof(char));
   int i=0;
   //首先越过前面所有空格
@@ -537,7 +726,10 @@ void refectorTypeName(char* str){
   while (i<strlen(str))
   {
     if(str[i]==' ') i++;
-    else if(str[i]=='*') vector_push_back(&vec,&str[i]);
+    else if(str[i]=='*'){
+      vector_push_back(&vec,&str[i]);
+      i++;
+    }
     else break; //否则是异常格式,只读取前面部分
   }
   char c='\0';
@@ -546,10 +738,73 @@ void refectorTypeName(char* str){
   strcpy(str,s);
   free(s);
   vector_clear(&vec);
+  return 1;
+}
+
+//判断语句是否是函数指针类型属性定义语句,是返回非0值,不是返回0
+int isFuncPointerFieldDef(char* str){
+  //函数指针属性定义语句可以用一个自动机来识别
+  //字符串->左括号->星号->右括号->左括号->类型列表->右括号
+  //void (*p2) (int,int)
+  //结构体类型变量定义和一般变量定义没有括号,
+  //结构体方法定义有一对括号
+  //函数指针属性才会有两对括号
+  char* stops="(";
+  char tmp[1000];
+  char end=mysgets(tmp,stops,str);
+  if(end!='(') return 0;
+  str+=strlen(tmp)+1;
+  end=mysgets(tmp,stops,str);
+  if(end!='(') return 0;
+  return 1;
+}
+
+//判断是否是函数指针类型名或者函数指针参数名,
+int isFuncPointerType(const char* str){
+  //进行粗糙判断
+  //TODO进行更精细判断
+  //如果有两个括号则是函数指针类型名
+  int num=0;
+  for(int i=0;i<strlen(str);i++){
+    if(str[i]=='(') num++;
+    if(num==2) return 1;
+  }
+  return 0;
+}
+
+
+
+int loadFuncPointerFieldDef(Type* typep,char* str){
+  char* stops="(";
+  char tmp[1000];
+  char end=mysgets(tmp,stops,str);
+  str+=strlen(tmp)+1;
+  //往后面查找剩下的内容
+  end=mysgets(tmp,"*",str);
+  //
+  if(end!='*') return 0;
+  str+=strlen(tmp)+1;
+  //然后后面查找,找到字符串尽头
+  char* stops2="()* ";
+  while((end=mysgets(tmp,stops2,str))!='\0'){
+    if(strlen(tmp)==0){
+      str+=1;
+      continue;
+    }
+    break;
+  }
+  if(end=='\0')return 0;
+  addStr_StrSet(&typep->funcPointerFields,tmp);
+  return 1;
 }
 
 
 int findType(TypeTbl* tbl,char* typeName,int* layerRet){
+  //首先判断是否是函数指针类型,如果是返回函数指针
+  if(isFuncPointerType(typeName)){
+    *layerRet=0;
+    return 1;   //类型表的第一个位置为FUNC类型
+  }
   long long id;
   int typeIndex;
   int pLayer;
@@ -595,7 +850,8 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
 //清空一个type的所有内容
 void delType(Type* type){
   initStrSet(&type->funcs);
-  //TODO,释放fields中hashtbl fields的内容
+  initStrSet(&type->funcPointerFields);
+  //释放fields中hashtbl fields的内容
   char** keys=malloc(type->fields.keySize*type->fields.size);
   char**  vals=malloc(type->fields.valSize*type->fields.size);
   hashtbl_toArr(&type->fields,keys,vals);

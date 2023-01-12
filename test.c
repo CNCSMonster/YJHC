@@ -1,27 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+typedef long long unsigned int(*G)(const char*) ;
 
 
-int main()
-{
-    int c=o123;
-    
-    volatile const int a=5;
-    printf("%p\n",&a);
-    int* m=(int*)&a;
-    // int* t=&a;
-    // int* m=(int*)*(&t);
-    // int* m=(int*)6422036;
-    // int* m=(int*)6422044;   //000000000061FE1C;
-    printf("%p\n",m);
-    //
-    printf("%d\n",a);
-    *m=3;
-    printf("%d\n",*m);
-    printf("%d\n",m==&a);
-    // int* m=&a;
-    // *m=4;
-    // printf("%d",*m);
-    exit(0);
-    // return 4;
+void sort(int i,int (*)(void*,void*));
+
+void sort(int i,int (*cmp)(void*,void*)){
+
+}
+
+
+typedef struct zarr{
+    int m;
+    int arr[];
+}ZArr;
+
+int main(char* argv[])
+{    
+
+    ZArr a={
+        .m=1
+    };
+    //0¿òÊý×é
+    printf("%d",a.arr[10000]);
+
+    return 1;
 }

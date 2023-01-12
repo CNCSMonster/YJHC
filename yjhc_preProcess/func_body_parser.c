@@ -51,7 +51,6 @@ int main(int argc,char* argv[]){
   while(jud=code_parse(body,tokens));
   fclose(body);
   fclose(tokens);
-  if(!jud) ERR;
   //然后进行第二次遍历,合并运算符
   strcpy(prePath,curPath);
   jud=sprintf(curPath,"%s2nd",tokensPath);

@@ -122,7 +122,7 @@ void del_tokenLine(TBNode* tokens){
 }
 
 //释放剩余所有内容,该方法可以在语义分析异常结束的时候使用
-void del_rest_token_reader(){
+void release_token_reader(){
   if(head.next!=NULL){
     del_tokenLine(head.next);
   }

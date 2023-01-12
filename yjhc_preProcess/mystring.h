@@ -19,7 +19,9 @@ int myfgets(char* buf,char* stops,FILE* fin);
 
 int myStrHash(const char* str);
 
-
+//过滤去除字符串中的某些字符,返回的是过滤后的字符指针,为了返回链式编程
+//该函数会删除字符串中在toRemoves出现的字符,后续字符向前补位
+char* myStrFilter(char* str,const char* toRemoves);
 
 
 //从字符串根据指定终结符读取一个字符串
@@ -29,7 +31,7 @@ int mysgets(char* buf,const char* stops,const char* src);
 int myStrStrip(char* str,const char* prefexs,const char* suffixs);
 
 //判断字符串中是否有个字符,如果是返回非0值,如果不是返回0
-int myIsCharInStr(char* str,char c);
+int myIsCharInStr(const char* str,const char c);
 
 int mystrReplace(char* s,char old,char new);
 
