@@ -1,4 +1,0 @@
-typedef enum score_level{ GOOD, BAD, NORMAL }LEVEL,*LEVELP
-struct student{ double score; int age; int* agep; int * agep; char name[20][22]; double getScore(); void selfIntroduce(); }
-typedef int GG
-union multiData{ int integer; double decimal; short shortInt; void doA(); }

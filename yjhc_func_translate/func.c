@@ -1,8 +1,6 @@
 #include "func.h"
 
 
-
-//获得个动态分配空间的字符串,作为指向函数的键
 char* getFuncKey(char* funcName,long long typeId){
   //使用个中间符号隔开两个内容
   int len=strlen(funcName)+20;
@@ -14,6 +12,7 @@ char* getFuncKey(char* funcName,long long typeId){
 //获得个初始函数表,
 FuncTbl getFuncTbl(TypeTbl* typeTbl){
   FuncTbl funcTbl;
+  funcTbl.funcNames=getVector(sizeof(char*)); //保存函数名字的顺序表
   funcTbl.globalTypeTbl=typeTbl;
   funcTbl.funcs=getHashTbl(100,sizeof(char*),sizeof(Func*),typeFieldNameHash,typeFieldEq);
   return funcTbl;
@@ -92,6 +91,8 @@ int loadLine_functbl(FuncTbl* funcTbl,char* str){
     key=getFuncKey(toAdd->func_name,ownerId);
   }
   hashtbl_put(&funcTbl->funcs,&key,&toAdd);
+  //把字符串也加到funcName里面
+  vector_push_back(&funcTbl->funcNames,&key);
   return 1;
 }
 
@@ -109,6 +110,7 @@ int extractArgFromLine(TypeTbl *typeTbl, Arg *retArg, char* argStr)
     isConst=1;
   }
   int i = strlen(argStr) - 1;
+  //然后往前移动越过参数名
   while (argStr[i] != ' ' && argStr[i] != '*')
     i--;
   char typeName[200];
@@ -128,15 +130,15 @@ int extractArgFromLine(TypeTbl *typeTbl, Arg *retArg, char* argStr)
     int rightBracketNum=1;
     valName[i]='\0';
     i--;
-    while(i>=0&&(rightBracketNum!=0||valName[i]!=']')){
+    while(i>=0&&(rightBracketNum!=0||((valName[i]==']'||valName[i]==' ')&&rightBracketNum==0))){
       if(valName[i]=='['){
         baseLayer++;
         rightBracketNum--;
       }
       else if(valName[i]==']') rightBracketNum++;
-      valName[i]='\0';
       i--;
     }
+    valName[i+1]='\0';
   }
   retLayer+=baseLayer;
   if (index == 0)
@@ -150,7 +152,7 @@ int extractArgFromLine(TypeTbl *typeTbl, Arg *retArg, char* argStr)
   retArg->name=strcpy(malloc(strlen(valName) + 1), valName);
   retArg->isConst=isConst;
   retArg->typeId=typeId;
-
+  return 1;
 }
 
 //查找函数,查找到返回函数指针,没有查找到返回NULL
@@ -226,5 +228,7 @@ void del_functbl(FuncTbl* funcTbl){
   free(keys);
   free(funcs);
   hashtbl_release(&funcTbl->funcs);
+  //释放函数名空间
+  vector_clear(&funcTbl->funcNames);
 }
 

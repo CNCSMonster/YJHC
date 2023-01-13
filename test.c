@@ -2,29 +2,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef long long unsigned int(*G)(const char*) ;
+typedef long long unsigned int(*G)(const char*);
 
-
-void sort(int i,int (*)(void*,void*));
-
-void sort(int i,int (*cmp)(void*,void*)){
-
+int countA(int i){
+    return i;
+}
+int countB(int j){
+    return j*2;
 }
 
-
-typedef struct zarr{
-    int m;
-    int arr[];
-}ZArr;
+int (*getCount(int i))(int){
+    if(i==1) return countA;
+    else return countB;
+}
 
 int main(char* argv[])
 {    
-
-    ZArr a={
-        .m=1
-    };
-    //0¿òÊý×é
-    printf("%d",a.arr[10000]);
-
+    printf("%d,%d",getCount(1)(1),getCount(2)(1));
+    char* a=malloc(3);
     return 1;
 }
+

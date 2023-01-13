@@ -9,6 +9,7 @@ TypeTbl getGlobalTypeTbl(){
     Type toAdd;
     toAdd.kind=i;
     toAdd.funcs=getStrSet(myStrHash);
+    toAdd.defaultName=NULL;
     toAdd.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
     toAdd.funcPointerFields=getStrSet(myStrHash);
     //放进去的字符串要动态分配空间
@@ -29,6 +30,7 @@ TypeTbl getTypeTbl(){
   Type unknownType;
   unknownType.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
   unknownType.kind=TYPE_UNKNOW;
+  unknownType.defaultName=NULL;
   unknownType.funcPointerFields=getStrSet(myStrHash);
   unknownType.funcs=getStrSet(myStrHash);  
   vector_push_back(&out.types,&unknownType);
@@ -36,6 +38,7 @@ TypeTbl getTypeTbl(){
   Type funcPointerType;
   funcPointerType.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
   funcPointerType.kind=TYPE_FUNC_POINTER;
+  funcPointerType.defaultName=NULL;
   funcPointerType.funcPointerFields=getStrSet(myStrHash);
   funcPointerType.funcs=getStrSet(myStrHash);
   vector_push_back(&out.types,&funcPointerType);
@@ -75,8 +78,8 @@ int loadFile_typeTbl(TypeTbl* tbl, FILE* fin){
 //long long前32位为对应基础type的下标,后32位为这个类型对应的指针层次
 //long long
 void getTypeIndexAndPointerLayer(long long code,int* typeIndex,int* pointerLayer ){
-  *typeIndex=code>>32;
-  *pointerLayer=(code<<32)>>32;
+  if(typeIndex!=NULL) *typeIndex=code>>32;
+  if(pointerLayer!=NULL) *pointerLayer=(code<<32)>>32;
 }
 
 //根据kindIndex和pointerLayer获得对应的long long编码
@@ -138,6 +141,7 @@ int loadLine_typetbl(TypeTbl* tbl,char* str){
     {
       return 0;
     }
+    toAdd.defaultName=strcpy(malloc(strlen(name)+1),name);
     vector_push_back(&tbl->types, &toAdd);
   }
   return 1;
@@ -246,6 +250,7 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
     {
       return 0;
     }
+
     // 然后读取type的别名和可能的指针别名,直到读到尽头为止
     while ((end = mysgets(tmp, ",", track)) != '\0')
     {
@@ -284,6 +289,7 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
       putStrId(tbl->strIds, tmp + i, id);
       track += strlen(tmp) + 1;
     }
+    type1.defaultName=strcpy(malloc(strlen(baseName)+1),baseName);
     vector_push_back(&tbl->types, &type1);
   }
   return 1;
@@ -409,7 +415,8 @@ char* refectorFuncPointerName(char* str){
 //展示type
 void showType(Type* type){
   //打印类型种类名字
-  printf("typeKindName:%s\n",typeKindName[type->kind]);
+  if(type->defaultName==NULL) printf("typeName:%s\n",typeKindName[type->kind]);
+  else printf("typeName:%s\n",type->defaultName);
   //然后打印类型拥有的函数指针类型变量
   printf("func pointer fields:\n");
   //打印函数指针属性
@@ -444,6 +451,7 @@ Type extractEnum(char* str){
   out.kind=TYPE_ENUM;
   out.fields=getHashTbl(10,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
   out.funcs=getStrSet(myStrHash);
+  out.funcPointerFields=getStrSet(myStrHash);
   //enum里面只能有成员
   char tmp[1000];
   char end;
@@ -849,6 +857,8 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
 
 //清空一个type的所有内容
 void delType(Type* type){
+  if(type->defaultName!=NULL) free(type->defaultName);
+  type->defaultName=NULL;
   initStrSet(&type->funcs);
   initStrSet(&type->funcPointerFields);
   //释放fields中hashtbl fields的内容

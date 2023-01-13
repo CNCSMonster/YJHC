@@ -15,6 +15,7 @@ int token_guess(FILE* fin,FILE* code);
 //第五遍扫描,确定函数指针,给函数指针变量标记为函数
 int token_findFuncPointer(FILE* fin,FILE* code);
 
+
 //ps四次遍历过后不存在unknown类型的token,所有token都被确定为类型/界符/保留字/函数名/量名
 
 

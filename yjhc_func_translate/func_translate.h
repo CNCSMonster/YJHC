@@ -10,28 +10,40 @@
 #include "val_tbl.h"
 #include "token_reader.h"
 
-//TODO
+
+//目前只是处理单文件的问题,多文件的yjhc代码会先通过静态链接的处理再进行翻译
+
+//一些翻译用的参数,
+//该参数用于重命名结构体方法
+#define PREFIX_OF_NEW_FUNC "__yjhc_"
+//该参数用于重命名结构体方法中调用的自身属性
+#define PREFIX_OF_NEW_VAL "this."
+
 
 //函数翻译者,保存函数翻译者需要的一些参数
 typedef struct func_translator{
   //表结构
   TypeTbl* gloabalTypeTbl; //全局类型表
-  ValTbl* ValTbl;  //全局量表
+  ValTbl* valTbl;  //全局量表
   ValTbl* partialValTbl;  //局部量表
   FuncTbl* funcTbl; //全局函数表
-  FILE* fout;
   //注意,token读取器使用的单例模式
 }FuncTranslator;
 
 //创建函数翻译器,翻译结果是把未翻译的yjhc的函数代码token转为c的函数代码token序列
-FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath,char* tokenPath,char* tokenOutPath);
+FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath);
 
 //使用函数翻译器开始翻译
-int func_translate(FuncTranslator* funcTranslator,char*);
+int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenOutPath);
 
+//翻译单个句子,成功返回nodes,失败返回NULL
+TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes);
 
 //翻译结束释放函数翻译器
 int release_FuncTranslator(FuncTranslator* funcTranslator);
+
+//对nodeds进行处理,成功返回非0值,失败返回0
+int process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes);
 
 
 //判断翻译类型
@@ -49,39 +61,39 @@ typedef enum func_translate_kind{
 }FTK;
 
 //判断句子的翻译类型,以选择不同的翻译语句
-FTK getTokenLineKind(TBNode* tokens);
+FTK getTokenLineKind(FuncTranslator* functranslator, TBNode* tokens);
 
-//翻译功能子代码,翻译成功返回非0值,翻译失败返回0
+//翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
 
 //翻译变量定义语句
-int translateVarDef(TBNode* tokens);
+TBNode* translateVarDef(FuncTranslator* functranslator,TBNode* tokens);
 
 //翻译常量定义语句
-int translateConstDef(TBNode* tokens);
+TBNode* translateConstDef(FuncTranslator* functranslator,TBNode* tokens);
 
 //翻译运算语句
-int translateCountDef(TBNode* tokens);
+TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens);
 
 //函数指针定义语句
-int translateFuncPointerDef(TBNode* tokens);
+TBNode* translateFuncPointerDef(FuncTranslator* functranslator,TBNode* tokens);
 
 //typedef命名类型别名语句
-int translateTypedef(TBNode* tokens);
+TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens);
 
 //翻译函数调用语句
-int translateFuncUse(TBNode* tokens);
+TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens);
 
 //翻译赋值语句
-int translateAssign(TBNode* tokens);
+TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens);
 
 //翻译类型方法调用语句
-int translateTypeMethodUse(TBNode* tokens);
+TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens);
 
 
 
 //翻译函数的选择表
 
-int (*tranFuncs[]) (TBNode*) = {
+TBNode* (*tranFuncs[]) (FuncTranslator*,TBNode*) = {
   [NOT_TRANSLATE_FTK] NULL,
   [VAR_DEFINE_FTK] translateVarDef,
   [CONST_DEFINE_FTK] translateConstDef,     //常量定义语句
@@ -90,11 +102,8 @@ int (*tranFuncs[]) (TBNode*) = {
   [TYPEDEF_FTK] translateTypedef,    //typedef起头的类型别名定义语句
   [FUNCPOINTER_DEF_FTK] translateFuncPointerDef,  //函数指针量定义语句
   [ASSIGN_FTK] translateAssign, //赋值语句
-  [TYPE_FUNCTION_USE_FTK] translateTypeMethodUse   //类型方法调用语句
+  [TYPE_METHOD_USE_FTK] translateTypeMethodUse   //类型方法调用语句
 };
-
-
-
 
 
 

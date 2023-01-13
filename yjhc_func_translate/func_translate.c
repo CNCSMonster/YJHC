@@ -3,35 +3,27 @@
 
 
 //创建函数翻译器,翻译结果是把未翻译的yjhc的函数代码token转为c的函数代码token序列
-FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath,char* tokenPath,char* tokenOutPath){
+FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath){
   FuncTranslator out={
-    .fout=NULL,
     .funcTbl=NULL,
     .gloabalTypeTbl=NULL,
     .partialValTbl=NULL,
     .ValTbl=NULL
   };
-  if(typePath==NULL||funcHeadPath==NULL||valPath==NULL||tokenPath==NULL||tokenOutPath==NULL) return out;
+  if(typePath==NULL||funcHeadPath==NULL||valPath==NULL) return out;
   int isRight=1;  //记录是正确的
   FILE* typeFin=fopen(typePath,"r");
   FILE* funcFin=fopen(funcHeadPath,"r");
   FILE* valFin=fopen(valPath,"r");
-  FILE* tokenFin=fopen(tokenPath,"r");
-  FILE* fout=fopen(tokenOutPath,"w");
-  if(typeFin==NULL||funcFin==NULL||valFin==NULL||tokenFin==NULL||fout==NULL){
+  if(typeFin==NULL||funcFin==NULL||valFin==NULL){
     isRight=0;
   }
   if(!isRight){
     if(typeFin!=NULL) fclose(typeFin);
     if(funcFin!=NULL) fclose(funcFin);
     if(valFin!=NULL) fclose(valFin);
-    if(tokenFin!=NULL) fclose(tokenFin);
-    if(fout!=NULL) fclose(fout);
     return out;
   }
-  //否则参数正确,进行初始化翻译器操作
-  init_token_reader(tokenFin);
-
   out.gloabalTypeTbl=malloc(sizeof(TypeTbl));
   *(out.gloabalTypeTbl)=getTypeTbl();
   loadFile_typeTbl(out.gloabalTypeTbl,typeFin);
@@ -40,11 +32,9 @@ FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath
   *(out.funcTbl)=getFuncTbl(out.gloabalTypeTbl);
   loadFile_functbl(out.funcTbl,funcFin);
 
-  out.ValTbl=malloc(sizeof(FuncTbl));
-  *(out.ValTbl)=getValTbl(*(out.gloabalTypeTbl));
-  loadFile_valtbl(out.ValTbl,valFin);
-
-  out.fout=fout;
+  out.valTbl=malloc(sizeof(FuncTbl));
+  *(out.valTbl)=getValTbl(*(out.gloabalTypeTbl));
+  loadFile_valtbl(out.valTbl,valFin);
 
   //完成空间分配后释放空间
   free(typeFin);
@@ -53,66 +43,133 @@ FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath
   return out;
 }
 
+//对nodeds进行处理,成功返回非0值,失败返回0
+TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes){
+  //先进行简单的结构体类型方法调用支持
+
+  //结构体类型属性调用支持
+
+  //gc支持:garbage collection
+  // if(gc){
+  //   //支持gc
+  // }
+  
+
+}
+
+
 
 
 //使用函数翻译器开始翻译
-int func_translate(FuncTranslator* funcTranslator,char*){
+int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenOutPath){
+  if(tokenInPath==NULL || tokenOutPath==NULL ) return 0;
+  //初始化输入输出工具
+  FILE* fin=fopen(tokenInPath,"r");
+  FILE* fout=fopen(tokenOutPath,"w");
+  int isRight=1;
+  if(fin==NULL||fout==NULL) isRight=0;
+  if(!isRight){
+    if(!fin) fclose(fin);
+    if(!fout) fclose(fout);
+    return 0;
+  }
+  init_token_reader(fin);
+  //正式工作
+  TBNode* nodes;
+  ActionSet actionSet;
+  int preBlocks=0;
+  //先全部进行翻译,然后格式化的工作另外再完成,
+  //翻译的结果应该是token序列
+  while((nodes=readTokenSentence(&actionSet))!=NULL){
+    //先进行处理
+    nodes=process_singleLine(funcTranslator,);
+    //然后把处理结果写入文件
+    if(nodes!=NULL) fput_tokenLine(fout,nodes);
+    //进行块的进出更新
+    if(preBlocks==actionSet.blocks-1){
+      //TODO
 
+    }
+    else if(preBlocks==actionSet.blocks+1){
+      //TODO
+
+    }
+    preBlocks=actionSet.blocks;
+    del_tokenLine(nodes);
+  }
+  fclose(fin);
+  fclose(fout);
+  return 1;
 }
+
 
 
 //翻译结束释放函数翻译器
 int release_FuncTranslator(FuncTranslator* funcTranslator){
-
+  if(funcTranslator->fout!=NULL) fclose(funcTranslator->fout);
+  funcTranslator->fout=NULL;
+  //删除量表以及内嵌的类型表
+  while(funcTranslator->valTbl!=NULL){
+    ValTbl* tmpTbl=funcTranslator->valTbl;
+    funcTranslator->valTbl=tmpTbl->next;
+    del_valTbl(&tmpTbl);
+    free(tmpTbl);
+  }
+  del_functbl(&funcTranslator); //删除函数表
+  free(funcTranslator->funcTbl);
+  free(funcTranslator->gloabalTypeTbl);
+  funcTranslator->funcTbl=NULL;
+  funcTranslator->gloabalTypeTbl=NULL;
+  funcTranslator->partialValTbl=NULL;
+  return 1;
 }
-
-
 
 
 //判断句子的翻译类型,以选择不同的翻译语句
-FTK getTokenLineKind(TBNode* tokens){
+FTK getTokenLineKind(FuncTranslator* functranslator, TBNode* tokens){
+
 
 }
 
-//翻译功能子代码
-int translateVarDef(TBNode* tokens){
+//翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
+
+//翻译变量定义语句
+TBNode* translateVarDef(FuncTranslator* functranslator,TBNode* tokens){
 
 }
+
 //翻译常量定义语句
-int translateConstDef(TBNode* tokens){
+TBNode* translateConstDef(FuncTranslator* functranslator,TBNode* tokens){
 
 }
 
 //翻译运算语句
-int translateCountDef(TBNode* tokens){
+TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
 
 }
 
 //函数指针定义语句
-int translateFuncPointerDef(TBNode* tokens){
+TBNode* translateFuncPointerDef(FuncTranslator* functranslator,TBNode* tokens){
 
 }
 
 //typedef命名类型别名语句
-int translateTypedef(TBNode* tokens){
+TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
 
 }
 
 //翻译函数调用语句
-int translateFuncUse(TBNode* tokens){
+TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
 
 }
 
 //翻译赋值语句
-int translateAssign(TBNode* tokens){
+TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
 
 }
 
 //翻译类型方法调用语句
-int translateTypeMethodUse(TBNode* tokens){
-  
+TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens){
+
 }
-
-
-
 

@@ -76,6 +76,8 @@ char* defaultValueOfBaseTypes[]={
 
 //仅仅支持enum以及非
 typedef struct struct_type{
+  //记录类型的基本名字
+  char* defaultName;  //记录基础名字
   TypeKind  kind; //记录该类型的类型
   //需要一个哈希表来保存fields,建立<key,val>为<fieldName,fieldTypeName>的哈希表
   hashtbl fields;

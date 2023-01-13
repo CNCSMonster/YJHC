@@ -1,0 +1,10 @@
+#define NOT_DEFINE (-1)
+
+typedef enum enum_Symbol{
+Symbols_NUM
+}Symbol;
+
+typedef enum enum_Token{
+Tokens_NUM
+}Token;
+

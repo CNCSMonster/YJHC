@@ -109,6 +109,16 @@ void fshow_tokenLine(FILE* fout,TBNode* tokens){
 }
 
 
+//以token的(类型编号,字符字面值)的形式写入文件
+void fput_tokenLine(FILE* fout,TBNode* tokens){
+  TBNode* track=tokens; 
+  while(track!=NULL){
+    fprintf(fout,"%d %s\n",track->token.kind,track->token.val);
+    track=track->next;
+  }
+}
+
+
 void del_tokenLine(TBNode* tokens){
   TBNode* tmp=tokens->next;
   while(tmp!=NULL){
@@ -132,4 +142,5 @@ void release_token_reader(){
     ssStack.next=tmp->next;
     free(tmp);
   }
+  tb_fin=NULL;  //注意这里没有回收文件指针
 }
