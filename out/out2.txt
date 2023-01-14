@@ -1,16 +1,85 @@
-struct A{
-int size; void setSize(int size);
-int getSize();
+void funcA(const char* mm){
+for(int i=1;i<10;i++) int m=i;
+printf("%s",mm);
 }
-struct A->void setSize(int size){
-self.size=size;
+ void addA(){
+void (*pp)(enum score_level*,struct student*);
 }
-struct A->int getSize(){
-return size;
+void addB(){
 }
-int main(int argc){
-struct A a;
-if(argc==1) a.setSize();
-else printf("%d",a.getSize());
+const double pi = 3.1415926;
+const int minutePerHour=60;
+const float ggb;
+const double* mm;
+int year;
+int month;
+typedef enum score_level{ GOOD,
+BAD,
+NORMAL
+}LEVEL,*LEVELP;
+struct student{
+double score;
+int age;
+int* agep;
+int * agep;
+char name[20][22];
+double getScore(); void selfIntroduce(); };
+typedef int GG;
+void swap(int* a,int * b){
+void (*p)(int); *a=*a+*b;
+*b=*a-*b;
+*a=*a-*b;
+}
+union multiData{
+int integer;
+double decimal;
+short shortInt;
+void doA();
+};
+struct student->double getScore(){
+return score; }
+struct student->void selfIntroduce(){
+printf("my name is:%s,my socre is:%f,my age is:%d",name,getScore(),age);
+}
+union multiData->void doA(){
+return ;
+}
+LEVEL judLevel(int score){
+if(score>=33)
+return GOOD;
+else if(score==22){
+score++;
+return NORMAL;
+}
+else
+return BAD;
+}
+int main(int argc,const char* argv[]){
+do int a=1; while(0);
+for(int i=0;i<a;i++){
+while(i<2*a){
+do int j=i; while(j<2);
+}
+}
+int a=1;
+if(a>1){
+for(int i=0;i<a;i++){
+while(i<2*a){
+do int j=i; while(j<2);
+}
+}
+}
+struct student stu1;
+union multiData md;
+const int m=5;
+typedef int MyInt;
+MyInt th;
+typedef union multiData MD;
+enum score_level L;
+T
+stu1.selfIntroduce();
+LEVEL level=judLevel(stu1);
+int N
+printf("student%s's score level is %d,he get %d pens!",M,a);
 return 1;
 }

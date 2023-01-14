@@ -9,11 +9,13 @@ void init_token_reader(FILE* fin){
   tail=&head;
   ifSplitAfterAdd=0;
   token_reader_blocks=0;
+  oldActionSet.blocks=0;
+  oldActionSet.printAction=PRINTSPACE;
+  oldActionSet.printTblAction=NOT_DEFINE;
 }
 
 //返回一条语句,通过函数指针返回对块的进出情况的判断,以及输出是否要换行的判断
 TBNode* readTokenSentence(ActionSet* actionSet){
-
   //直接返回的情况,结束后分割
   //语法制导翻译-part1:分割+打印+块动作翻译
   while(1){

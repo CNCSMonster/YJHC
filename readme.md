@@ -54,7 +54,9 @@ cp
 
 ### TODO，希望有缘人帮忙做了这些工作
 
-1. 提取库文件类型和变量名:
+1. 制作个yjhc的语法高亮插件
+
+2. 提取库文件类型和变量名:
 
    根据pound.txt中的#include信息
 
@@ -62,13 +64,11 @@ cp
 
    libTypePath和libValPath文件中能够被TypeTbl或ValTbl加载
 
-2. 进行静态文件拼接.
+3. 进行静态文件拼接.
 
    根据pound.txt中的#include信息,把#include的相对路径或者绝对路径下的文件分别经过去注释和去pound处理后黏贴到主文件中
 
    最后得到一个没有pound("#“)的源文件,以及一个只有#define的pound文件
-
-3. 补充this关键字的识别和处理
 
 4. 完善任何格式化的漏洞
 

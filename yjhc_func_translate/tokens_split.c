@@ -21,7 +21,7 @@ int main(int argc,char* argv[]){
   ActionSet actionSet;
   while((nodes=readTokenSentence(&actionSet))!=NULL){
     fshow_tokenLine(fout,nodes);
-    fprintf(fout,"\n");
+    fprintf(fout,"\t%d\n",actionSet.blocks);  //´òÓ¡¿é²ãÊý
   }
   release_token_reader();
   return 1;

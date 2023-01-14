@@ -46,7 +46,7 @@ const char* tokenStrings[]={
   [ELSE]  "keyword else",
   [FOR] "keyword for",
   [DO]  "keyword do in do-while structure",
-  [WHILE] "keyword while in do-while structure",
+  [WHILE] "keyword while",
   [CONTINUE]  "keyword continue",
   [BREAK] "keyword break",
   [RETURN]  "keyword return",

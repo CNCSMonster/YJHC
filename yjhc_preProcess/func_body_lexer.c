@@ -1,4 +1,4 @@
-#include "func_body_parser.h"
+#include "func_body_lexer.h"
 
 
 #define ERR printf("something wrong in parser")
@@ -14,6 +14,9 @@ int token_guess(FILE* fin,FILE* code);
 
 //第五遍扫描,确定函数指针,给函数指针变量标记为函数
 int token_findFuncPointer(FILE* fin,FILE* code);
+
+//判断一个token类型是否是句子开始前的token
+int is_preSentence_token(Token token);
 
 
 //ps四次遍历过后不存在unknown类型的token,所有token都被确定为类型/界符/保留字/函数名/量名
@@ -125,7 +128,13 @@ int main(int argc,char* argv[]){
   return 0;
 }
 
-
+//判断一个token类型是否是句子开始前的token
+int is_preSentence_token(Token token){
+  if(token.kind==SEMICOLON||token.kind==LEFT_BRACE||token.kind==RIGHT_BRACE||token.kind==COMMA||token.kind==LEFT_PAR){
+    return 1;
+  }
+  return 0;
+}
 
 int token_mergeOp(FILE* fin,FILE* code){
   Token last;   //上一个token,最多只要保留两个token(因为最多两个token来合成)
@@ -364,13 +373,13 @@ int token_guess(FILE* fin,FILE* code){
       cur.kind=TYPE;
       next.kind=TYPE;
     }
-    //如果curtoken是某个语句的开头而且下一个token是未知名,则这个token是类型定义,下一个token是变量名
-    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA||pre.kind==CONST_KEYWORD)&&next.kind==UNKNOWN){
+    //如果curtoken是某个语句的的开头或者const的下一个而且下一个token是未知名,则这个token是类型定义,下一个token是变量名
+    else if((is_preSentence_token(pre)||pre.kind==CONST_KEYWORD)&&next.kind==UNKNOWN){
       cur.kind=TYPE;
       next.kind=VAR;
     }
     //如果cur token是开头token,而且下一个token是*,则这个token是个类型定义
-    else if((pre.kind==SEMICOLON||pre.kind==LEFT_PAR||pre.kind==COMMA||pre.kind==CONST_KEYWORD)
+    else if((is_preSentence_token(pre)||pre.kind==CONST_KEYWORD)
       &&strcmp(next.val,"*")==0
     ){
       Token tmpCur=connectToken(cur,next,TYPE,"");
@@ -422,7 +431,7 @@ int token_findFuncPointer(FILE* fin,FILE* code){
       continue;
     }
     //如果前面是句子开头,则进行判断,
-    if(pre.kind==LEFT_BRACE||pre.kind==SEMICOLON||pre.kind==LEFT_BRACE||pre.kind==COMMA){
+    if(is_preSentence_token(pre)){
       //首先读取到分号
       while((tmpToken=getToken(fin)).val!=NULL&&tmpToken.kind!=SEMICOLON){
         vector_push_back(&vec,&tmpToken);
@@ -525,6 +534,9 @@ int token_findFuncPointer(FILE* fin,FILE* code){
         isRight=0;
         break;
       }
+    }
+    else{
+      //其他情况
     }
   }
   if(!isRight){
