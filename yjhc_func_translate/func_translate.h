@@ -1,9 +1,7 @@
 #ifndef _FUNC_TRANSLATE_H
 #define _FUNC_TRANSLATE_H
 
-
-#include "str_set.h"
-#include "string_index.h"
+#include "lib_use.h"
 #include "syntax_symbol.h"
 #include "func.h"
 #include "type.h"
@@ -40,10 +38,7 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
 TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes);
 
 //翻译结束释放函数翻译器
-int release_FuncTranslator(FuncTranslator* funcTranslator);
-
-//对nodeds进行处理,成功返回非0值,失败返回0
-int process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes);
+int release_funcTranslator(FuncTranslator* funcTranslator);
 
 
 //判断翻译类型
@@ -61,7 +56,7 @@ typedef enum func_translate_kind{
 }FTK;
 
 //判断句子的翻译类型,以选择不同的翻译语句
-FTK getTokenLineKind(FuncTranslator* functranslator, TBNode* tokens);
+FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* tokens);
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
 

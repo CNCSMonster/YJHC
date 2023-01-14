@@ -1,6 +1,16 @@
-int main();
-int main(){
-int a;
-if(a>2) return 0;
+struct A{
+int size; void setSize(int size);
+int getSize();
+}
+struct A->void setSize(int size){
+self.size=size;
+}
+struct A->int getSize(){
+return size;
+}
+int main(int argc){
+struct A a;
+if(argc==1) a.setSize();
+else printf("%d",a.getSize());
 return 1;
 }

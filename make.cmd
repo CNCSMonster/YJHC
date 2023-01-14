@@ -16,5 +16,8 @@ gcc gtg\main.c -o exe\gtg
 @REM 能够根据函数的token列表获得函数的格式化
 gcc yjhc_func_translate\refector.c -o exe\refector
 
+@REM 准备个函数代码块分割工具,用来检查token_reader的分割功能是否正确
+gcc yjhc_func_translate\tokens_split.c -o exe\tks
 
-
+@REM 准备翻译工具
+gcc yjhc_func_translate\main.c -o exe\ft

@@ -33,6 +33,8 @@
 #include "type.h"
 #include "type.c"
 
+#include "func_translate.h"
+#include "func_translate.c"
 
 #include "action.h"
 

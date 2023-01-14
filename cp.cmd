@@ -29,3 +29,10 @@ chdir ../..
 @REM 使用refector工具获得代码的格式化放置到out中
 exe\refector out/func_tokens.txt out/func_refector.txt
 
+@REM 使用tokens_split工具tks把token序列进行切割,以检查切割结果是否正确
+exe\tks out/func_tokens.txt out/after_tokens_split.txt
+
+@REM 进行翻译工具ft把函数token翻译为c的token
+exe\ft out/type.txt out/global.txt out/func_head.txt out/func_tokens.txt out/func_tokens_after_translate.txt
+
+

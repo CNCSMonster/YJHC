@@ -1,1 +1,3 @@
-main|NULL|int|()
+setSize|struct A|void|(int size)
+getSize|struct A|int|()
+main|NULL|int|(int argc)

@@ -1,20 +1,16 @@
 {
-	int a ;
-	if ( a > 2 ) {
-		return 0 ;
+	self . size = size ;
+}
+{
+	return size ;
+}
+{
+	struct A a ;
+	if ( argc == 1 ) {
+		a . ( ) ;
 	}
-	struct A m;
+	else {
+		printf ( "%d" , a . getSize ( ) ) ;
+	}
 	return 1 ;
-}
-
-struct A{
-	int age;
-	int add(int,int);
-}
-struct A->int add(int a,int b){
-	return a+b+age;
-}
-
-__yjhc_struct_A_add(struct A* this,int a,int b){
-	return a+ b + this->age;
 }

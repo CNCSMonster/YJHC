@@ -1,0 +1,27 @@
+{
+self . size = size
+;
+}
+{
+return size
+;
+}
+{
+struct A a
+;
+if
+(
+argc == 1
+)
+{
+a . ( )
+;
+}
+else
+{
+printf ( "%d" , a . getSize ( ) )
+;
+}
+return 1
+;
+}

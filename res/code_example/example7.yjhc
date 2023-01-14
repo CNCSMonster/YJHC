@@ -1,0 +1,26 @@
+//测试结构体方法的定义和使用的翻译
+//结构体方法调用的翻译
+//使用self关键字
+
+struct A{
+    int size;   //A结构体的size属性
+    void setSize(int size);
+    int getSize();
+}
+struct A->void setSize(int size){
+    self.size=size;
+}
+struct A->int getSize(){
+    return size;
+}
+
+//c里面this会被理解成一个关键字
+int main(int argc){
+    struct A a;
+    if(argc==1) a.setSize();
+    else printf("%d",a.getSize());
+    return 1;
+}
+
+
+

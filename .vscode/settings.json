@@ -23,7 +23,8 @@
         "str_set.c": "cpp",
         "vector.h": "c",
         "hashtable.h": "c",
-        "val_tbl.h": "c"
+        "val_tbl.h": "c",
+        "str_set.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

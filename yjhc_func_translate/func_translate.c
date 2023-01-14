@@ -8,7 +8,7 @@ FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath
     .funcTbl=NULL,
     .gloabalTypeTbl=NULL,
     .partialValTbl=NULL,
-    .ValTbl=NULL
+    .valTbl=NULL
   };
   if(typePath==NULL||funcHeadPath==NULL||valPath==NULL) return out;
   int isRight=1;  //记录是正确的
@@ -37,25 +37,12 @@ FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath
   loadFile_valtbl(out.valTbl,valFin);
 
   //完成空间分配后释放空间
-  free(typeFin);
-  free(funcFin);
-  free(valFin);
+  fclose(typeFin);
+  fclose(valFin);
+  fclose(funcFin);
   return out;
 }
 
-//对nodeds进行处理,成功返回非0值,失败返回0
-TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes){
-  //先进行简单的结构体类型方法调用支持
-
-  //结构体类型属性调用支持
-
-  //gc支持:garbage collection
-  // if(gc){
-  //   //支持gc
-  // }
-  
-
-}
 
 
 
@@ -82,7 +69,7 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
   //翻译的结果应该是token序列
   while((nodes=readTokenSentence(&actionSet))!=NULL){
     //先进行处理
-    nodes=process_singleLine(funcTranslator,);
+    nodes=process_singleLine(funcTranslator,nodes);
     //然后把处理结果写入文件
     if(nodes!=NULL) fput_tokenLine(fout,nodes);
     //进行块的进出更新
@@ -97,25 +84,32 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
     preBlocks=actionSet.blocks;
     del_tokenLine(nodes);
   }
+  release_token_reader();
   fclose(fin);
   fclose(fout);
   return 1;
 }
 
+//对nodeds进行处理,成功返回非0值,失败返回0
+TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes){
+  //首先判断类型
+  FTK kind=getTokenLineKind(funcTranslator,nodes);
+  if(tranFuncs[kind]!=NULL)
+    nodes=tranFuncs[kind](funcTranslator,nodes);
+  return nodes;
+}
 
 
 //翻译结束释放函数翻译器
-int release_FuncTranslator(FuncTranslator* funcTranslator){
-  if(funcTranslator->fout!=NULL) fclose(funcTranslator->fout);
-  funcTranslator->fout=NULL;
+int release_funcTranslator(FuncTranslator* funcTranslator){
   //删除量表以及内嵌的类型表
   while(funcTranslator->valTbl!=NULL){
     ValTbl* tmpTbl=funcTranslator->valTbl;
     funcTranslator->valTbl=tmpTbl->next;
-    del_valTbl(&tmpTbl);
+    del_valTbl(tmpTbl);
     free(tmpTbl);
   }
-  del_functbl(&funcTranslator); //删除函数表
+  del_functbl(funcTranslator->funcTbl); //删除函数表
   free(funcTranslator->funcTbl);
   free(funcTranslator->gloabalTypeTbl);
   funcTranslator->funcTbl=NULL;
@@ -126,9 +120,11 @@ int release_FuncTranslator(FuncTranslator* funcTranslator){
 
 
 //判断句子的翻译类型,以选择不同的翻译语句
-FTK getTokenLineKind(FuncTranslator* functranslator, TBNode* tokens){
+FTK getTokenLineKind(FuncTranslator* funcTransltor,TBNode* tokens){
 
 
+
+  return NOT_TRANSLATE_FTK;
 }
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL

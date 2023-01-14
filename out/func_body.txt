@@ -1,1 +1,3 @@
-{ int a; if(a>2) return 0; return 1; }
+{ self.size=size; }
+{ return size; }
+{ struct A a; if(argc==1) a.setSize(); else printf("%d",a.getSize()); return 1; }
