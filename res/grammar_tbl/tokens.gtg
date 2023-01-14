@@ -27,3 +27,9 @@ FUNC
 #实际上由于c语言的语法特性,我们经过token分析后可以确定所有token类型
 #加入1个未知定义,不确定得名,可能是在标准库里面的量或者类型
 UNKNOWN
+
+
+#补充新的token,self关键字
+token add -n 1
+SELF_KEYWORD
+

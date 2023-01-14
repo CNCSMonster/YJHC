@@ -5,6 +5,8 @@
 int main(int argc,char* argv[]){
   char* inputPath=argv[1];
   char* outputPath=argv[2];
+  // char* inputPath="..\\out\\func_tokens.txt";
+  // char* inputPath="..\\out\\after_tokens_split.txt";
   FILE* fin=fopen(inputPath,"r");
   FILE* fout=fopen(outputPath,"w");
   int isRight=1;

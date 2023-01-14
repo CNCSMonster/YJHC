@@ -583,6 +583,10 @@ int code_parse(FILE *fin, FILE *code)
       else if(strcmp(tmp,"typedef")==0){
         fprintf(code,"%d %s\n",TYPEDEF_KEYWORD,tmp);
       }
+      //判断是否是self关键字(不允许用来命名自定义函数/成员方法/成员属性/其他量)
+      else if(strcmp(tmp,SELF_STRING_VALUE)==0){
+        fprintf(code,"%d %s\n",SELF_KEYWORD,tmp);
+      }
       //如果是类型定义关键字,则与后面的一个字符串一起组成类型名
       else if (isTypeDefKeyWords(tmp))
       {

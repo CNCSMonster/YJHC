@@ -1,5 +1,5 @@
 (left brace, {)
-(variable, self)
+(self keyword, self)
 (operation symbol, .)
 (variable, size)
 (operation symbol, =)

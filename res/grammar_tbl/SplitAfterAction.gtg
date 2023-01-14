@@ -4,6 +4,7 @@ action add SplitAfterAction
 SPLITAFTER
 
 
+
 #首先是,case情况下在压入左括号后split
 
 syntax add SplitAfterAction -n 8
@@ -55,7 +56,5 @@ DO_WHILE_BLOCK_IN,FOR,SPLITAFTER
 #case_in进入后要分割
 syntax add SplitAfterAction -n 1
 WHILE_OF_DO,LEFT_PAR,SPLITAFTER
-
-
 
 

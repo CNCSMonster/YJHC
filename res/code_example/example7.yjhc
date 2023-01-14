@@ -1,6 +1,8 @@
 //测试结构体方法的定义和使用的翻译
 //结构体方法调用的翻译
 //使用self关键字
+#include <stdio.h>
+#include <stdlib.h>
 
 struct A{
     int size;   //A结构体的size属性

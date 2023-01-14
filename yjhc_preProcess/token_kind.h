@@ -4,35 +4,36 @@
 //在该头文件中定义token编号,分类不是很细致,因为实际上用不了分太多
 typedef enum tokenkind{
   TYPE,
-  CONST,
-  VAR,
-  TYPEDEF_KEYWORD,
-  CONST_KEYWORD,
-  IF,
-  ELIF,
-  ELSE,
-  DO,
-  WHILE,
-  FOR,
-  RETURN,
-  BREAK,
-  CONTINUE,
-  OP,
-  LEFT_PAR,
-  RIGHT_PAR,
-  LEFT_BRACKET,
-  RIGHT_BRACKET,
-  LEFT_BRACE,
-  RIGHT_BRACE,
-  SEMICOLON,
-  COMMA,
-  FUNC,
-  UNKNOWN,
-  Tokens_NUM
+CONST,
+VAR,
+TYPEDEF_KEYWORD,
+CONST_KEYWORD,
+IF,
+ELIF,
+ELSE,
+DO,
+WHILE,
+FOR,
+RETURN,
+BREAK,
+CONTINUE,
+OP,
+LEFT_PAR,
+RIGHT_PAR,
+LEFT_BRACKET,
+RIGHT_BRACKET,
+LEFT_BRACE,
+RIGHT_BRACE,
+SEMICOLON,
+COMMA,
+FUNC,
+UNKNOWN,
+SELF_KEYWORD,
+Tokens_NUM
 }TokenKind;
 
-
-
+//定义关键字self的字符字面值，关键字self用来访问结构体或者共用体自身属性或者方法
+#define SELF_STRING_VALUE "self"
 
 
 //定义token类型对应的字符串描述
@@ -61,6 +62,7 @@ const char* tokenStrings[]={
   [LEFT_BRACE] "left brace",   //左花括号
   [RIGHT_BRACE] "right brace",  //右花括号
   [OP]  "operation symbol",
+  [SELF_KEYWORD] "self keyword",
   [FUNC] "function"
 };
 
@@ -70,12 +72,12 @@ const char* keyForProcessControl[]={
   "do","while","return","break",
   "continue"
 };
+
 const TokenKind controlTokens[]={
   IF,ELSE,ELIF,FOR,
   DO,WHILE,RETURN,BREAK,
   CONTINUE
 };
-
 
 
 //定义基础数据类型
