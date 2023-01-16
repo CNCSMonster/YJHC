@@ -10,26 +10,26 @@
 
 // //测试val_tbl的查找功能
 // int main(){
-  // //首先创建val_tbl
-  // TypeTbl typeTbl=getGlobalTypeTbl();
-  // FILE* fin=fopen("..\\out\\func_type.txt","r");
-  // loadFile_typeTbl(&typeTbl,fin);
-  // fclose(fin);
-  // ValTbl valTbl=getValTbl(typeTbl);
-  // fin=fopen("..\\out\\global.txt","r");
-  // loadFile_valtbl(&valTbl,fin);
-  // fclose(fin);
-  // //进行查找显示
-  // do{
-  //   char name[500];
-  //   scanf("%s",name);
-  //   printf("\n**********************\n");
-  //   if(strcmp(name,"*")==0){
-  //     break;
-  //   }
-  //   Val val;
-  //   Type type;
-  //   int retLayer;
+//   //首先创建val_tbl
+//   TypeTbl typeTbl=getGlobalTypeTbl();
+//   FILE* fin=fopen("..\\out\\func_type.txt","r");
+//   loadFile_typeTbl(&typeTbl,fin);
+//   fclose(fin);
+//   ValTbl valTbl=getValTbl(typeTbl);
+//   fin=fopen("..\\out\\global.txt","r");
+//   loadFile_valtbl(&valTbl,fin);
+//   fclose(fin);
+//   //进行查找显示
+//   do{
+//     char name[500];
+//     scanf("%s",name);
+//     printf("\n**********************\n");
+//     if(strcmp(name,"*")==0){
+//       break;
+//     }
+//     Val val;
+//     Type type;
+//     int retLayer;
 //     int jud=findVal(&valTbl,name,&val,&type,&retLayer);
 //     if(jud==0){
 //       printf("not such val!\n");
@@ -189,7 +189,7 @@
 //     if(typeId==0) printf("null\n");
 //     else{
 //       int typeIndex;
-//       getTypeIndexAndPointerLayer(typeId,&typeIndex,NULL);
+//       extractTypeIndexAndPointerLayer(typeId,&typeIndex,NULL);
 //       //获取类型
 //       Type type;
 //       vector_get(&(funcTbl.globalTypeTbl->types),typeIndex,&type);
@@ -211,5 +211,88 @@
 
 
 //测试val_tbl的查找和增加功能
-
+//以及测试val_tbl加载函数参数列表功能
+int main(){
+  TypeTbl typeTbl=getGlobalTypeTbl();
+  FILE* fin=fopen("../out/type.txt","r");
+  loadFile_typeTbl(&typeTbl,fin);
+  fclose(fin);
+  ValTbl valTbl=getValTbl(typeTbl); //把类型表交给valTbl了
+  fin=fopen("../out/global.txt","r");
+  loadFile_valtbl(&valTbl,fin);
+  fclose(fin);
+  ValTbl* partialValTbl=&valTbl;
+  FuncTbl funcTbl=getFuncTbl(&typeTbl);
+  fin=fopen("../out/func_head.txt","r");
+  loadFile_functbl(&funcTbl,fin);
+  fclose(fin);
+  do{
+    int ord[2000];
+    int tmp[100];
+    printf("\n************************************************\n\n");
+    myfgets(ord,"\n",stdin);
+    
+    //输入exit()退出
+    if(strcmp(ord,"exit()")==0) break;
+    //输入select 查询
+    mysgets(tmp," ",ord);
+    if(strcmp(tmp,"check")==0){
+      //查找量
+      Val val;
+      Type type;
+      char* name=(char*)ord+strlen((const char*)tmp)+1;
+      int retLayer;
+      if(findVal(partialValTbl,name,&val,&type,&retLayer)){
+        show_val(&val);
+        printf("typeLayer:%d\n",retLayer);
+        showType(&type);
+      }
+      else printf("not found!\n");
+    }
+    //输入load加载函数列表
+    else if(strcmp(tmp,"load")==0){
+      char* tmp2=(char*)ord+strlen((const char*)tmp)+1;
+      char funcName[200];
+      char end=mysgets(funcName," ",tmp2);
+      char* owner="";
+      if(end!='\0')
+        owner=(char*)tmp2+strlen(funcName)+1;
+      Func* func;
+      if(strlen(owner)==0)
+        func=findFunc(&funcTbl,funcName,NULL);
+      else 
+        func=findFunc(&funcTbl,funcName,owner);
+      if(func==NULL) printf("not found\n");
+      else showFunc(func);
+      //扩展局部表
+      if(func!=NULL){
+        loadArgs_valtbl(partialValTbl,&funcTbl,func);
+        printf("load sucess!\n");
+      }
+    }
+    //输入extend扩展新的局部表
+    else if(strcmp(tmp,"extend")==0){
+      partialValTbl=extendValTbl(partialValTbl);
+    }
+    //输入recycle释放新的局部表
+    else if(strcmp(tmp,"recycle")==0){
+      if(partialValTbl==&valTbl){
+        printf("fail!");
+      }else{
+        partialValTbl=recycleValTbl(partialValTbl);
+      }
+    }
+  }while(1);
+  //释放空间
+  del_functbl(&funcTbl);
+  ValTbl* track=valTbl.next;
+  while(track!=NULL){
+    valTbl.next=track->next;
+    del_valTbl(track);
+    free(track);
+    track=valTbl.next;
+  }
+  del_valTbl(&valTbl);
+  return 0;
+}
 

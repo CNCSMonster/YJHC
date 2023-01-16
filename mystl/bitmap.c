@@ -79,10 +79,32 @@ void put_bitmap(BitMapUtil* tmUtil,BitMap* bm,int index){
   bm->map[index/(sizeof(char)*8)]|=t;
 }
 
+//清空位图中已经加入的位置
+void clear_bitmap(BitMapUtil* bmu,BitMap* bm){
+  memset(bm->map,0,bmu->mapSize);
+}
+
+
 //释放位图空间
 void delBitMap(BitMap* bm){
   free(bm->map);
 }
 
+//以符合c语言格式的二进制打印结果
+void showInBinary_bitmap(BitMapUtil* bmu,BitMap* bm){
+  printf("0b");
+  for(int i=0;i<bmu->mapSize;i++){
+    //判断这个位置是否存在
+    int t=bm->map[i];
+    //一个字节8比特,查找
+    for(int i=0;i<7;i++){
+      if(t%2==0) printf("0");
+      else printf("1");
+      t>>1;
+    }
+    if(t==0) printf("0");
+    else printf("1");
+  }
+}
 
 

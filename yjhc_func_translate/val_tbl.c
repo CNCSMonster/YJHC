@@ -131,32 +131,63 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
 //比如查找int* a;语句定义的变量a
 //返回的基本类型为int,返回的指针层次为0
 int findVal(ValTbl* curTbl,char* valName,Val* retVal,Type* retType,int* typeLayer){
+  if(curTbl==NULL) return 0;
+  int id=-1;
   //首先查找变量,从当前表开始往上逐层查找
   while(curTbl!=NULL){
     //第一步,根据变量名字查找对应的下标
-    int id=strToId(curTbl->valIds,valName);
+    id=strToId(curTbl->valIds,valName);
     //如果id小于0,说明这个表没有这个量
     if(id<0){
       //往之前的表查找这个量
       curTbl=curTbl->pre;
       continue;
     }
-    vector_get(&curTbl->vals,id,retVal);
-    //获取类型名
-    char* typeName; //获取类型名
-    hashtbl_get(&curTbl->valToType,&valName,&typeName);
-    //从类型表查找类型,首先查找类型名,然后根据类型名查找
-    int typeIndex=0;
-    do{
-      int typeIndex=findType(&curTbl->typeTbl,typeName,typeLayer);
-      vector_get(&curTbl->typeTbl.types,typeIndex,retType);
-      curTbl=curTbl->pre;
-    }while(retType->kind==UNKNOWN&&curTbl!=NULL);
+    else{
+      break;
+    }
+  }
+  if(id<0) return 0;
+  vector_get(&curTbl->vals,id,retVal);
+  //获取类型名
+  char *typeName; // 获取类型名
+  // 获取类型名失败,说明加入的是未知类型
+  if (!hashtbl_get(&curTbl->valToType, &valName, &typeName))
+  {
+    vector_get(&curTbl->typeTbl.types, 0, retType);
     return 1;
   }
-  return 0; //没有查找成功
+  // 然后根据类型名在类型表内查找
+  int typeIndex = 0;
+  do
+  {
+    int typeIndex = findType(&curTbl->typeTbl, typeName, typeLayer);
+    vector_get(&curTbl->typeTbl.types, typeIndex, retType);
+    curTbl = curTbl->pre;
+  } while (retType->kind == TYPE_UNKNOW && curTbl != NULL);
+  return 1;
 }
 
+//插入新的局部表,返回新的局部表的指针,扩展失败返回NULL
+ValTbl* extendValTbl(ValTbl* curTbl){
+  if(curTbl==NULL) return NULL;
+  ValTbl* toExtend=malloc(sizeof(ValTbl));
+  (*toExtend)=getValTbl(getTypeTbl());
+  curTbl->next=toExtend;
+  toExtend->pre=curTbl;
+  return toExtend;
+}
+
+//回收某个局部表,注意,该局部表一定要是最后一个表,返回新的局部表
+ValTbl* recycleValTbl(ValTbl* partialTbl){
+  if(partialTbl==NULL) return NULL;
+  if(partialTbl->next!=NULL) return NULL; //如果不是最后一个局部表,则返回NULL,提示错误
+  ValTbl* toRet=partialTbl->pre;  //要返回的是该表前一个
+  toRet->next=NULL;
+  del_valTbl(partialTbl);
+  free(partialTbl);
+  return toRet;
+}
 
 
 
@@ -177,17 +208,17 @@ Val getVal(char* name,int isConst,char* defaultVal){
 void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName){
   //首先查找类型
   Type find={ //结构体类型的具名初始化
-    .kind=UNKNOWN
+    .kind=TYPE_UNKNOW
   };
   ValTbl* tbl=valTbl;
-  do{
+  while(tbl!=NULL&&typeName!=NULL){
     int index=findType(&tbl->typeTbl,typeName,NULL);
     if(index>0){
-      vector_get(&valTbl->typeTbl.types,index,&find);
+      vector_get(&tbl->typeTbl.types,index,&find);
       break;
     }
     tbl=tbl->pre;
-  }while(tbl!=NULL);
+  }
   //否则根据类型获取默认值或者采取默认值
   if(defaultVal==NULL) defaultVal=defaultValueOfBaseTypes[find.kind];
   //然后生成val结构体
@@ -195,9 +226,44 @@ void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isCon
   putStrId(valTbl->valIds,toAdd.name,valTbl->vals.size);
   vector_push_back(&valTbl->vals,&toAdd);
   //绑定类型
-  char* val=strcpy(malloc(strlen(valName)+1),valName);
-  char* type=strcpy(malloc(strlen(typeName)+1),typeName);
-  hashtbl_put(&valTbl->valToType,&val,&type);
+  //如果类型名为NULL,表示未知,则不绑定
+  if(typeName!=NULL){
+    char* val=strcpy(malloc(strlen(valName)+1),valName);
+    char* type=strcpy(malloc(strlen(typeName)+1),typeName);
+    hashtbl_put(&valTbl->valToType,&val,&type);
+  }
+}
+
+
+
+//往量表中加载一个函数的参数
+void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func){
+  //依次取出参数
+  for(int i=0;i<func->args.size;i++){
+    Arg arg;
+    vector_get(&func->args,i,&arg);
+    //获取参数的类型
+    long long typeId=arg.typeId;
+    //如果找到的类型为unknown
+    if(typeId==0){
+      addVal_valtbl(valTbl,arg.name,NULL,arg.isConst,NULL);
+      continue;
+    }
+    //获取对应global中对应的内容
+    int typeIndex;
+    int typeLayer;
+    extractTypeIndexAndPointerLayer(typeId,&typeIndex,&typeLayer);
+    Type type;
+    vector_get(&funcTbl->globalTypeTbl->types,typeIndex,&type);
+    char* typeName=malloc(strlen(type.defaultName)+typeLayer+1);
+    strcpy(typeName,type.defaultName);
+    for(int i=strlen(typeName);i<typeLayer;i++){
+      typeName[i]='*';
+    }
+    typeName[strlen(type.defaultName)+typeLayer]='\0';
+    addVal_valtbl(valTbl,arg.name,NULL,arg.isConst,typeName);
+    free(typeName);
+  }
 }
 
 
@@ -232,6 +298,12 @@ void del_valTbl(ValTbl* valTbl){
   }
   if (tmp->pre != NULL)
     tmp->pre->next = valTbl;
+}
+
+
+//展示一个量
+void show_val(Val* val){
+  printf("name:%s, isConst:%d, val:%s\n",val->name,val->isConst,val->val);
 }
 
 //删除一个变量

@@ -35,9 +35,15 @@ void get_bitmap(BitMapUtil* bmUtil,BitMap* bm,int* retIndexs,int* retSize);
 //往位图中加入位数
 void put_bitmap(BitMapUtil* tmUtil,BitMap* bm,int index);
 
+//清空位图中已经加入的位置
+void clear_bitmap(BitMapUtil* bmu,BitMap* bm);
+
+
 //释放位图空间
 void delBitMap(BitMap* bm);
 
+//以符合c语言格式的二进制打印结果
+void showInBinary_bitmap(BitMapUtil* bmu,BitMap* bm);
 
 
 

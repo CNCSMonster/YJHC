@@ -9,7 +9,7 @@ TypeTbl getGlobalTypeTbl(){
     Type toAdd;
     toAdd.kind=i;
     toAdd.funcs=getStrSet(myStrHash);
-    toAdd.defaultName=NULL;
+    toAdd.defaultName=strcpy(malloc(strlen(baseTypeNames[i])+1),baseTypeNames[i]);
     toAdd.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
     toAdd.funcPointerFields=getStrSet(myStrHash);
     //放进去的字符串要动态分配空间
@@ -77,7 +77,7 @@ int loadFile_typeTbl(TypeTbl* tbl, FILE* fin){
 //指针维数为0表示就是这个类型本身
 //long long前32位为对应基础type的下标,后32位为这个类型对应的指针层次
 //long long
-void getTypeIndexAndPointerLayer(long long code,int* typeIndex,int* pointerLayer ){
+void extractTypeIndexAndPointerLayer(long long code,int* typeIndex,int* pointerLayer ){
   if(typeIndex!=NULL) *typeIndex=code>>32;
   if(pointerLayer!=NULL) *pointerLayer=(code<<32)>>32;
 }
@@ -819,7 +819,7 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
   //首先直接试着获取层次和下标
   id=strToId(tbl->strIds,typeName);
   if(id>=0){
-    getTypeIndexAndPointerLayer(id,&typeIndex,&pLayer);
+    extractTypeIndexAndPointerLayer(id,&typeIndex,&pLayer);
     if(layerRet!=NULL) *layerRet=pLayer;
     return typeIndex;
   }
@@ -840,7 +840,7 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
   if(id<0){
     id=getTypeId(0,pLayer);
   }else{
-    getTypeIndexAndPointerLayer(id,&typeIndex,&pLayer);
+    extractTypeIndexAndPointerLayer(id,&typeIndex,&pLayer);
     pLayer+=pointerLayer;
     id=getTypeId(typeIndex,pLayer);
   }

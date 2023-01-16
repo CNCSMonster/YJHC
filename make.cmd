@@ -19,5 +19,11 @@ gcc yjhc_func_translate\refector.c -o exe\refector
 @REM 准备个函数代码块分割工具,用来检查token_reader的分割功能是否正确
 gcc yjhc_func_translate\tokens_split.c -o exe\tks
 
+@REM 准备编译yjhc_func_translate要用的头文件要的生成工具
+gcc tool\genBitMap.c -o exe\genBitMap
+
+@REM 然后使用该生成工具去产生头文件
+exe\genBitMap>yjhc_func_translate/config.h
+
 @REM 准备翻译工具
 gcc yjhc_func_translate\main.c -o exe\ft

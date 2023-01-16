@@ -21,6 +21,7 @@
 #include "..\\mystl\\str_set.c"
 #include "..\\mystl\\vector.c"
 #include "..\\mystl\\hashtable.c"
+#include "..\\mystl\\bitmap.c"
 
 #include "sentence_kind.h"
 
@@ -29,6 +30,9 @@
 
 #include "func.h"
 #include "func.c"
+
+#include "func_tbl.h"
+#include "func_tbl.c"
 
 #include "type.h"
 #include "type.c"

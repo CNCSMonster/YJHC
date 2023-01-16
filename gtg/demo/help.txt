@@ -1,0 +1,61 @@
+
+使用说明:
+命令格式
+
+增加型命令:
+action add <actionkind>
+actionkind add
+token add
+symbol add
+syntax add     //不需要指定要使用的表格
+增加型命令默认会使用下一行的内容作为所有增加内容
+增加型命令后面可以加上附加后缀[-n N]
+具体用法:
+actionkind add -n 2
+PrintAction BlockAction
+action add PrintAction
+NEWLINE CURLINE
+这四行命令会增加两个actionkind:PrintAction和BlockAction,增加PrintAction下面的两个action:
+NEWLINE和CURLINE
+
+设定型命令:
+可设定的内容在未设定前有默认值
+set defaultAction <actionkind>  #该命令设置actionkind对应表格的默认动作
+set notDefine       #该命令用来设置全局的not_define字符串
+
+执行型命令:
+run
+
+提示型命令:
+help 提示信息,提示使用信息
+
+查看命令:
+check actionkind  //查看actionkind列表
+check defaultAction //查看指定actionkind的default action
+check token //查看所有token信息
+check action  <actionkind> 查看某个actionkind下所有action信息
+check actions  则查看所有action的信息,包括所有actionkind
+check symbol  //查看所有symbol信息
+check syntax <actionkind> //查看对应actionkind的syntax信息
+check syntaxs   //查看所有actionkind对应的syntax信息
+check all //查看所有信息
+可以在后面加入-o命令把信息输出到-o后面指定的文件中
+
+
+控制型命令:
+exit 退出命令,获取该命令后,把缓冲结果保存,并且退出
+gc 垃圾回收命令,回收id,回收空间(garbage collect)
+
+替换型命令:
+replace
+输入该命令后会使用接下来的两个字符串分别作为要替换字符串，和替换后字符串
+也可以加入-n N增加属性,则会提取后面的n对字符串来replace操作
+每个替换输入格式为 oldStr->newStr, 注意中间不能有空格
+
+删除命令
+del
+同样可以后面加入-n来使用,则会使用后面的n个字符串做删除操作
+
+输出命令:
+使用output -o path 输出原始命令文件,(output orders)
+使用output -g path 输出使用的语法文件(output grammar table)

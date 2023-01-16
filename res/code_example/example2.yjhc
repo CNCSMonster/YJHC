@@ -3,5 +3,9 @@ void doA(){
 }
 
 int main(){
+    for(int i=1+(2*3);i<444;i--,i++){
+        printf("%d",i+i*i-i*(i-1));
+        continue;
+    }
     return 1;
 }

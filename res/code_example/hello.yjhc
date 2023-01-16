@@ -1,0 +1,19 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+//
+typedef struct struct_people{
+    char name[100];
+    void sayHello(char* helloTo);
+}People;
+People getPeople(char* name){
+    //strcpy(name,name);
+    strcpy(self.name,name);
+}
+People->void sayHello(char* helloTo){
+    printf("Hello,%s!",helloTo);
+}
+int main(){
+    People Mike=getPeople();
+    return 0;
+}

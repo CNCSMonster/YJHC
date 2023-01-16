@@ -24,7 +24,9 @@
         "vector.h": "c",
         "hashtable.h": "c",
         "val_tbl.h": "c",
-        "str_set.h": "c"
+        "str_set.h": "c",
+        "bitmap.h": "c",
+        "lib_use.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

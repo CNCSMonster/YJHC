@@ -11,6 +11,8 @@
 //基础数据类型包括int,long,short,double,float
 //自定义类型包括,enum,struct,union
 
+#define MAX_TYPE_NAME_LENGTH 200
+
 typedef enum enum_type_kind{
   TYPE_INT,
   TYPE_SHORT,
@@ -115,7 +117,7 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str);
 //指针维数为0表示就是这个类型本身
 //long long前32位为对应基础type的下标,后32位为这个类型对应的指针层次
 //long long
-void getTypeIndexAndPointerLayer(long long code,int* typeIndex,int* pointerLayer );
+void extractTypeIndexAndPointerLayer(long long code,int* typeIndex,int* pointerLayer );
 
 //根据kindIndex和pointerLayer获得对应的long long编码
 long long getTypeId(int typeIndex,int pointerLayer);
@@ -160,6 +162,7 @@ int loadFuncPointerFieldDef(Type* typep,char* str);
 //根据类型名字查询一个类型,返回该类型在类型表中的下标以及该类型名对应的该类型的指针层次
 //如果查找成功,返回的类型下标为正数,如果查找失败,返回为0,而0位置保存unknown类型
 int findType(TypeTbl* tbl,char* typeName,int* layerRet);
+
 
 //清空一个type的所有内容
 void delType(Type* type);

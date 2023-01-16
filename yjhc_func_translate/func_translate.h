@@ -7,6 +7,7 @@
 #include "type.h"
 #include "val_tbl.h"
 #include "token_reader.h"
+#include "config.h"
 
 
 //目前只是处理单文件的问题,多文件的yjhc代码会先通过静态链接的处理再进行翻译
@@ -22,10 +23,11 @@
 typedef struct func_translator{
   //表结构
   TypeTbl* gloabalTypeTbl; //全局类型表
-  ValTbl* valTbl;  //全局量表
+  ValTbl* globalValTbl;  //全局量表
   ValTbl* partialValTbl;  //局部量表
   FuncTbl* funcTbl; //全局函数表
   //注意,token读取器使用的单例模式
+  Func* curFunc;  //当前翻译到的函数
 }FuncTranslator;
 
 //创建函数翻译器,翻译结果是把未翻译的yjhc的函数代码token转为c的函数代码token序列
@@ -43,6 +45,7 @@ int release_funcTranslator(FuncTranslator* funcTranslator);
 
 //判断翻译类型
 typedef enum func_translate_kind{
+  NOT_LEAGAL_FTK,   //判断是有语法错误的句子就会返回NOT_LEAGAL_FTK
   NOT_TRANSLATE_FTK,    //不用翻译的语句
   VAR_DEFINE_FTK,      //变量定义语句
   CONST_DEFINE_FTK,     //常量定义语句
@@ -84,11 +87,13 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens);
 //翻译类型方法调用语句
 TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens);
 
+//常量开头语句
 
 
 //翻译函数的选择表
 
 TBNode* (*tranFuncs[]) (FuncTranslator*,TBNode*) = {
+  [NOT_LEAGAL_FTK] NULL,
   [NOT_TRANSLATE_FTK] NULL,
   [VAR_DEFINE_FTK] translateVarDef,
   [CONST_DEFINE_FTK] translateConstDef,     //常量定义语句

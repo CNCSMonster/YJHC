@@ -1,6 +1,9 @@
 #ifndef _VAR_TBL_H
 #define _VAR_TBL_H
 
+#include "func_tbl.h"
+#include "type.h"
+
 #include "stluse.h"
 #include "type.h"
 
@@ -52,13 +55,25 @@ Val getVal(char* name,int isConst,char* defaultVal);
 //返回的基本类型为int,返回的指针层次为0
 int findVal(ValTbl* curTbl,char* valName,Val* retVal,Type* retType,int* typeLayer);
 
+//插入新的局部表,返回新的局部表的指针,扩展失败返回NULL
+ValTbl* extendValTbl(ValTbl* curTbl);
+
+//回收curTbl后面的下一个局部表,返回新的局部表的指针,
+ValTbl* recycleValTbl(ValTbl* partialTbl);
 
 
 //往量表中加入值
 void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName);
 
+//往量表中加载一个函数的参数
+void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func);
+
+
 //删除一个量表
 void del_valTbl(ValTbl* valTbl);
+
+//展示一个量
+void show_val(Val* val);
 
 //删除一个量
 void delVal(Val* val);

@@ -1,13 +1,22 @@
 int a;
 int b;
+
 typedef struct sm{
-void funcA(char a,char b);
-void count(long c,int g);
+    void funcA(char a,char b);
+    void count(long c,int g);
 }M;
+
 void funcA(char a,char b){
+    
 }
+
 void count(long c,int g){
+
 }
+
 int main(int argc){
-return 0;
+    return 0;
 }
+
+
+
