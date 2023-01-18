@@ -291,13 +291,7 @@ void del_valTbl(ValTbl* valTbl){
     delVal(&toDel);
   }
   vector_clear(&tmp->vals);
-  valTbl = tmp->next;
-  if (valTbl != NULL)
-  {
-    valTbl->pre = tmp->pre;
-  }
-  if (tmp->pre != NULL)
-    tmp->pre->next = valTbl;
+  //删除量表就只是单独删除一个量表
 }
 
 

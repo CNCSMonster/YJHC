@@ -172,10 +172,10 @@
 //   loadFile_functbl(&funcTbl,fin);
 //   fclose(fin);
 //   //进行顺序展示func
-//   for(int i=0;i<funcTbl.funcNames.size;i++){
+//   for(int i=0;i<funcTbl.funcKeys.size;i++){
 //     printf("\n\n****************************************\n\n");
 //     char* key;
-//     vector_get(&funcTbl.funcNames,i,&key);
+//     vector_get(&funcTbl.funcKeys,i,&key);
 //     char funcName[300];
 //     char ownerId[300];
 //     mysgets(funcName,"#",key);
@@ -210,89 +210,89 @@
 
 
 
-//测试val_tbl的查找和增加功能
-//以及测试val_tbl加载函数参数列表功能
-int main(){
-  TypeTbl typeTbl=getGlobalTypeTbl();
-  FILE* fin=fopen("../out/type.txt","r");
-  loadFile_typeTbl(&typeTbl,fin);
-  fclose(fin);
-  ValTbl valTbl=getValTbl(typeTbl); //把类型表交给valTbl了
-  fin=fopen("../out/global.txt","r");
-  loadFile_valtbl(&valTbl,fin);
-  fclose(fin);
-  ValTbl* partialValTbl=&valTbl;
-  FuncTbl funcTbl=getFuncTbl(&typeTbl);
-  fin=fopen("../out/func_head.txt","r");
-  loadFile_functbl(&funcTbl,fin);
-  fclose(fin);
-  do{
-    int ord[2000];
-    int tmp[100];
-    printf("\n************************************************\n\n");
-    myfgets(ord,"\n",stdin);
+// //测试val_tbl的查找和增加功能
+// //以及测试val_tbl加载函数参数列表功能
+// int main(){
+//   TypeTbl typeTbl=getGlobalTypeTbl();
+//   FILE* fin=fopen("../out/type.txt","r");
+//   loadFile_typeTbl(&typeTbl,fin);
+//   fclose(fin);
+//   ValTbl valTbl=getValTbl(typeTbl); //把类型表交给valTbl了
+//   fin=fopen("../out/global.txt","r");
+//   loadFile_valtbl(&valTbl,fin);
+//   fclose(fin);
+//   ValTbl* partialValTbl=&valTbl;
+//   FuncTbl funcTbl=getFuncTbl(&typeTbl);
+//   fin=fopen("../out/func_head.txt","r");
+//   loadFile_functbl(&funcTbl,fin);
+//   fclose(fin);
+//   do{
+//     int ord[2000];
+//     int tmp[100];
+//     printf("\n************************************************\n\n");
+//     myfgets(ord,"\n",stdin);
     
-    //输入exit()退出
-    if(strcmp(ord,"exit()")==0) break;
-    //输入select 查询
-    mysgets(tmp," ",ord);
-    if(strcmp(tmp,"check")==0){
-      //查找量
-      Val val;
-      Type type;
-      char* name=(char*)ord+strlen((const char*)tmp)+1;
-      int retLayer;
-      if(findVal(partialValTbl,name,&val,&type,&retLayer)){
-        show_val(&val);
-        printf("typeLayer:%d\n",retLayer);
-        showType(&type);
-      }
-      else printf("not found!\n");
-    }
-    //输入load加载函数列表
-    else if(strcmp(tmp,"load")==0){
-      char* tmp2=(char*)ord+strlen((const char*)tmp)+1;
-      char funcName[200];
-      char end=mysgets(funcName," ",tmp2);
-      char* owner="";
-      if(end!='\0')
-        owner=(char*)tmp2+strlen(funcName)+1;
-      Func* func;
-      if(strlen(owner)==0)
-        func=findFunc(&funcTbl,funcName,NULL);
-      else 
-        func=findFunc(&funcTbl,funcName,owner);
-      if(func==NULL) printf("not found\n");
-      else showFunc(func);
-      //扩展局部表
-      if(func!=NULL){
-        loadArgs_valtbl(partialValTbl,&funcTbl,func);
-        printf("load sucess!\n");
-      }
-    }
-    //输入extend扩展新的局部表
-    else if(strcmp(tmp,"extend")==0){
-      partialValTbl=extendValTbl(partialValTbl);
-    }
-    //输入recycle释放新的局部表
-    else if(strcmp(tmp,"recycle")==0){
-      if(partialValTbl==&valTbl){
-        printf("fail!");
-      }else{
-        partialValTbl=recycleValTbl(partialValTbl);
-      }
-    }
-  }while(1);
-  //释放空间
-  del_functbl(&funcTbl);
-  ValTbl* track=valTbl.next;
-  while(track!=NULL){
-    valTbl.next=track->next;
-    del_valTbl(track);
-    free(track);
-    track=valTbl.next;
-  }
-  del_valTbl(&valTbl);
-  return 0;
-}
+//     //输入exit()退出
+//     if(strcmp(ord,"exit()")==0) break;
+//     //输入select 查询
+//     mysgets(tmp," ",ord);
+//     if(strcmp(tmp,"check")==0){
+//       //查找量
+//       Val val;
+//       Type type;
+//       char* name=(char*)ord+strlen((const char*)tmp)+1;
+//       int retLayer;
+//       if(findVal(partialValTbl,name,&val,&type,&retLayer)){
+//         show_val(&val);
+//         printf("typeLayer:%d\n",retLayer);
+//         showType(&type);
+//       }
+//       else printf("not found!\n");
+//     }
+//     //输入load加载函数列表
+//     else if(strcmp(tmp,"load")==0){
+//       char* tmp2=(char*)ord+strlen((const char*)tmp)+1;
+//       char funcName[200];
+//       char end=mysgets(funcName," ",tmp2);
+//       char* owner="";
+//       if(end!='\0')
+//         owner=(char*)tmp2+strlen(funcName)+1;
+//       Func* func;
+//       if(strlen(owner)==0)
+//         func=findFunc(&funcTbl,funcName,NULL);
+//       else 
+//         func=findFunc(&funcTbl,funcName,owner);
+//       if(func==NULL) printf("not found\n");
+//       else showFunc(func);
+//       //扩展局部表
+//       if(func!=NULL){
+//         loadArgs_valtbl(partialValTbl,&funcTbl,func);
+//         printf("load sucess!\n");
+//       }
+//     }
+//     //输入extend扩展新的局部表
+//     else if(strcmp(tmp,"extend")==0){
+//       partialValTbl=extendValTbl(partialValTbl);
+//     }
+//     //输入recycle释放新的局部表
+//     else if(strcmp(tmp,"recycle")==0){
+//       if(partialValTbl==&valTbl){
+//         printf("fail!");
+//       }else{
+//         partialValTbl=recycleValTbl(partialValTbl);
+//       }
+//     }
+//   }while(1);
+//   //释放空间
+//   del_functbl(&funcTbl);
+//   ValTbl* track=valTbl.next;
+//   while(track!=NULL){
+//     valTbl.next=track->next;
+//     del_valTbl(track);
+//     free(track);
+//     track=valTbl.next;
+//   }
+//   del_valTbl(&valTbl);
+//   return 0;
+// }
 

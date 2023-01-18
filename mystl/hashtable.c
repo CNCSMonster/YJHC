@@ -6,6 +6,7 @@ hashtbl getHashTbl(int cap,int keySize,int valSize,int (*hash)(const void*),int 
   out.cap=cap;
   out.keySize=keySize;
   out.valSize=valSize;
+  out.size=0;
   out.hash=hash;
   out.keyEq=keyEq;
   out.nodes=malloc(sizeof(hashtable_node*)*out.cap);

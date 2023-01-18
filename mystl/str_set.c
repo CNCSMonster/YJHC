@@ -106,7 +106,7 @@ int initStrSet(StrSet* ssp){
   return 1;
 }
 
-//
+//获取动态分配空间且每个元素字符串都动态分配空间的字符串数组
 char** toStrArr_StrSet(StrSet* ssp){
   char** out;
   out=malloc(sizeof(char*)*ssp->num);

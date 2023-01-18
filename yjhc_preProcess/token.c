@@ -47,6 +47,15 @@ struct token connectToken(Token token1,Token token2,TokenKind newKind,char* sep)
 }
 
 
+//获取一个self类型的token
+Token getSelfToken(){
+  Token out={
+    .kind=SELF_KEYWORD,
+    .val=strcpy(malloc(1+strlen(SELF_STRING_VALUE)),SELF_STRING_VALUE)
+  };
+  return out;
+}
+
 //释放给token分配的空间,释放空间之后就不应该再使用了
 void delToken(Token token){
   free(token.val);

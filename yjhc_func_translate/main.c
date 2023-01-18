@@ -1,10 +1,6 @@
 #include "all.h"
 
 
-
-
-
-
 //传入的五个控制台参数依次
 
 int main(int argc,char* argv[]){
@@ -26,9 +22,18 @@ int main(int argc,char* argv[]){
 
   //首先加载函数翻译器
   FuncTranslator funcTranslator=getFuncTranslator(typesPath,funcPath,valPath);
+  //如果有表为空,表示失败
+  if(funcTranslator.funcTbl==NULL){
+    printf("fail to cre funcTranslator\n");
+    return 0;
+  }
+  if(!pre_translate_check(&funcTranslator)){
+    return 0;
+  }
   if(!func_translate(&funcTranslator,tokenInPath,tokenOutPath)){
     printf("fail to translate\n");
+    return 0;
   }
   release_funcTranslator(&funcTranslator);
-  return 0;
+  return 1;
 }

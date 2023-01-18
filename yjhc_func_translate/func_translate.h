@@ -33,8 +33,15 @@ typedef struct func_translator{
 //创建函数翻译器,翻译结果是把未翻译的yjhc的函数代码token转为c的函数代码token序列
 FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath);
 
+//进行翻译前检查
+int pre_translate_check(FuncTranslator* translator);
+
 //使用函数翻译器开始翻译
 int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenOutPath);
+
+//补全成员方法中自身方法的调用
+TBNode* member_use_complement(FuncTranslator* funcTranslator,TBNode* nodes);
+
 
 //翻译单个句子,成功返回nodes,失败返回NULL
 TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes);

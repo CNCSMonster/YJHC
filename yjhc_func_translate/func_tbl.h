@@ -6,15 +6,11 @@
 //准备函数表,函数表应该能够根据函数名还有主人名快速查找到
 //
 typedef struct struct_func_table{
-  vector funcNames; //一个顺序表保存函数的名字
+  vector funcKeys; //一个顺序表保存函数的名字
   TypeTbl* globalTypeTbl;  //全局变量表
   hashtbl funcs;  //函数表
 }FuncTbl;
 
-//获得个动态分配空间的字符串,作为指向函数的键,
-//传入的参数分别为函数名以及函数主人类型的typeId
-//如果该函数不是某个类型的方法,则主人设置为unknown类型
-char* getFuncKey(char* funcName,long long typeId);
 
 //获得个初始函数表,
 FuncTbl getFuncTbl(TypeTbl* typeTbl);

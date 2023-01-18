@@ -33,12 +33,10 @@ FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath
   *(out.funcTbl)=getFuncTbl(out.gloabalTypeTbl);
   loadFile_functbl(out.funcTbl,funcFin);
 
-  out.globalValTbl=malloc(sizeof(FuncTbl));
+  out.globalValTbl=malloc(sizeof(ValTbl));
   *(out.globalValTbl)=getValTbl(*(out.gloabalTypeTbl));
   loadFile_valtbl(out.globalValTbl,valFin);
-
   out.partialValTbl=out.globalValTbl;
-
   //完成空间分配后释放空间
   fclose(typeFin);
   fclose(valFin);
@@ -47,6 +45,63 @@ FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath
 }
 
 
+//进行翻译前检查,比如函数是否全都实现
+int pre_translate_check(FuncTranslator* translator){
+  //翻译前检查
+  //检查1,检查结构体方法是否全部实现
+  //首先,取出所有结构体方法到一个数组中
+  StrSet strset=getStrSet(myStrHash);
+  int isRight=1;  //标识
+  //先把所有函数加入strset
+  for(int i=0;i<translator->funcTbl->funcKeys.size&&isRight;i++){
+    //根据函数名字取出函数标识串
+    char* funcKey;
+    vector_get(&translator->funcTbl->funcKeys,i,&funcKey);
+    //加入标识串
+    if(!addStr_StrSet(&strset,funcKey)){
+      //获取主人和typeid
+      long long typeId;
+      char funcName[200];
+      extractFuncNameAndOwnerFromKey(funcKey,funcName,&typeId);
+      if(typeId==0)
+        printf("redefinition of function %s",funcName);
+      else{
+        Type type;
+        int typeIndex;
+        extractTypeIndexAndPointerLayer(typeId,&typeIndex,NULL);
+        vector_get(&translator->gloabalTypeTbl->types,typeIndex,&type);
+        printf("redefinition of member function %s of %s type",funcName,type.defaultName);
+      }
+      isRight=0;
+    }
+  }
+  if(!isRight){
+    initStrSet(&strset);
+    return 0;
+  }
+  //然后进行结构体的方法遍历.判断是否有未实现的
+  for(int i=2;i<translator->gloabalTypeTbl->types.size&&isRight;i++){
+    Type type;
+    vector_get(&translator->gloabalTypeTbl->types,i,&type);
+    if(type.kind!=TYPE_UNION&&type.kind!=TYPE_STRUCT) continue;
+    //获取typeId
+    long long typeId=getTypeId(i,0);
+    char** funcsArr=toStrArr_StrSet(&type.funcs);
+    for(int j=0;j<type.funcs.num&&isRight;j++){
+        char* tfk=getFuncKey(funcsArr[j],typeId);
+        if(!delStr_StrSet(&strset,tfk)){
+          //打印没有实现的函数
+          printf("member func %s of %s type not find definition\n",funcsArr[j],type.defaultName);
+          isRight=0;
+        }
+        free(tfk);
+    }
+    free(funcsArr);
+  }
+  initStrSet(&strset);
+  if(!isRight) return 0;
+  return 1;
+}
 
 
 
@@ -73,7 +128,11 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
   int funcIndex=0;  //记录翻译到的函数的下标
   while((nodes=readTokenSentence(&actionSet))!=NULL){
     //先进行处理
-    nodes=process_singleLine(funcTranslator,nodes);
+    //进行方法内自身缺失调度补充
+    // nodes=member_use_complement(funcTranslator,nodes);
+    //对一个句子补充函数
+    // nodes=process_singleLine(funcTranslator,nodes);
+
     //然后把处理结果写入文件
     if(nodes!=NULL) fput_tokenLine(fout,nodes);
     //进行块的进出更新
@@ -82,7 +141,7 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
       if(preBlocks==0){ //加载函数
         //查找对应函数
         char* name;
-        vector_get(&funcTranslator->funcTbl->funcNames,funcIndex,&name);
+        vector_get(&funcTranslator->funcTbl->funcKeys,funcIndex,&name);
         //根据名字查找函数
         hashtbl_get(&funcTranslator->funcTbl->funcs,&name,&funcTranslator->curFunc);
         //TODO加入安全检查
@@ -92,29 +151,16 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
         }
       }
       //增加新的局部量表
-      funcTranslator->partialValTbl->next=malloc(sizeof(ValTbl));
-      *(funcTranslator->partialValTbl->next)=getValTbl(getTypeTbl());
-      funcTranslator->partialValTbl->next->next=NULL;
-      funcTranslator->partialValTbl->next->pre=funcTranslator->partialValTbl->next;
-      funcTranslator->partialValTbl=funcTranslator->partialValTbl->next;
-      //TODO,加入函数的参数表到局部变量中
-      
+    //  funcTranslator->partialValTbl=extendValTbl(funcTranslator->partialValTbl);
+      //加入函数的参数表到局部变量中
+      // loadArgs_valtbl(funcTranslator->partialValTbl,funcTranslator->funcTbl,funcTranslator->curFunc);
     }
     else if(preBlocks==actionSet.blocks+1){
       //TODO,判断函数是否退出
       if(preBlocks==1){
         funcTranslator->curFunc=NULL;
       }
-      //释放局部量块
-      ValTbl* tmpValTbl=funcTranslator->partialValTbl;
-      //进行安全性检查,TODO
-      if(tmpValTbl==funcTranslator->globalValTbl){
-        isRight=0;
-        break;
-      }
-      funcTranslator->partialValTbl=tmpValTbl->pre;
-      del_valTbl(tmpValTbl);
-      free(tmpValTbl);
+      // funcTranslator->partialValTbl=recycleValTbl(funcTranslator->partialValTbl);
     }
     preBlocks=actionSet.blocks;
     del_tokenLine(nodes);
@@ -127,6 +173,101 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
   if(!isRight) return 0;
   return 1;
 }
+
+
+//补全成员方法中自身方法或者属性的调用
+TBNode* member_use_complement(FuncTranslator* funcTranslator,TBNode* nodes){
+  //如果不是成员方法则不用补全类型
+  if(funcTranslator->curFunc==NULL) return nodes;
+  //查找有没有成员方法
+  TBNode* track=nodes;
+  TBNode* pre=NULL;
+  TBNode* prePre=NULL;
+  TBNode head;
+  head.next=nodes;
+  nodes->last=&head;
+  // 取出函数主人
+  Type* owner=NULL;
+  char* ownerName=funcTranslator->curFunc->owner;
+  if(ownerName==NULL) return nodes; //如果函数没有主人名,则不是自身调用函数
+  //取出函数主人，找到对应类型
+  int typeIndex=findType(funcTranslator->gloabalTypeTbl,ownerName,NULL);
+  Type type;
+  if(typeIndex==0){
+    vector_get(&funcTranslator->gloabalTypeTbl->types,typeIndex,&type);
+  }
+  while (track!=NULL)
+  {
+    int ifToComplete=0; //判断是否去补全
+    //如果func是比较单独的,则检查匹配判断是否需要前面插入self.
+    if(
+      (track->token.kind==FUNC||track->token.kind==VAR)
+      &&
+      ((pre==NULL||pre->last==NULL)
+      ||
+      //前面不是self.
+      !(strcmp(pre->token.val,"*")==0&&prePre->token.kind==SELF_KEYWORD)
+      )
+    ){
+      //如果前面是函数,判断是否是成员函数
+      if(track->token.kind==FUNC){
+        //判断track的func是不是当前func的主人type的成员函数
+        if(
+          //一 不能够是函数指针属性
+          !containsStr_StrSet(&type.funcPointerFields,track->token.val)
+          //二是要是这个类型的函数属性
+          &&containsStr_StrSet(&type.funcs,track->token.val)
+        ){
+          //则进行补全
+          TBNode* tmpPre=track->last;
+          //增加一个..类型的空指针
+          TBNode* newSelf;  //新自身关键字节点
+          TBNode* newVisit; //新访问符点
+          //获取一个新的tokenNode
+          newSelf=getTBNode(SELF_STRING_VALUE,SELF_KEYWORD);
+          newVisit=getTBNode(".",OP);
+          newSelf->next=newVisit;
+          newVisit->last=newSelf;
+          tmpPre->next=newSelf;
+          newSelf->last=tmpPre;
+          track->last=newVisit;
+          newVisit->next=track;
+        }
+      }
+      else if(track->token.kind==VAR){
+        //判断是否在属性内,如果在，补全缺失的关键字
+        if(hashtbl_get(&type.fields,&(track->token.val),NULL)){
+          //则进行补全
+          TBNode* tmpPre=track->last;
+          //增加一个..类型的空指针
+          TBNode* newSelf;  //新自身关键字节点
+          TBNode* newVisit; //新访问符点
+          //获取一个新的tokenNode
+          newSelf=getTBNode(SELF_STRING_VALUE,SELF_KEYWORD);
+          newVisit=getTBNode(".",OP);
+          newSelf->next=newVisit;
+          newVisit->last=newSelf;
+          tmpPre->next=newSelf;
+          newSelf->last=tmpPre;
+          track->last=newVisit;
+          newVisit->next=track;
+        }
+      }
+    }
+    if(track!=NULL){
+      pre=track;
+      track=track->next;
+    }
+    if(pre!=NULL){
+      prePre=pre->last;
+    }
+  }
+  nodes=head.next;
+  nodes->last=NULL;
+  return nodes;
+}
+
+
 
 //对nodeds进行处理,成功返回非0值,失败返回0
 TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes){
@@ -175,6 +316,7 @@ FTK getTokenLineKind(FuncTranslator* funcTransltor,TBNode* nodes){
   //则取反后者1110_0000,然后拿后者与前者做与运算
   //如果结果不为0,则说明目标句子含有其他符号,否则没有
   if(nodes==NULL) return NOT_TRANSLATE_FTK;
+  if(funcTransltor->curFunc==NULL) return NOT_TRANSLATE_FTK;
   BitMapUtil bmu={
     .mapSize=sizeof(long long)
   };
@@ -193,32 +335,30 @@ FTK getTokenLineKind(FuncTranslator* funcTransltor,TBNode* nodes){
   if(((~sepOrCon)&curMap)==0){
     return NOT_TRANSLATE_FTK;
   }
-  //否则进行量查询
-  //如果存在typedef,则说明是类型起别名语句
-  if(in_bitmap(&bmu,&bm,TYPEDEF_KEYWORD)) return TYPEDEF_FTK;
-  //如果开头是类型,或者const关键字什么的,则是量定义语句
-  if(nodes->token.kind==TYPE){
+  //判断是否是typedef语句
+  if(nodes->token.kind==TYPEDEF_KEYWORD){
+    return TYPEDEF_FTK;
+  }
+  //判断是否是变量定义语句
+  if(nodes->token.kind==TYPE&&nodes->next!=NULL&&nodes->next->token.kind==VAR){
     return VAR_DEFINE_FTK;
   }
-  else if(nodes->token.kind==CONST){
-    return CONST_DEFINE_FTK;
+  if(nodes->token.kind==CONST_KEYWORD){
+    if(nodes->next!=NULL&&nodes->next->token.kind==TYPE) {
+      return CONST_DEFINE_FTK;
+    }
   }
-  //判断是否是需要翻译的函数调用
-  //也就是判断是否是a.funcA()这种类型,或者如果是在成员方法内的话,
-  //判断是否是省略了self的funcA()
-  //又或者是否是self.funcA()
-
-
-  //判断是否是赋值语句
-  //也就是判断是否是a=1或者a,b,c=1,2,3这种类型
-
-  //判断是否
-
-  
-  
-
-  
-
+  //判断是否是函数调用语句,可能是函数连续调用
+  if(nodes->token.kind==FUNC){
+    //如果第一个是函数,还要判断这个函数是否是内部函数
+    return FUNC_USE_FTK;
+  }
+  //判断是否是对象调用方法语句
+  if(nodes->token.kind==VAR&&nodes->next!=NULL&&nodes->next->token.kind==OP){
+    TBNode* tn=nodes->next->next;
+    if(tn!=NULL&&tn->token.kind==FUNC) return TYPE_METHOD_USE_FTK;
+  }
+  //判断是否是第一个函数使用语句
 
   return NOT_TRANSLATE_FTK;
 }

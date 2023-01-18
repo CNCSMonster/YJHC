@@ -59,5 +59,8 @@ void del_tokenLine(TBNode* tokens);
 //释放剩余所有内容,该方法可以在语义分析异常结束的时候使用
 void release_token_reader();
 
+//产生一个动态分配空间的孤立TBNode*
+TBNode* getTBNode(const char* str,TokenKind kind);
+
 
 #endif

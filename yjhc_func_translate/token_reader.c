@@ -146,3 +146,19 @@ void release_token_reader(){
   }
   tb_fin=NULL;  //注意这里没有回收文件指针
 }
+
+
+//产生一个动态分配空间的孤立TBNode*
+TBNode* getTBNode(const char* str,TokenKind kind){
+  TBNode* out;
+  out=malloc(sizeof(TBNode));
+  out->last=NULL;
+  out->next=NULL;
+  out->token.kind=kind;
+  out->token.val=strcpy(malloc(strlen(str)+1),str);
+  return out;
+}
+
+
+
+

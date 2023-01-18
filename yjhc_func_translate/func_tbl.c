@@ -1,18 +1,12 @@
 #include "func_tbl.h"
 
 
-char* getFuncKey(char* funcName,long long typeId){
-  //使用个中间符号隔开两个内容
-  int len=strlen(funcName)+20;
-  char* out=malloc(len);
-  sprintf(out,"%s#%lld",funcName,typeId);
-  return out;
-}
+
 
 //获得个初始函数表,
 FuncTbl getFuncTbl(TypeTbl* typeTbl){
   FuncTbl funcTbl;
-  funcTbl.funcNames=getVector(sizeof(char*)); //保存函数名字的顺序表
+  funcTbl.funcKeys=getVector(sizeof(char*)); //保存函数名字的顺序表
   funcTbl.globalTypeTbl=typeTbl;
   funcTbl.funcs=getHashTbl(100,sizeof(char*),sizeof(Func*),typeFieldNameHash,typeFieldEq);
   return funcTbl;
@@ -92,7 +86,7 @@ int loadLine_functbl(FuncTbl* funcTbl,char* str){
   }
   hashtbl_put(&funcTbl->funcs,&key,&toAdd);
   //把字符串也加到funcName里面
-  vector_push_back(&funcTbl->funcNames,&key);
+  vector_push_back(&funcTbl->funcKeys,&key);
   return 1;
 }
 
@@ -199,6 +193,6 @@ void del_functbl(FuncTbl* funcTbl){
   free(funcs);
   hashtbl_release(&funcTbl->funcs);
   //释放函数名空间
-  vector_clear(&funcTbl->funcNames);
+  vector_clear(&funcTbl->funcKeys);
 }
 

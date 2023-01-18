@@ -30,3 +30,28 @@ void showFunc(Func* func){
     printf("arg%d. name:%s,isConst:%d,typeIndex:%d,pointerLayer:%d\n",i+1,arg.name,arg.isConst,typeIndex,pointerLayer);
   }
 }
+
+char* getFuncKey(char* funcName,long long typeId){
+  //使用个中间符号隔开两个内容
+  int len=strlen(funcName)+20;
+  char* out=malloc(len);
+  sprintf(out,"%s#%lld",funcName,typeId);
+  return out;
+}
+
+
+//根据funcKey获取func的名字，和主人,成功返回非0值，失败返回0
+int extractFuncNameAndOwnerFromKey(char* funcKey,char* funcName,long long* retOwnerId){
+  //读取到井号
+  char end=mysgets(funcName,"#",funcKey);
+  if(end!='#') return 0;
+  char tmpS[200];
+  end=mysgets(tmpS,"",funcName+strlen(funcName)+1);
+  if(tmpS[0]=='0'&&tmpS[1]=='\0'){
+    *retOwnerId=0;
+    return 1;
+  }
+  *retOwnerId=atoll(tmpS);
+  return 1;
+}
+
