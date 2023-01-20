@@ -130,6 +130,18 @@ int pre_translate_check(FuncTranslator* translator){
 
 
 
+//进行是否有主函数检查,如果有主函数,返回非0值,如果没有，返回0
+int check_main_function(FuncTranslator* translator){
+  //在函数表中查找主人为NULL,函数名为main的函数
+  char* funcKey=getFuncKey("main",0);
+  int out=0;
+  if(hashtbl_get(&translator->funcTbl->funcs,&funcKey,NULL)){
+    out=1;
+  }
+  free(funcKey);
+  return out;
+}
+
 
 //使用函数翻译器开始翻译
 int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenOutPath){

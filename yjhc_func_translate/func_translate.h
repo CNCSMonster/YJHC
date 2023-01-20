@@ -36,8 +36,13 @@ FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath
 //进行翻译前检查
 int pre_translate_check(FuncTranslator* translator);
 
+//进行是否有主函数检查,如果有主函数,返回非0值,如果没有，返回0
+int check_main_function(FuncTranslator* translator);
+
+
 //使用函数翻译器开始翻译
 int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenOutPath);
+
 
 //补全成员方法中自身方法的调用
 TBNode* member_use_complement(FuncTranslator* funcTranslator,TBNode* nodes);

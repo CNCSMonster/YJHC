@@ -1,6 +1,12 @@
 {	1
-int （ * doa ) ( int*** , char* , struct D** , fdssd* )	1
+self . doa ( )	1
 ;	1
-return 1	1
+return	1
+;	0
+}	0
+{	1
+self . c = 1	1
+;	1
+return	1
 ;	0
 }	0

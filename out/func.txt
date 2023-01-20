@@ -1,1 +1,2 @@
-int main(){ int （*doa) (int***,char*,struct D**,fdssd*); return 1; }
+A->void dob(){ self.doa(); return ; }
+A->void doa(){ self.c=1; return ; }

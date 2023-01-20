@@ -14,10 +14,6 @@ A->void doa(){
     return ;
 }
 
-
-
-
-
 int main(){
     return 0;
 }

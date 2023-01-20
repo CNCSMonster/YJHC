@@ -1,1 +1,3 @@
-int main(){ int （*doa) (int***,char*,struct D**,fdssd*); return 1; }
+typedef struct sa{ int c; void doa(); void dob(); }A
+A->void dob(){ self.doa(); return ; }
+A->void doa(){ self.c=1; return ; }
