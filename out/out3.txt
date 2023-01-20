@@ -1,21 +1,16 @@
-struct sa{
-int a;
-short b;
+typedef struct sa{
+int c;
+void doa();
 void dob();
-};
-struct sa->void doa(){
-dob();
-}
-struct sa->void dob(){
-return;
-}
-void doa(){
+}A;
+A->void doa(){
+c=1;
 return ;
-dob();
 }
-void dob(){
+A->void dob(){
+doa();
 return ;
 }
 int main(){
-return 1;
+return 0;
 }

@@ -1,1 +1,1 @@
-struct sa{ int a; short b; void dob(); }
+typedef struct sa{ int c; void doa(); void dob(); }A

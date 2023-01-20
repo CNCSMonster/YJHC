@@ -1,0 +1,11 @@
+{
+	c = 1 ;
+	return ;
+}
+{
+	doa ( ) ;
+	return ;
+}
+{
+	return 0 ;
+}

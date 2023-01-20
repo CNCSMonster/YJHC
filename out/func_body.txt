@@ -1,5 +1,3 @@
-{ dob(); }
-{ return; }
-{ return ; dob(); }
-{ return ; }
-{ return 1; }
+{ c=1; return ; }
+{ doa(); return ; }
+{ return 0; }

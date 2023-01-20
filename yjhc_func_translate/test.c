@@ -111,50 +111,47 @@
 
 
 
-// //测试typetbl的查找功能和增加类型功能
-// int main(){
-//   //首先加载类型
-//   //然后根据类型名查找类型,以及类型信息
-//   TypeTbl typeTbl=getGlobalTypeTbl();
-//   FILE* fin=fopen("../out/type.txt","r");
-//   loadFile_typeTbl(&typeTbl,fin);
-//   fclose(fin);
-  
-//   //如果输入的字符串没有空格说明是类型名
-//   //如果输入的字符串有空格说明是命令,加载命令
-//   while(1){
-//     char tmp[1000];
-//     printf("******************************************\n");
-//     printf("input:");
-//     myfgets(tmp,"\n",stdin);
-//     if(strcmp(tmp,"exit()")==0){
-//       printf("mm");
-//       break;
-//     }
-//     //如果第一个字符是<,则说明是命令
-//     if(tmp[0]=='<'){
-//       if(!loadLine_typetbl(&typeTbl,tmp+1)){
-//         printf("fail to execute %s",tmp+1);
-//       }
-//     }
-//     //否则是类型名,查找类型名
-//     else{
-//       int typeIndex;
-//       int layer;
-//       typeIndex=findType(&typeTbl,tmp,&layer);
-//       if(typeIndex<0){
-//         printf("???\n");
-//         continue;
-//       }
-//       Type type;
-//       vector_get(&typeTbl.types,typeIndex,&type);
-//       printf("typeIndex:%d,layer:%d\n",typeIndex,layer);
-//       showType(&type);
-//     }
-//   }
-//   delTypeTbl(&typeTbl);
-//   return 0;
-// }
+//测试typetbl的查找功能和增加类型功能
+int main(){
+  //首先加载类型
+  //然后根据类型名查找类型,以及类型信息
+  TypeTbl typeTbl=getGlobalTypeTbl();
+  FILE* fin=fopen("../out/type.txt","r");
+  loadFile_typeTbl(&typeTbl,fin);
+  fclose(fin);
+  while(1){
+    char tmp[1000];
+    printf("******************************************\n");
+    printf("input:");
+    myfgets(tmp,"\n",stdin);
+    if(strcmp(tmp,"exit()")==0){
+      printf("mm");
+      break;
+    }
+    //如果第一个字符是<,则说明是命令
+    if(tmp[0]=='<'){
+      if(!loadLine_typetbl(&typeTbl,tmp+1)){
+        printf("fail to execute %s",tmp+1);
+      }
+    }
+    //否则是类型名,查找类型名
+    else{
+      int typeIndex;
+      int layer;
+      typeIndex=findType(&typeTbl,tmp,&layer);
+      if(typeIndex<0){
+        printf("???\n");
+        continue;
+      }
+      Type type;
+      vector_get(&typeTbl.types,typeIndex,&type);
+      printf("typeIndex:%d,layer:%d\n",typeIndex,layer);
+      showType(&type);
+    }
+  }
+  delTypeTbl(&typeTbl);
+  return 0;
+}
 
 //测试顺序读取type的名字
 

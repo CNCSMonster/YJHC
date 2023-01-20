@@ -148,7 +148,7 @@ Type extractStruct(char* str);
 
 
 //格式化类型字符串,格式化成功返回非0值,格式化出现异常返回0
-int refectorTypeName(char* str);
+int formatTypeName(char* str);
 
 //判断语句是否是函数指针类型属性定义语句,是返回非0值,不是返回0
 int isFuncPointerFieldDef(char* str);

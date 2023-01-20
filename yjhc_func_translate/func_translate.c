@@ -161,15 +161,21 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
 
     //然后把处理结果写入文件
     if(nodes!=NULL) fput_tokenLine(fout,nodes);
+
+    //进行一个debug的处理
+    if(nodes!=NULL) fshow_tokenLine(stdout,nodes);
+
+
     //进行块的进出更新
     if(preBlocks==actionSet.blocks-1){
       //判断是否要加载函数
       if(preBlocks==0){ //加载函数
         //查找对应函数
-        char* name;
-        vector_get(&funcTranslator->funcTbl->funcKeys,funcIndex,&name);
+        char* funcKey;
+        vector_get(&funcTranslator->funcTbl->funcKeys,funcIndex,&funcKey);
+        funcIndex++;
         //根据名字查找函数
-        hashtbl_get(&funcTranslator->funcTbl->funcs,&name,&funcTranslator->curFunc);
+        hashtbl_get(&funcTranslator->funcTbl->funcs,&funcKey,&funcTranslator->curFunc);
         //TODO加入安全检查
         if(funcTranslator->curFunc==NULL){
           isRight=0;
@@ -182,7 +188,7 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
       loadArgs_valtbl(funcTranslator->partialValTbl,funcTranslator->funcTbl,funcTranslator->curFunc);
     }
     else if(preBlocks==actionSet.blocks+1){
-      //TODO,判断函数是否退出
+      //判断函数是否退出
       if(preBlocks==1){
         funcTranslator->curFunc=NULL;
       }
@@ -213,80 +219,52 @@ TBNode* member_use_complement(FuncTranslator* funcTranslator,TBNode* nodes){
   head.next=nodes;
   nodes->last=&head;
   // 取出函数主人
-  Type* owner=NULL;
   char* ownerName=funcTranslator->curFunc->owner;
   if(ownerName==NULL) return nodes; //如果函数没有主人名,则不是自身调用函数
   //取出函数主人，找到对应类型
   int typeIndex=findType(funcTranslator->gloabalTypeTbl,ownerName,NULL);
   Type type;
-  if(typeIndex==0){
+  if(typeIndex!=0){
     vector_get(&funcTranslator->gloabalTypeTbl->types,typeIndex,&type);
   }
   while (track!=NULL)
   {
     int ifToComplete=0; //判断是否去补全
     //如果func是比较单独的,则检查匹配判断是否需要前面插入self.
-    if(
-      (track->token.kind==FUNC||track->token.kind==VAR)
-      &&
-      ((pre==NULL||pre->last==NULL)
-      ||
-      //前面不是self.
-      !(strcmp(pre->token.val,"*")==0&&prePre->token.kind==SELF_KEYWORD)
-      )
-    ){
-      //如果前面是函数,判断是否是成员函数
-      if(track->token.kind==FUNC){
-        //判断track的func是不是当前func的主人type的成员函数
-        if(
-          //一 不能够是函数指针属性
-          !containsStr_StrSet(&type.funcPointerFields,track->token.val)
-          //二是要是这个类型的函数属性
-          &&containsStr_StrSet(&type.funcs,track->token.val)
-        ){
-          //则进行补全
-          TBNode* tmpPre=track->last;
-          //增加一个..类型的空指针
-          TBNode* newSelf;  //新自身关键字节点
-          TBNode* newVisit; //新访问符点
-          //获取一个新的tokenNode
-          newSelf=getTBNode(SELF_STRING_VALUE,SELF_KEYWORD);
-          newVisit=getTBNode(".",OP);
-          newSelf->next=newVisit;
-          newVisit->last=newSelf;
-          tmpPre->next=newSelf;
-          newSelf->last=tmpPre;
-          track->last=newVisit;
-          newVisit->next=track;
-        }
-      }
-      else if(track->token.kind==VAR){
-        //判断是否在属性内,如果在，补全缺失的关键字
-        if(hashtbl_get(&type.fields,&(track->token.val),NULL)){
-          //则进行补全
-          TBNode* tmpPre=track->last;
-          //增加一个..类型的空指针
-          TBNode* newSelf;  //新自身关键字节点
-          TBNode* newVisit; //新访问符点
-          //获取一个新的tokenNode
-          newSelf=getTBNode(SELF_STRING_VALUE,SELF_KEYWORD);
-          newVisit=getTBNode(".",OP);
-          newSelf->next=newVisit;
-          newVisit->last=newSelf;
-          tmpPre->next=newSelf;
-          newSelf->last=tmpPre;
-          track->last=newVisit;
-          newVisit->next=track;
-        }
-      }
+    //如果一个track既不是func也不是var，则不需要进行成员调用补全
+    if(track->token.kind!=FUNC&&track->token.kind!=VAR){
+      ifToComplete=0;
+    }else if(pre!=NULL&&prePre!=NULL&&strcmp(pre->token.val,".")==0&&prePre->token.kind==SELF_KEYWORD){
+      ifToComplete=0;
+    }else if(track->token.kind==VAR&&hashtbl_get(&type.fields,&(track->token.val),NULL)){
+      ifToComplete=1;
+    }else if(track->token.kind==VAR){
+      ifToComplete=0;
+    }else if(containsStr_StrSet(&type.funcPointerFields,track->token.val)){
+      ifToComplete=1;
+    }else if(containsStr_StrSet(&type.funcs,track->token.val)){
+      ifToComplete=1;
     }
-    if(track!=NULL){
-      pre=track;
-      track=track->next;
+    //如果判断要补全，则进行补全操作
+    if(ifToComplete){
+      // 则进行补全
+      TBNode *tmpPre = track->last;
+      // 增加一个..类型的空指针
+      TBNode *newSelf;  // 新自身关键字节点
+      TBNode *newVisit; // 新访问符点
+      // 获取一个新的tokenNode
+      newSelf = getTBNode(SELF_STRING_VALUE, SELF_KEYWORD);
+      newVisit = getTBNode(".", OP);
+      newSelf->next = newVisit;
+      newVisit->last = newSelf;
+      tmpPre->next = newSelf;
+      newSelf->last = tmpPre;
+      track->last = newVisit;
+      newVisit->next = track;
     }
-    if(pre!=NULL){
-      prePre=pre->last;
-    }
+    track=track->next;
+    if(track!=NULL) pre=track->last;
+    if(pre!=NULL) prePre=pre->last;
   }
   nodes=head.next;
   nodes->last=NULL;
@@ -300,12 +278,12 @@ TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes){
   if(nodes==NULL) return NULL;
   //首先判断类型
   FTK kind=getTokenLineKind(funcTranslator,nodes);
-  if(kind=NOT_LEAGAL_FTK){
-    del_tokenLine(nodes);
-    return NULL;
-  }
-  if(tranFuncs[kind]!=NULL)
-    nodes=tranFuncs[kind](funcTranslator,nodes);
+  // if(kind=NOT_LEAGAL_FTK){
+  //   del_tokenLine(nodes);
+  //   return NULL;
+  // }
+  // if(tranFuncs[kind]!=NULL)
+  //   nodes=tranFuncs[kind](funcTranslator,nodes);
   return nodes;
 }
 

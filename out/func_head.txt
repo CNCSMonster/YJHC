@@ -1,5 +1,3 @@
-doa|struct sa|void|()
-dob|struct sa|void|()
-doa|NULL|void|()
-dob|NULL|void|()
+doa|A|void|()
+dob|A|void|()
 main|NULL|int|()

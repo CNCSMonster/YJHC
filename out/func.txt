@@ -1,5 +1,3 @@
-struct sa->void doa(){ dob(); }
-struct sa->void dob(){ return; }
-void doa(){ return ; dob(); }
-void dob(){ return ; }
-int main(){ return 1; }
+A->void doa(){ c=1; return ; }
+A->void dob(){ doa(); return ; }
+int main(){ return 0; }

@@ -1,0 +1,11 @@
+{
+	self . c = 1 ;
+	return ;
+}
+{
+	self . doa ( ) ;
+	return ;
+}
+{
+	return 0 ;
+}

@@ -14,7 +14,7 @@ gcc gtg\main.c -o exe\gtg
 
 @REM 准备refector工具到exe中,该工具主要使用gtg生成的语法动作表以及token_reader模块
 @REM 能够根据函数的token列表获得函数的格式化
-gcc yjhc_func_translate\refector.c -o exe\refector
+gcc yjhc_func_translate\formatter.c -o exe\formatter
 
 @REM 准备个函数代码块分割工具,用来检查token_reader的分割功能是否正确
 gcc yjhc_func_translate\tokens_split.c -o exe\tks

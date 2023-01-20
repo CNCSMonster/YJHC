@@ -34,7 +34,7 @@ int addStr_StrSet(StrSet* ssp,char* s){
     pre->next->next=NULL;
     pre->next->s=strcpy(malloc(strlen(s)+1),s);
   }
-  ssp->num++;
+  ssp->num=ssp->num+1;
   return 1;
 }
 
@@ -73,7 +73,7 @@ int delStr_StrSet(StrSet* ssp,char* str){
   }
   free(tmp->s);
   free(tmp);
-  ssp->num--;
+  ssp->num=ssp->num-1;
   return 1;
 }
 
@@ -95,6 +95,7 @@ int initStrSet(StrSet* ssp){
       tmp->next=tmp2->next;
       free(tmp2->s);
       free(tmp2);
+      i++;
     }
     free(tmp->s);
     free(tmp);

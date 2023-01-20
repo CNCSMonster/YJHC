@@ -111,7 +111,7 @@ int extractArgFromLine(TypeTbl *typeTbl, Arg *retArg, char* argStr)
   char oldChar = argStr[i + 1];
   argStr[i + 1] = '\0';
   strcpy(typeName, argStr);
-  refectorTypeName(typeName);
+  formatTypeName(typeName);
   long long typeId;
   int retLayer;
   int index = findType(typeTbl, typeName, &retLayer);

@@ -3,7 +3,7 @@ pause
 ggb
 cls
 @REM 使用doc_del把注释和多余空格换行去除
-exe\dd res\code_example\example9.yjhc out\out1.txt    
+exe\dd res\code_example\example10.yjhc out\out1.txt    
 @REM exe\dd test.c out\out1.txt  
 @REM 使用pound_remove 从源程序中分离出pound(#)语句
 exe\pr out\out1.txt out/out2.txt out/pound.txt  
@@ -27,7 +27,7 @@ chdir res/grammar_tbl
 chdir ../..
 
 @REM 使用refector工具获得代码的格式化放置到out中
-exe\refector out/func_tokens.txt out/func_refector.txt
+exe\formatter out/func_tokens.txt out/func_format.txt
 
 @REM 使用tokens_split工具tks把token序列进行切割,以检查切割结果是否正确
 exe\tks out/func_tokens.txt out/after_tokens_split.txt
@@ -35,4 +35,5 @@ exe\tks out/func_tokens.txt out/after_tokens_split.txt
 @REM 进行翻译工具ft把函数token翻译为c的token
 exe\ft out/type.txt out/global.txt out/func_head.txt out/func_tokens.txt out/func_tokens_after_translate.txt
 
-
+@REM 格式化翻译后的代码
+exe\formatter out/func_tokens_after_translate.txt out/func_format2.txt

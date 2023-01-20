@@ -117,7 +117,7 @@ int loadLine_typetbl(TypeTbl* tbl,char* str){
     char name[300];
     end = mysgets(name, "{", str);
     char *typeStr = str + strlen(name) + 1;
-    refectorTypeName(name);
+    formatTypeName(name);
     putStrId(tbl->strIds, name, getTypeId(tbl->types.size, 0));
     char *end = str;
     while (end < str + strlen(str) && *end != '}')
@@ -152,14 +152,13 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
   char tmp[200];
   char end;
   // 如果先读到左括号，说明是重命名
-  // 如果先读到分号,说明是对已知类型进行重命名
+  // 如果先读到结尾符,说明是对已知类型进行重命名
   end = mysgets(tmp, "{(", str);
   char *track = str + strlen("typedef") + 1;
   // 如果先遇到(,说明是给函数指针类型起别名
   if(end=='('){
     //给函数指针起别名,
     //提取名
-    //TODO
     char funcPointerType[1000];
     strcpy(funcPointerType,track);
     //首先提取字符串
@@ -177,7 +176,7 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
       num++;
     }
     strncpy(newName,track+i,num);
-    if(!refectorTypeName(funcPointerType)) return 0;
+    if(!formatTypeName(funcPointerType)) return 0;
     putStrId(tbl->strIds,newName,getTypeId(1,0));
     return 1;
   }
@@ -199,7 +198,7 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
     strcpy(newName, str + last + 1);
     str[last] = '\0';
     strcpy(oldName, str + strlen("typedef") + 1);
-    refectorTypeName(oldName); // 格式化旧的名字
+    formatTypeName(oldName); // 格式化旧的名字
     // 然后查找旧的名字对应的id是否存在
     long long id = strToId(tbl->strIds, oldName);
     // 如果返回-1,说明这个id不存在,设置为对应的unknownid
@@ -218,7 +217,7 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
     char baseName[400];
     end = mysgets(baseName, "{", track);
     track += strlen(baseName) + 1;
-    refectorTypeName(baseName);
+    formatTypeName(baseName);
     // 然后注册基础名字
     putStrId(tbl->strIds, baseName, getTypeId(tbl->types.size, 0));
     // 然后判断类型,读取后面的类型信息
@@ -265,9 +264,10 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
         i++;
       }
       // 格式化名字
-      refectorTypeName(tmp + i);
-      // 然后注册
-      int id = getTypeId(tbl->types.size, layer);
+      formatTypeName(tmp + i);
+      // 获取别名的对应的typeId
+      long long id= getTypeId(tbl->types.size, layer);
+      //注册类型别名
       putStrId(tbl->strIds, tmp + i, id);
       track += strlen(tmp) + 1;
     }
@@ -283,9 +283,9 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
         i++;
       }
       // 格式化名字
-      refectorTypeName(tmp + i);
+      formatTypeName(tmp + i);
       // 然后注册
-      int id = getTypeId(tbl->types.size, layer);
+      long long id = getTypeId(tbl->types.size, layer);
       putStrId(tbl->strIds, tmp + i, id);
       track += strlen(tmp) + 1;
     }
@@ -337,7 +337,7 @@ char* refectorFuncPointerName(char* str){
   //保存返回类型名
   char retType[200];
   char end=mysgets(retType," (",str);
-  refectorTypeName(retType); //规范设定返回类型不能以函数指针的形式给出,
+  formatTypeName(retType); //规范设定返回类型不能以函数指针的形式给出,
   //开始搜索类型名
   if(str[strlen(str)-1]!=')') return NULL;
   int toIndex=strlen(str)-2;
@@ -371,7 +371,7 @@ char* refectorFuncPointerName(char* str){
     //否则加入这次要加入的字符串
     char tmpType[300];
     strncpy(tmpType,str+fromIndex+1,toIndex-fromIndex);
-    refectorTypeName(tmpType);
+    formatTypeName(tmpType);
     char* tmpStr=strcpy(malloc(strlen(tmpType)+1),tmpType);
     vector_push_back(&argTypes,&tmpStr);
     toIndex=fromIndex-1;
@@ -549,7 +549,7 @@ Type extractUnion(char* str){
       fieldName=strcpy(malloc(strlen(tmp+i+1)+1),tmp+i+1);
       tmp[i]='\0';
       //格式化变类型名
-      refectorTypeName(tmp);
+      formatTypeName(tmp);
       fieldType=strcpy(malloc(strlen(tmp)+1+pointerLayer),tmp);
       char* ts=fieldType+strlen(fieldType);
       for(int j=0;j<pointerLayer;j++){
@@ -573,7 +573,7 @@ Type extractUnion(char* str){
       fieldName=strcpy(malloc(strlen(tmp+i+1)+1),tmp+i+1);
       tmp[i]='\0';
       //格式化变量名
-      refectorTypeName(tmp);
+      formatTypeName(tmp);
       fieldType=strcpy(malloc(strlen(tmp)+1),tmp);
       //加入变量名和类型名
       hashtbl_put(&out.fields,&fieldName,&fieldType);
@@ -665,7 +665,7 @@ Type extractStruct(char* str){
       fieldName=strcpy(malloc(strlen(tmp+i+1)+1),tmp+i+1);
       tmp[i]='\0';
       //格式化变类型名
-      refectorTypeName(tmp);
+      formatTypeName(tmp);
       fieldType=strcpy(malloc(strlen(tmp)+1+pointerLayer),tmp);
       char* ts=fieldType+strlen(fieldType);
       for(int j=0;j<pointerLayer;j++){
@@ -689,7 +689,7 @@ Type extractStruct(char* str){
       fieldName=strcpy(malloc(strlen(tmp+i+1)+1),tmp+i+1);
       tmp[i]='\0';
       //格式化变量名
-      refectorTypeName(tmp);
+      formatTypeName(tmp);
       fieldType=strcpy(malloc(strlen(tmp)+1),tmp);
       //加入变量名和类型名
       hashtbl_put(&out.fields,&fieldName,&fieldType);
@@ -704,7 +704,7 @@ Type extractStruct(char* str){
 
 
 //格式化类型字符串
-int refectorTypeName(char* str){
+int formatTypeName(char* str){
   //如果判断是函数指针类型字符串,则格式函数指针类型字符串
   if(isFuncPointerType(str)){
     return refectorFuncPointerName(str)==NULL?0:1;
@@ -825,7 +825,7 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
   }
   //获取不到则获取类型名字的格式化
   char* ts=strcpy(malloc(strlen(typeName)+1),typeName);
-  refectorTypeName(ts);
+  formatTypeName(ts);
   int i=strlen(ts)-1;
   //然后统计指针层次，以及找到原始名字
   int pointerLayer=0;

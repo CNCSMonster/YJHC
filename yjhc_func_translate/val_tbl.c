@@ -85,7 +85,7 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
   }while(1);
   //然后获得vec的类型
   //剩下的str就是新加入量的类型
-  refectorTypeName(str);  //首先进行一下格式化
+  formatTypeName(str);  //首先进行一下格式化
   //查找类型,如果类型没有初始化的话,而且是常量的话,则设置其默认值
   Type type={
     .kind=UNKNOWN
