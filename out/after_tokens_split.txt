@@ -1,16 +1,6 @@
 {	1
-c = 1	1
+int （ * doa ) ( int*** , char* , struct D** , fdssd* )	1
 ;	1
-return	1
-;	0
-}	0
-{	1
-doa ( )	1
-;	1
-return	1
-;	0
-}	0
-{	1
-return 0	1
+return 1	1
 ;	0
 }	0

@@ -163,8 +163,7 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
     if(nodes!=NULL) fput_tokenLine(fout,nodes);
 
     //进行一个debug的处理
-    if(nodes!=NULL) fshow_tokenLine(stdout,nodes);
-
+    // if(nodes!=NULL) fshow_tokenLine(stdout,nodes);
 
     //进行块的进出更新
     if(preBlocks==actionSet.blocks-1){
@@ -278,12 +277,12 @@ TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes){
   if(nodes==NULL) return NULL;
   //首先判断类型
   FTK kind=getTokenLineKind(funcTranslator,nodes);
-  // if(kind=NOT_LEAGAL_FTK){
-  //   del_tokenLine(nodes);
-  //   return NULL;
-  // }
-  // if(tranFuncs[kind]!=NULL)
-  //   nodes=tranFuncs[kind](funcTranslator,nodes);
+  if(kind=NOT_LEAGAL_FTK){
+    del_tokenLine(nodes);
+    return NULL;
+  }
+  if(tranFuncs[kind]!=NULL)
+    nodes=tranFuncs[kind](funcTranslator,nodes);
   return nodes;
 }
 
@@ -347,11 +346,14 @@ FTK getTokenLineKind(FuncTranslator* funcTransltor,TBNode* nodes){
   if(nodes->token.kind==TYPE&&nodes->next!=NULL&&nodes->next->token.kind==VAR){
     return VAR_DEFINE_FTK;
   }
+  //判断是否是常量定义语句
   if(nodes->token.kind==CONST_KEYWORD){
     if(nodes->next!=NULL&&nodes->next->token.kind==TYPE) {
       return CONST_DEFINE_FTK;
     }
   }
+  //判断是否是运算表达式：包括自增表达式，包括常量表达式
+
   //判断是否是函数调用语句,可能是函数连续调用
   if(nodes->token.kind==FUNC){
     //如果第一个是函数,还要判断这个函数是否是内部函数

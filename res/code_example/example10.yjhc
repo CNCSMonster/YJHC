@@ -4,16 +4,17 @@ typedef struct sa{
     void doa();
     void dob();
 }A;
+A->void dob(){
+    self.doa();
+    return ;
+}
 
 A->void doa(){
-    c=1;
+    self.c=1;
     return ;
 }
 
-A->void dob(){
-    doa();
-    return ;
-}
+
 
 
 

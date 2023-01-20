@@ -1,1 +1,0 @@
-typedef struct sa{ int c; void doa(); void dob(); }A

@@ -70,5 +70,6 @@ int printToken(Token token){
 //往文件中写回token的符号值和字符字面值
 int fputToken(Token token,FILE* fout){
   fprintf(fout,"%d %s\n",token.kind,token.val);
+  fprintf(stdout,"%d %s\n",token.kind,token.val); //测试用
   return 1;
 }

@@ -1,16 +1,4 @@
-typedef struct sa{
-int c;
-void doa();
-void dob();
-}A;
-A->void doa(){
-c=1;
-return ;
-}
-A->void dob(){
-doa();
-return ;
-}
 int main(){
-return 0;
+int （*doa) (int***,char*,struct D**,fdssd*);
+return 1;
 }

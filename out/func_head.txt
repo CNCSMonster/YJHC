@@ -1,3 +1,1 @@
-doa|A|void|()
-dob|A|void|()
 main|NULL|int|()
