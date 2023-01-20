@@ -25,13 +25,16 @@ int main(int argc,char* argv[]){
   //如果有表为空,表示失败
   if(funcTranslator.funcTbl==NULL){
     printf("fail to cre funcTranslator\n");
+    release_funcTranslator(&funcTranslator);
     return 0;
   }
   if(!pre_translate_check(&funcTranslator)){
+    release_funcTranslator(&funcTranslator);
     return 0;
   }
   if(!func_translate(&funcTranslator,tokenInPath,tokenOutPath)){
     printf("fail to translate\n");
+    release_funcTranslator(&funcTranslator);
     return 0;
   }
   release_funcTranslator(&funcTranslator);

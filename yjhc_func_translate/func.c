@@ -46,7 +46,7 @@ int extractFuncNameAndOwnerFromKey(char* funcKey,char* funcName,long long* retOw
   char end=mysgets(funcName,"#",funcKey);
   if(end!='#') return 0;
   char tmpS[200];
-  end=mysgets(tmpS,"",funcName+strlen(funcName)+1);
+  end=mysgets(tmpS,"",funcKey+strlen(funcName)+1);
   if(tmpS[0]=='0'&&tmpS[1]=='\0'){
     *retOwnerId=0;
     return 1;

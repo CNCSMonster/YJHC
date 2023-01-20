@@ -64,13 +64,13 @@ int pre_translate_check(FuncTranslator* translator){
       char funcName[200];
       extractFuncNameAndOwnerFromKey(funcKey,funcName,&typeId);
       if(typeId==0)
-        printf("redefinition of function %s",funcName);
+        printf("redefinition of function %s\n",funcName);
       else{
         Type type;
         int typeIndex;
         extractTypeIndexAndPointerLayer(typeId,&typeIndex,NULL);
         vector_get(&translator->gloabalTypeTbl->types,typeIndex,&type);
-        printf("redefinition of member function %s of %s type",funcName,type.defaultName);
+        printf("redefinition of member function %s of %s type\n",funcName,type.defaultName);
       }
       isRight=0;
     }
@@ -98,10 +98,36 @@ int pre_translate_check(FuncTranslator* translator){
     }
     free(funcsArr);
   }
+  if(!isRight){
+    initStrSet(&strset);
+    return 0;
+  }
+  //找到没有声明但是实现了的函数,也就是strset中剩下的函数
+  char** keys=toStrArr_StrSet(&strset);
+  for(int i=0;i<strset.num;i++){
+    //去判断该函数是否是全局函数,如果是全局的函数,则不进行检查
+    char funcName[300];
+    long long retOwnerId;
+    extractFuncNameAndOwnerFromKey(keys[i],funcName,&retOwnerId);
+    //根据retOwnerId判断是否是全局函数
+    free(keys[i]);
+    if(retOwnerId==0){
+      continue;
+    }
+    //获取对应类型的名字
+    int index;
+    extractTypeIndexAndPointerLayer(retOwnerId,&index,NULL);
+    Type type;
+    vector_get(&translator->gloabalTypeTbl->types,index,&type);
+    if(type.kind!=TYPE_STRUCT&&type.kind!=TYPE_UNION) continue;
+    printf("definition of member function %s but without declaration in \"%s\"'s definition\n",funcName,type.defaultName);
+  }
+  free(keys);
   initStrSet(&strset);
   if(!isRight) return 0;
   return 1;
 }
+
 
 
 
@@ -129,9 +155,9 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
   while((nodes=readTokenSentence(&actionSet))!=NULL){
     //先进行处理
     //进行方法内自身缺失调度补充
-    // nodes=member_use_complement(funcTranslator,nodes);
+    nodes=member_use_complement(funcTranslator,nodes);
     //对一个句子补充函数
-    // nodes=process_singleLine(funcTranslator,nodes);
+    nodes=process_singleLine(funcTranslator,nodes);
 
     //然后把处理结果写入文件
     if(nodes!=NULL) fput_tokenLine(fout,nodes);
@@ -151,16 +177,16 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
         }
       }
       //增加新的局部量表
-    //  funcTranslator->partialValTbl=extendValTbl(funcTranslator->partialValTbl);
+      funcTranslator->partialValTbl=extendValTbl(funcTranslator->partialValTbl);
       //加入函数的参数表到局部变量中
-      // loadArgs_valtbl(funcTranslator->partialValTbl,funcTranslator->funcTbl,funcTranslator->curFunc);
+      loadArgs_valtbl(funcTranslator->partialValTbl,funcTranslator->funcTbl,funcTranslator->curFunc);
     }
     else if(preBlocks==actionSet.blocks+1){
       //TODO,判断函数是否退出
       if(preBlocks==1){
         funcTranslator->curFunc=NULL;
       }
-      // funcTranslator->partialValTbl=recycleValTbl(funcTranslator->partialValTbl);
+      funcTranslator->partialValTbl=recycleValTbl(funcTranslator->partialValTbl);
     }
     preBlocks=actionSet.blocks;
     del_tokenLine(nodes);

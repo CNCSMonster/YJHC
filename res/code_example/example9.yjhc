@@ -1,0 +1,32 @@
+//该代码演示函数检查
+
+struct sa{
+    int a;
+    short b;
+    //void doa();
+    void dob();
+};
+
+struct sa->void doa(){
+    dob();
+}
+
+struct sa->void dob(){
+    return;
+}
+
+void doa(){
+    return ;
+    dob();
+}
+
+
+void dob(){
+
+    return ;
+}
+
+
+int main(){
+    return 1;
+}
