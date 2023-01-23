@@ -1,12 +1,20 @@
 {	1
-self . doa ( )	1
-;	1
-return	1
+strcpy ( self . name , name )	1
 ;	0
 }	0
 {	1
-self . c = 1	1
+printf ( "Hello,%s!" , helloTo )	1
+;	0
+}	0
+{	1
+int a , b , c	1
 ;	1
-return	1
+int a = 1 , b = 2 , c = 3	1
+;	1
+People Mike = getPeople ( )	1
+;	1
+Mike . sayHello ( )	1
+;	1
+return 0	1
 ;	0
 }	0

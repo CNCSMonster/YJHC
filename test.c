@@ -18,16 +18,8 @@ int (*getCount(int i))(int){
 
 int main(char* argv[])
 {    
+    int a,b,c;
     //测试按位取反
-    FILE* fin=fopen("gtg.txt","w");
-    printf("%p\n",fin);
-    FILE* fin2=fopen("gtg.txt","w");
-    //检查fin是否是指向相同的文件
-    printf("%p\n",fin2);
-    fprintf(fin,"11");
-    fprintf(fin2,"22");
-    fclose(fin);
-    fclose(fin2);
     return 1;
 }
 

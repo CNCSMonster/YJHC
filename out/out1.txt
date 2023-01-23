@@ -1,13 +1,19 @@
-typedef struct sa{
-int c;
-void doa();
-void dob();
-}A;
-A->void dob(){
-self.doa();
-return ;
+#include <stdio.h>
+#include <stdlib.h>
+typedef struct struct_people{
+char name[100];
+void sayHello(char* helloTo);
+}People;
+People getPeople(char* name){
+strcpy(self.name,name);
 }
-A->void doa(){
-self.c=1;
-return ;
+People->void sayHello(char* helloTo){
+printf("Hello,%s!",helloTo);
+}
+int main(){
+int a,b,c;
+int a=1,b=2,c=3;
+People Mike=getPeople();
+Mike.sayHello();
+return 0;
 }

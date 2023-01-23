@@ -42,5 +42,8 @@
 
 #include "action.h"
 
+#include "func_rename.h"
+#include "func_rename.c"
+
 
 #endif

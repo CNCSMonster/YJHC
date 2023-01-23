@@ -10,6 +10,7 @@
 #include "config.h"
 
 
+
 //目前只是处理单文件的问题,多文件的yjhc代码会先通过静态链接的处理再进行翻译
 
 //一些翻译用的参数,
@@ -26,8 +27,11 @@ typedef struct func_translator{
   ValTbl* globalValTbl;  //全局量表
   ValTbl* partialValTbl;  //局部量表
   FuncTbl* funcTbl; //全局函数表
+  //设置异常信息,如果异常信息出现问题,用来传递提示
+  int judSentenceKindErr;
   //注意,token读取器使用的单例模式
   Func* curFunc;  //当前翻译到的函数
+  FILE* warningFout;  //报错信息输出路径,一般默认是stdout
 }FuncTranslator;
 
 //创建函数翻译器,翻译结果是把未翻译的yjhc的函数代码token转为c的函数代码token序列
@@ -66,12 +70,41 @@ typedef enum func_translate_kind{
   TYPEDEF_FTK,    //typedef起头的类型别名定义语句
   FUNCPOINTER_DEF_FTK,  //函数指针量定义语句
   ASSIGN_FTK, //赋值语句
-  TYPE_METHOD_USE_FTK,  //类型方法调用语句
+  MEMBER_FUNCTION_USE_FTK,  //类型方法调用语句
   FTK_NUM   //token的数量
 }FTK;
 
 //判断句子的翻译类型,以选择不同的翻译语句
 FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* tokens);
+
+
+//判断是否是不需要翻译的语句,也就是没有成员函数调用的语句
+int isNotNeedTranslate(FuncTranslator* funcTranslator,TBNode* nodes);
+
+
+//获取表达式的类型,成功返回非0值,失败返回0
+int getTypeOfExpression(FuncTranslator* translator,TBNode* nodes,Type* retType,int* retTypeLayer);
+
+//句子类型判断子函数
+//判断是否是函数指针定义语句
+int isFuncPointerDefSentence(FuncTranslator* funcTranslator,TBNode* nodes);
+
+
+//判断是否是赋值语句
+int isAssignSentence(FuncTranslator* funcTranslator,TBNode* nodes);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
 
@@ -114,7 +147,7 @@ TBNode* (*tranFuncs[]) (FuncTranslator*,TBNode*) = {
   [TYPEDEF_FTK] translateTypedef,    //typedef起头的类型别名定义语句
   [FUNCPOINTER_DEF_FTK] translateFuncPointerDef,  //函数指针量定义语句
   [ASSIGN_FTK] translateAssign, //赋值语句
-  [TYPE_METHOD_USE_FTK] translateTypeMethodUse   //类型方法调用语句
+  [MEMBER_FUNCTION_USE_FTK] translateTypeMethodUse   //类型方法调用语句
 };
 
 

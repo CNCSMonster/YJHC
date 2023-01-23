@@ -6,7 +6,7 @@
 //准备函数表,函数表应该能够根据函数名还有主人名快速查找到
 //
 typedef struct struct_func_table{
-  vector funcKeys; //一个顺序表保存函数的名字
+  vector funcKeys; //一个顺序表保存函数的名字和主人组合成的键
   TypeTbl* globalTypeTbl;  //全局变量表
   hashtbl funcs;  //函数表
 }FuncTbl;

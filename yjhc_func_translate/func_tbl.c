@@ -84,6 +84,7 @@ int loadLine_functbl(FuncTbl* funcTbl,char* str){
     ownerId=getTypeId(ownerTypeIndex,ownerLayer);
     key=getFuncKey(toAdd->func_name,ownerId);
   }
+
   hashtbl_put(&funcTbl->funcs,&key,&toAdd);
   //把字符串也加到funcName里面
   vector_push_back(&funcTbl->funcKeys,&key);

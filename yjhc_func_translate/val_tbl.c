@@ -83,7 +83,6 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
     }
     if(isEnd) break;
   }while(1);
-  //然后获得vec的类型
   //剩下的str就是新加入量的类型
   formatTypeName(str);  //首先进行一下格式化
   //查找类型,如果类型没有初始化的话,而且是常量的话,则设置其默认值
@@ -117,7 +116,7 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
       vector_set(vec,i,&val,NULL);
     }
     putStrId(valTbl->valIds,val.name,i);
-    //注册量名与类型的关系,TODO
+    //注册量名与类型的关系
     char* typeName=strcpy(malloc(strlen(str)+1),str);
     char* valName=strcpy(malloc(strlen(val.name)+1),val.name);
     hashtbl_put(&valTbl->valToType,&valName,&typeName);
@@ -204,7 +203,6 @@ Val getVal(char* name,int isConst,char* defaultVal){
 
 
 //往量表中加入值
-//其中
 void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName){
   //首先查找类型
   Type find={ //结构体类型的具名初始化

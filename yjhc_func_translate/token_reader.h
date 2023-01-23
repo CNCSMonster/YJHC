@@ -24,6 +24,7 @@ typedef struct token_buffer_node{
   struct token token;
 }TBNode;
 
+
 int ifSplitAfterAdd=0;  //标记是否在新加入token后分割的情况
 ActionSet oldActionSet; //用来记录之前的一些动作
 

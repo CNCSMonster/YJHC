@@ -1,1 +1,1 @@
-typedef struct sa{ int c; void doa(); void dob(); }A
+typedef struct struct_people{ char name[100]; void sayHello(char* helloTo); }People
