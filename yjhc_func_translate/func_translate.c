@@ -348,30 +348,11 @@ int release_funcTranslator(FuncTranslator* funcTranslator){
 
 //判断句子的翻译类型,以选择不同的翻译语句
 FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
-  //如果一个句子里面全部都是界符,则这个句子是不用翻译的
-  //首先进行一次遍历,取出所有符号的类型
-  //然后使用位运算来判断该符号是否正确
-  //比如说0000_0000八个位置表示八种符号
-  //而我们的句子的符号种类分布是 1100_0000，1表示有
-  //要判断是否全部符号都在0001_1111内
-  //则取反后者1110_0000,然后拿后者与前者做与运算
-  //如果结果不为0,则说明目标句子含有其他符号,否则没有
   if(nodes==NULL) return NOT_TRANSLATE_FTK;
   if(funcTranslator->curFunc==NULL) return NOT_TRANSLATE_FTK;
-  BitMapUtil bmu={
-    .mapSize=sizeof(long long)
-  };
-  BitMap bm=getBitMap(&bmu);
-  TBNode* track=nodes;
-  while(track!=NULL){
-    put_bitmap(&bmu,&bm,track->token.kind);
-    track=track->next;
-  }
-  long long curMap;
-  memcpy(&curMap,bm.map,sizeof(curMap));
-  long long sepOrCon=SEP_BITMAP|CONTROL_KEYWORD_BITMAP;
-  //判断是否仅仅含有界符和关键字的表达式,则不用进行任何翻译动作处理，
-  if(((~sepOrCon)&curMap)==0){
+  
+  //判断是否是不用进行方法调用翻译的句子
+  if(ifNotNeedFuncTranslate(funcTranslator,nodes)){
     return NOT_TRANSLATE_FTK;
   }
   
@@ -379,20 +360,48 @@ FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
   if(nodes->token.kind==TYPEDEF_KEYWORD){
     return TYPEDEF_FTK;
   }
+ 
   //判断是否是变量定义语句
   if(nodes->token.kind==TYPE&&nodes->next!=NULL&&nodes->next->token.kind==VAR){
     return VAR_DEFINE_FTK;
   }
+  
   //判断是否是常量定义语句
   if(nodes->token.kind==CONST_KEYWORD){
     if(nodes->next!=NULL&&nodes->next->token.kind==TYPE) {
       return CONST_DEFINE_FTK;
+    }
+    else{
+      return NOT_LEAGAL_FTK;
     }
   }
   
   //判断是否是函数调用语句
   if(nodes->token.kind==FUNC){
     return FUNC_USE_FTK;
+  }
+
+  //判断是否是成员属性调用
+  if(nodes->token.kind==VAR&&nodes->next!=NULL&&
+    strcmp(nodes->next->token.val,".")==0&&
+    nodes->next->next!=NULL
+    &&nodes->next->next->token.kind==VAR
+  ){
+    return MEMBER_FIELD_USE_FTK;
+  }
+  //判断是否是成员方法调用
+  if(nodes->token.kind==VAR&&
+    nodes->next!=NULL
+    &&strcmp(nodes->next->token.val,".")==0
+    &&nodes->next->next!=NULL
+    &&nodes->next->next->token.kind==FUNC
+  ){
+    return MEMBER_FUNCTION_USE_FTK;
+  }
+
+  //判断是否是数组元素访问
+  if(nodes->token.kind==VAR&&nodes->next!=NULL&&nodes->next->token.kind==LEFT_BRACKET){
+    return ARR_VISIT_FTK;
   }
 
   //判断是否是函数指针定义语句,如果是函数指针定义语句,则进行函数指针定义语句的处理
@@ -416,129 +425,46 @@ FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
     return NOT_LEAGAL_FTK;
   }
 
-  //判断是否是不需要进行成员方法调用翻译的语句
-  if(isNotNeedTranslate(funcTranslator,nodes)){
-    return NOT_TRANSLATE_FTK;
-  }
-  if(funcTranslator->judSentenceKindErr){
-    //处理异常,并返回对判断:句子不合语法
-    funcTranslator->judSentenceKindErr=0;
-    return NOT_LEAGAL_FTK;
-  }
-  
-  //否则需要进行成员方法调用翻译
-  return MEMBER_FUNCTION_USE_FTK;
+
+  //否则是复合运算语句,对运算进行分解
+  return COUNT_FTK;
 }
 
-//判断是否是不需要翻译的语句,也就是没有成员函数调用的语句
-int isNotNeedTranslate(FuncTranslator* funcTranslator,TBNode* nodes){
-  //如果没有成员方法调用,则不需要翻译
-  //判断是否有成员方法调用的分析
+
+//判断是否是不需要方法调用翻译的句子
+int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
+  if(nodes==NULL) return 1;
+
+  //如果一个句子里面全部都是界符,则这个句子是不用翻译的
+  //首先进行一次遍历,取出所有符号的类型
+  //然后使用位运算来判断该符号是否正确
+  //比如说0000_0000八个位置表示八种符号
+  //而我们的句子的符号种类分布是 1100_0000，1表示有
+  //要判断是否全部符号都在0001_1111内
+  //则取反后者1110_0000,然后拿后者与前者做与运算
+  //如果结果不为0,则说明目标句子含有其他符号,否则没有
+
+  //如果只有运算表达式和的符号,则是不需要方法调用翻译的句子
+  BitMapUtil bmu={
+    .mapSize=sizeof(long long)
+  };
+  BitMap bm=getBitMap(&bmu);
   TBNode* track=nodes;
-  //如果存在self就不是不需要翻译的情况
   while(track!=NULL){
-    if(track->token.kind==SELF_KEYWORD){
-      return 0; //需要翻译
-    }
+    put_bitmap(&bmu,&bm,track->token.kind);
     track=track->next;
   }
-  //如果没有在上面退出,说明里面不含有self关键字
-  track==nodes;
-  while (track!=NULL)
-  {
-    if(track->token.kind!=FUNC||track->last==NULL||strcmp(track->last->token.val,".")!=0){
-      track=track->next;
-      continue;
-    }
-    //往前搜索直到上一个表达式结束为止
-
-    //或者搜索到NULL为止,搜索到NULL说明情况异常
-    TBNode* ownerHead=searchOwnerHead(track->last->last);
-    TBNode* ownerTail=track->last->last;
-    if(ownerHead!=NULL){
-      //获取表达式类型
-      Type type;
-      int retLayer;
-      //如果获取表达式类型成功,根据类型判断是否式成员方法调用
-      if(getTypeOfExpression(funcTranslator,nodes,&type,&retLayer)){
-        
-      }
-      //如果获取失败,报错
-      else{
-
-      }
-
-    }
-
-    track=track->next;
+  long long mode=COUNT_BITMAP|CONTROL_KEYWORD_BITMAP|SEP_BITMAP;
+  long long cur;
+  memcpy(&cur,bm.map,sizeof(cur));
+  delBitMap(&bm);
+  //如果nodes中含有mode以外的token类型
+  if(cur&(~mode)){
+    return 0;
   }
-  return 1; //如果在循环中没有发现不用输出,
+  return 1;
 }
 
-//往前搜索到一个连锁表达式的起点
-TBNode* searchOwnerHead(TBNode* tail){
-  TBNode* track=tail;
-  //对表达式进行搜索
-  TBNode* head=tail;
-  while(track!=NULL){
-    if(track->token.kind==VAR){
-      head=track;
-    }
-    else if(track->token.kind==RIGHT_PAR){
-      //往前搜索直到括号表达式结束
-      int count=1;
-      TBNode* track2=track->last;
-      TBNode* sufTrack2=NULL;
-      while(track2!=NULL&&count!=0){
-        if(track2->token.kind==RIGHT_PAR) count++;
-        else if(track2->token.kind==LEFT_PAR) count--;
-        sufTrack2=track2;
-        track2=track2->last;
-      }
-      //异常情况,括号不对齐,返回NULL
-      if(count!=0){
-        return NULL;
-      }
-      //否则是对齐的
-      if(track2==NULL||track2->token.kind!=FUNC){
-        head=sufTrack2;
-      }
-      else{
-        head=track2;
-      }
-    }
-    else if(track->token.kind==RIGHT_BRACKET){
-      //往前搜索直到方块表达式结束
-      int count=1;
-      TBNode* track2=track2->last;
-      TBNode* sufTrack2=NULL;
-      while(track2!=NULL){
-        sufTrack2=track2;
-        if(track2->token.kind==RIGHT_BRACKET&&) count++;
-        else if(track2->token.kind==LEFT_BRACKET) count--;
-        if(count!=0||track2->last==NULL||track2->last->token==RIGHT_BRACKET) track2=track2->last;
-        sufTrack2=track2->next;
-        break;
-      }
-      //表达式前面的内容应该是field,如果表达
-      if(count!=0||track2==NULL){
-        return NULL;
-      }
-      if(track2->last->token.kind==VAR){
-        head=track2->last;
-      }
-      else{
-        return NULL;
-      }
-    }
-    else return NULL;
-    if(head->last->token.kind==OP&&strcmp(head->last->token.val,".")==0){
-      track=head->last->last
-    }
-    else break;
-  }
-  return head;
-}
 
 
 //获取表达式的类型
@@ -639,8 +565,15 @@ int isAssignSentence(FuncTranslator* funcTranslator,TBNode* nodes){
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
 
+
+//翻译成员属性访问语句
+TBNode* translateMemberFieldVisit(FuncTranslator* functranslator,TBNode* tokens){
+
+}
+
 //翻译变量定义语句
 TBNode* translateVarDef(FuncTranslator* functranslator,TBNode* tokens){
+
 
 }
 
@@ -672,6 +605,12 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
 
 //翻译赋值语句
 TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
+
+  //TODO,主要做类型检查,判断赋值类型是否匹配
+  if(1) return tokens;  //不检查
+
+
+
   //首先获取类型的typeId
 
   //然后把后面的每个变量都加入该类型,以括号为间隔
@@ -699,10 +638,7 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
       tHead->last=NULL;
       tail->next=NULL;
       tHead=process_singleLine(functranslator,tHead); //返回新双向链表头部
-      //TODO,
-      tail=findTBNodesTail(tHead); //找到双向链表尾部
-
-
+      //TODO
     }
     else if(track->token.kind==RIGHT_PAR){
       leftPar--;
@@ -726,6 +662,10 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
 
 //翻译类型方法调用语句
 TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens){
+
+  //则第一个位置就是量,对这个量进行翻译
+
+
 
 }
 

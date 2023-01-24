@@ -1,1 +1,1 @@
-typedef struct struct_people{ char name[100]; void sayHello(char* helloTo); }People
+typedef struct struct_people{ char name[100]; int age; void sayHello(char* helloTo); }People

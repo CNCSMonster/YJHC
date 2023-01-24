@@ -30,6 +30,7 @@ int main(){
   put(SEMICOLON);
   long long out;
   memcpy(&out,bm.map,sizeof(out));
+  printf("//界符位图\n");
   printf("const long long SEP_BITMAP = %lld;\n",out);
   //然后获取流程控制关键字的集合
   clear_bitmap(&bmu,&bm);
@@ -37,10 +38,21 @@ int main(){
   put(IF);put(ELIF);put(ELSE);
   put(CONTINUE);put(BREAK);put(RETURN);
   memcpy(&out,bm.map,sizeof(out));
+  printf("//流程控制关键字位图\n");
   printf("const long long CONTROL_KEYWORD_BITMAP = %lld;\n",out);
-  //其他集合没必要
+  //加入运算表达式的内容
+  clear_bitmap(&bmu,&bm);
+  put(OP);put(VAR);put(CONST);
+  //加入运算层次括号
+  put(LEFT_PAR);put(RIGHT_PAR);
+  put(LEFT_BRACKET);put(RIGHT_BRACKET);
+  put(LEFT_BRACE);put(RIGHT_BRACE);
+  memcpy(&out,bm.map,sizeof(out));
+  printf("//加入运算表达式位图\n");
+  printf("const long long COUNT_BITMAP = %lld;\n",out);
+  //非运算符位图
+
   printf("#endif\n");
   delBitMap(&bm);
-
   return 0;
 }

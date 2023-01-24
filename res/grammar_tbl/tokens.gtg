@@ -32,4 +32,3 @@ UNKNOWN
 #补充新的token,self关键字
 token add -n 1
 SELF_KEYWORD
-

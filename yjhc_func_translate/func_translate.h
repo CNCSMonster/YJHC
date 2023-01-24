@@ -71,6 +71,8 @@ typedef enum func_translate_kind{
   FUNCPOINTER_DEF_FTK,  //函数指针量定义语句
   ASSIGN_FTK, //赋值语句
   MEMBER_FUNCTION_USE_FTK,  //类型方法调用语句
+  MEMBER_FIELD_USE_FTK, //类型属性调用语句
+  ARR_VISIT_FTK,  //数组元素访问调用语句
   FTK_NUM   //token的数量
 }FTK;
 
@@ -78,12 +80,14 @@ typedef enum func_translate_kind{
 FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* tokens);
 
 
-//判断是否是不需要翻译的语句,也就是没有成员函数调用的语句
-int isNotNeedTranslate(FuncTranslator* funcTranslator,TBNode* nodes);
-
 
 //获取表达式的类型,成功返回非0值,失败返回0
 int getTypeOfExpression(FuncTranslator* translator,TBNode* nodes,Type* retType,int* retTypeLayer);
+
+//判断是否是不需要方法调用翻译的句子
+int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes);
+
+
 
 //句子类型判断子函数
 //判断是否是函数指针定义语句
@@ -107,6 +111,13 @@ int isAssignSentence(FuncTranslator* funcTranslator,TBNode* nodes);
 
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
+
+//翻译成员属性访问语句
+TBNode* translateMemberFieldVisit(FuncTranslator* functranslator,TBNode* tokens);
+
+//数组元素访问语句
+TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens);
+
 
 //翻译变量定义语句
 TBNode* translateVarDef(FuncTranslator* functranslator,TBNode* tokens);
@@ -147,6 +158,7 @@ TBNode* (*tranFuncs[]) (FuncTranslator*,TBNode*) = {
   [TYPEDEF_FTK] translateTypedef,    //typedef起头的类型别名定义语句
   [FUNCPOINTER_DEF_FTK] translateFuncPointerDef,  //函数指针量定义语句
   [ASSIGN_FTK] translateAssign, //赋值语句
+  [MEMBER_FIELD_USE_FTK] translateMemberFieldVisit, //成员属性访问语句
   [MEMBER_FUNCTION_USE_FTK] translateTypeMethodUse   //类型方法调用语句
 };
 
