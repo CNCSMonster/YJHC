@@ -194,7 +194,8 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
     nodes=process_singleLine(funcTranslator,nodes);
 
     //然后把处理结果写入文件
-    if(nodes!=NULL) fput_tokenLine(fout,nodes);
+    if(nodes!=NULL) 
+      fput_tokenLine(fout,nodes);
 
     //debug用的打印语句
     // if(nodes!=NULL) fshow_tokenLine(stdout,nodes);
@@ -311,7 +312,7 @@ TBNode* process_singleLine(FuncTranslator* funcTranslator,TBNode* nodes){
   if(nodes==NULL) return NULL;
   //首先判断类型
   FTK kind=getTokenLineKind(funcTranslator,nodes);
-  if(kind=NOT_LEAGAL_FTK){
+  if(kind==NOT_LEAGAL_FTK){
     del_tokenLine(nodes);
     return NULL;
   }
@@ -355,13 +356,32 @@ FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
   if(ifNotNeedFuncTranslate(funcTranslator,nodes)){
     return NOT_TRANSLATE_FTK;
   }
+  //如果出现了判断异常
+  if(funcTranslator->judSentenceKindErr){
+    //处理异常,并返回对判断:句子不合语法
+    funcTranslator->judSentenceKindErr=0;
+    return NOT_LEAGAL_FTK;
+  }
   
+
   //判断是否是typedef语句
   if(nodes->token.kind==TYPEDEF_KEYWORD){
     return TYPEDEF_FTK;
   }
+
+  //判断是否是类型强转语句，TODO
+  if(isTypeChangeSentence(funcTranslator,nodes)){
+    return TYPE_CHANGE_FTK;
+  }
+  //如果出现了判断异常
+  if(funcTranslator->judSentenceKindErr){
+    //处理异常,并返回对判断:句子不合语法
+    funcTranslator->judSentenceKindErr=0;
+    return NOT_LEAGAL_FTK;
+  }
+
  
-  //判断是否是变量定义语句
+  //判断是否是变量定义语句,这里的变量可能指变量数组
   if(nodes->token.kind==TYPE&&nodes->next!=NULL&&nodes->next->token.kind==VAR){
     return VAR_DEFINE_FTK;
   }
@@ -399,9 +419,14 @@ FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
     return MEMBER_FUNCTION_USE_FTK;
   }
 
-  //判断是否是数组元素访问
-  if(nodes->token.kind==VAR&&nodes->next!=NULL&&nodes->next->token.kind==LEFT_BRACKET){
+  if(isArrVisitSentence(funcTranslator,nodes)){
     return ARR_VISIT_FTK;
+  }
+  //如果出现了判断异常
+  if(funcTranslator->judSentenceKindErr){
+    //处理异常,并返回对判断:句子不合语法
+    funcTranslator->judSentenceKindErr=0;
+    return NOT_LEAGAL_FTK;
   }
 
   //判断是否是函数指针定义语句,如果是函数指针定义语句,则进行函数指针定义语句的处理
@@ -425,7 +450,6 @@ FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
     return NOT_LEAGAL_FTK;
   }
 
-
   //否则是复合运算语句,对运算进行分解
   return COUNT_FTK;
 }
@@ -434,7 +458,6 @@ FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
 //判断是否是不需要方法调用翻译的句子
 int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
   if(nodes==NULL) return 1;
-
   //如果一个句子里面全部都是界符,则这个句子是不用翻译的
   //首先进行一次遍历,取出所有符号的类型
   //然后使用位运算来判断该符号是否正确
@@ -458,19 +481,13 @@ int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
   long long cur;
   memcpy(&cur,bm.map,sizeof(cur));
   delBitMap(&bm);
-  //如果nodes中含有mode以外的token类型
+  //如果nodes中含有mode以外的token类型,则不是不需要进行yjhc->c翻译的句子
   if(cur&(~mode)){
     return 0;
   }
   return 1;
 }
 
-
-
-//获取表达式的类型
-int getTypeOfExpression(FuncTranslator* translator,TBNode* nodes,Type* retType,int* retTypeLayer){
-
-}
 
 //判断子函数
 //判断是否是函数指针定义语句
@@ -533,13 +550,16 @@ int isFuncPointerDefSentence(FuncTranslator* funcTranslator,TBNode* nodes){
 }
 
 
-//判断是否是赋值语句
+//判断是否是赋值语句,如果是赋值语句,则支持连续赋值语句
 int isAssignSentence(FuncTranslator* funcTranslator,TBNode* nodes){
   //准备内容
   // 格式为:var=val,var2=val,...var3=val
   //准备个自动机来判断是否是赋值语句
   int state=0;
-  while(nodes!=NULL){
+  const int fail_state=INT_MAX;
+  const int accept_state=INT_MAX-1;
+  int toNum=0;  //统计目的变量的数量
+  while(nodes!=NULL&&state!=fail_state){
     //初始状态仅仅可能遇到VAR
     if(state==0&&nodes->token.kind==VAR){
       state=1;
@@ -548,38 +568,425 @@ int isAssignSentence(FuncTranslator* funcTranslator,TBNode* nodes){
     //遇到','进入状态0,期待遇到下一个变量
     else if(state==1&&nodes->token.kind==COMMA){
       state=0;
+      toNum++;
     }
-    //遇到=号说明是赋值语句
+    //遇到=号进入状态2,
     else if(state==1&&strcmp(nodes->token.val,"=")==0){
-      return 1;
-    }else{
+      state=accept_state;
+    }
+    //进入读取值状态
+    else if(state==accept_state){
+      //读取到逗号为止
+      int count=0;
+      if(nodes->token.kind==COMMA){
+        state=fail_state;
+        break;
+      }
+      toNum--;
+      do{
+        TokenKind kind=nodes->token.kind;
+        if(kind==RIGHT_PAR||kind==RIGHT_BRACE||kind==RIGHT_BRACKET) count--;
+        else if(kind==LEFT_PAR||kind==LEFT_BRACE||kind==LEFT_BRACKET) count++;
+        else if(kind==COMMA&&count==0) break;
+        nodes=nodes->next;
+      }while(nodes!=NULL);
+      if(nodes==NULL) break;
+    }
+    else{
       funcTranslator->judSentenceKindErr=1;
       return 0;
     }
     nodes=nodes->next;
   }
-  return 0;
+  //如果是异常情况停机
+  if(state!=accept_state||toNum!=0){
+    funcTranslator->judSentenceKindErr=1;
+    return 0;
+  }
+  return 1;
 }
 
+//判断是否是数组成员访问
+int isArrVisitSentence(FuncTranslator* funcTranslator,TBNode* nodes){
+  if(nodes->token.kind!=VAR) return 0;
+  nodes=nodes->next;
+  if(nodes->token.kind!=LEFT_BRACKET) return 0;
+  nodes=nodes->next;
+  //获取中间内容
+  int leftBra=1;
+  while(nodes!=NULL){
+    if(nodes->token.kind==LEFT_PAR||nodes->token.kind==LEFT_BRACKET||nodes->token.kind==LEFT_BRACE)
+    {
+      leftBra++;
+    }
+    else if(nodes->token.kind==RIGHT_PAR||nodes->token.kind==RIGHT_BRACE||nodes->token.kind==RIGHT_BRACKET)
+    {
+      leftBra--;
+    }
+    if(leftBra==0) break;
+    nodes=nodes->next;
+  }
+  if(leftBra!=0){
+    funcTranslator->judSentenceKindErr=1;
+    return 0;
+  }
+  return 1;
+}
+
+//判断是否是类型强转语句
+int isTypeChangeSentence(FuncTranslator* funcTranslator,TBNode* nodes){
+  if(nodes==NULL) return 0;
+  if(nodes->token.kind!=LEFT_PAR) return 0;
+  nodes=nodes->next;
+  if(nodes==NULL||nodes->token.kind!=TYPE) return 0;
+  nodes=nodes->next;
+  if(nodes==NULL||nodes->token.kind!=RIGHT_PAR) return 0;
+  return 1;
+}
 
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
 
 
 //翻译成员属性访问语句
-TBNode* translateMemberFieldVisit(FuncTranslator* functranslator,TBNode* tokens){
+TBNode* translateMemberFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens){
+  //需要保证传给这个函数的tokens一定是对应类型的
+  //首先第一个量一定是VAR,否则则是异常情况
+  //首先获取变量的类型
+  Type type;
+  Val val;
+  int retLayer;
+  char* newTypeName=NULL;  //新变量的类型名
+  //TODO 如果表没有找到这个量，可能是因为是c标准库里定义的结构体量,因为还没有加载c库的定义
+  if(!findVal(funcTranslator->partialValTbl,tokens->token.val,&val,&type,&retLayer)){
+    //TODO 异常情况
+    del_tokenLine(tokens);
+    return NULL;
+  }
 
+  //否则如果找到的类型为结构体类型或者枚举类型的话
+  if((type.kind==TYPE_STRUCT||type.kind==TYPE_UNION)
+    &&(
+      (retLayer==0&&strcmp(tokens->next->token.val,".")==0)
+      ||
+      (retLayer==1&&strcmp(tokens->next->token.val,"->")==0)
+    )
+  ){
+    
+    //获取该属性类型名,如果该类型没有该属性可访问,进行报错提示
+    if(!hashtbl_get(&type.fields,&(tokens->next->next->token.val),&newTypeName)){
+      fprintf(funcTranslator->warningFout,"visit unexist field %s of %s\n",tokens->next->next->token.val,tokens->token.val); 
+      del_tokenLine(tokens);
+      return NULL;
+    }
+  }
+  //如果是其他类型，比如未知类型，则可能是标准库中的成员访问;又或者进行了错误指针层次的访问
+  else{
+    //暂时当作异常处理
+    del_tokenLine(tokens);
+    return NULL;
+  }
+
+  TBNode *tail = tokens->next->next;
+  TBNode *sufTail = tail->next;
+  tail->next = NULL;
+  if (sufTail != NULL)
+    sufTail->last = NULL;
+  // 合并表达式
+  TBNode *out = connect_tokens(tokens, VAR, "");
+  // 如果合并异常
+  if (out == NULL)
+  {
+    del_tokenLine(sufTail);
+    return NULL;
+  }
+  // 检查合并结果是否是孤立节点
+  if (out->next != NULL || out->last != NULL)
+  {
+    del_tokenLine(out);
+    return NULL;
+  }
+  // 否则合并成功,
+  
+  //首先连接合成表达式和后面剩余节点
+  out->next=sufTail;
+  sufTail->last=out;
+  //然后注册表达式字符值为目标类型
+  addVal_valtbl(funcTranslator->partialValTbl,out->token.val,NULL,0,newTypeName,0);
+
+  return process_singleLine(funcTranslator ,out);
+}
+
+//数组元素访问语句
+TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
+  //首先截取后面两个方括号之间的内容
+  TBNode* head=tokens->next->next;
+  TBNode* preHead=head->last;
+  TBNode* sufTail=head;
+  int leftP=1;
+  while(sufTail!=NULL){
+    TokenKind kind=sufTail->token.kind;
+    if(kind==LEFT_BRACE||kind==LEFT_PAR||kind==LEFT_BRACKET){
+      leftP++;
+    }
+    else if(kind==RIGHT_BRACE||kind==RIGHT_BRACKET||kind==RIGHT_PAR)
+    {
+      leftP--;
+    }
+    if(leftP==0) break;
+    sufTail=sufTail->next;
+  }
+  if(sufTail==NULL){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //否则如果下标表达式为空,也就是方括号内为空内容,也就是非法情况
+  else if(sufTail==head){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //然后处理下标表达式,事实下标表达式应该是一个结果为整型变量的运算
+  
+  //首先分离出下标表达式
+  head->last=NULL;
+  preHead->next=NULL;
+  sufTail->last->next=NULL;
+  sufTail->last=NULL;
+
+
+  //然后处理下标表达式
+  head=process_singleLine(funcTranslator,head);
+  //如果下标表达式分析错误
+  if(head==NULL){
+    del_tokenLine(tokens);
+    del_tokenLine(sufTail);
+    return NULL;
+  }
+  //否则判断下标表达式的类型
+  Type type;
+  Val val;
+  int layer;
+  //从表中搜索获取下标表达式类型
+  findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&layer);
+  //判断表达式的类类型
+  //如果下标不是int类型或者不是long long类型,则为错误的下标表达式,返回异常值
+  if(layer!=0||type.kind!=TYPE_INT){
+    del_tokenLine(tokens);
+    del_tokenLine(sufTail);
+    del_tokenLine(head);
+    return NULL;
+  }
+  //否则是正确类型的表达式,合并前后内容
+  TBNode* sufSufTail=sufTail->next;
+  preHead->next=head;
+  head->last=preHead;
+  head->next=sufTail;
+  sufTail->last=head;
+
+  //分离数组元素访问表达式,
+  sufTail->next=NULL;
+  if(sufSufTail!=NULL) sufSufTail->last=NULL;
+  
+  //处理数组访问表达式,数组表达式处理完后应该是一个var
+  tokens=connect_tokens(tokens,VAR,"");
+
+  //合并处理后的数组访问表达式和之前分离的内容
+  tokens->next=sufSufTail;
+  if(sufSufTail!=NULL) sufSufTail->last=tokens;
+
+  //加入量表
+  layer--;
+  addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,0,type.defaultName,layer);
+
+  //然后返回对剩下部分继续翻译的结果
+  return process_singleLine(funcTranslator,tokens);
+}
+
+
+//翻译类型强转语句
+TBNode* translateTypeChange(FuncTranslator* funcTranslator,TBNode* tokens){
+  
+  return tokens;
 }
 
 //翻译变量定义语句
-TBNode* translateVarDef(FuncTranslator* functranslator,TBNode* tokens){
+TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
+  //首先获取类型
+  char* typeName=tokens->token.val;
+  Type type;
+  int typeLayer;
+  //查找类型
+  findType_valtbl(funcTranslator->partialValTbl,typeName,&type,&typeLayer);
+  //然后获取后面所有变量
+  vector vars=getVector(sizeof(char*));
+  vector layers=getVector(sizeof(int));
+  TBNode* track=tokens->next;
+  int leftP=0;
+  int state=0;  //用一个状态来辅助分析
+  int isRight=1;
+  //
+  do{
+    //如果状态为0,加入一个变量,进入状态m
+    if(state==0&&track->token.kind==VAR){
+      vector_push_back(&vars,track->token.val);
+      //判断这个变量是否是数组,如果是,则进行数组定义检查
+      int layer=0;
+      vector_push_back(&layers,&layer);
+      state=1;
+    } 
+    //如果是数组
+    else if(state==1&&track->token.kind==LEFT_BRACKET){
+      TBNode* head=track->next;
+      TBNode* tail=head;
+      int leftP=1;
+      while(tail!=NULL){
+        if(tail->token.kind==RIGHT_BRACKET) leftP--;
+        else if(tail->token.kind==RIGHT_BRACKET) leftP++;
+        if(leftP==0) break;
+        tail=tail->next;
+      }
+      if(leftP!=0||tail==head){
+        isRight=0;
+        break;
+      }
+      TBNode* sufTail=tail;
+      tail=sufTail->last;
+      //分割
+      tail->next=NULL;
+      sufTail->last=NULL;
+      track->next=NULL;
 
+      track->next=sufTail;
+      sufTail->last=track;
 
+      head=process_singleLine(funcTranslator,head); //对该数组定义的维度大小表达式进行处理
+      //如果处理失败
+      if(head==NULL){
+        isRight=0;
+        break;
+      }
+      //如果处理的结果维度表达式不是整型常数类型或者不是常数类型,则错误
+      if(head->token.kind!=CONST
+      &&head->token.kind!=VAR
+      ){
+        isRight=0;
+        break;
+      }
+      //否则如果是变量,取出判断是否是整数类型的常变量
+      Type type;
+      Val val;
+      int typeLayer=0;
+      if(head->token.kind==VAR){
+        //判断是否是常数型的量
+        //如果是,代入值
+        findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&typeLayer);
+        if(typeLayer!=0||!val.isConst){
+          fprintf(funcTranslator->warningFout,"size of arr' axis should be a const int val,but not %s!\n",head->token.val);
+          isRight=0;
+          break;
+        }
+      }
+
+      //否则是合适的内容,没有差错,连接回来
+      track->next=head;
+      head->last=track;
+      head->next=sufTail;
+      sufTail->last=head;
+
+      //对layer进行处理,增加个维度
+      int layer;
+      vector_get(&layers,layers.size-1,&layer);
+      layer++;
+      vector_set(&layers,layers.size-1,&layer,NULL);
+      //然后track跳到sufTail位置
+      track=sufTail;
+    }
+    //如果遇到逗号跳转到期待位置
+    else if(state==1&&track->token.kind==COMMA){
+      state=0;
+    }
+    //如果遇到==号,进入值处理语句
+    else if(state==1&&track->token.kind==OP&&strcmp(track->token.val,"==")==0){
+      state=2;
+    }
+    //处理值表达式,其实是跳过不处理,跳到
+    else if(state==2){
+      TBNode* t2=track;
+      int leftP=0;
+      if(t2==NULL||t2->token.kind==COMMA){
+        isRight=0;
+        break;
+      }
+      //用t2搜索到值表达式的结尾
+      while(t2!=NULL){
+        TokenKind kind=t2->token.kind;
+        if(kind==LEFT_PAR||kind==LEFT_BRACE||kind==LEFT_BRACKET){
+          leftP++;
+        }
+        else if(kind==RIGHT_PAR||kind==RIGHT_BRACE||kind==RIGHT_BRACKET){
+          leftP--;
+        }
+        if(leftP==0&&(t2->next==NULL||t2->next->token.kind==COMMA)) break;
+        t2=t2->next;
+      }
+      //t2搜索到了值表达式的结尾
+      state=1;
+      if(t2->next==NULL){
+        break;
+      }
+      track=t2;
+    }
+    else{
+      isRight=0;
+      break;
+    }
+    track=track->next;
+  }while(track!=NULL);
+  if(!isRight||state!=1){
+    vector_clear(&vars);
+    vector_clear(&layers);
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //如果没有异常退出,开始注册变量名
+  for(int i=0;i<vars.size;i++){
+    char* name;
+    int addLayer;
+    //首先取出注册变量名和增加的层次
+    vector_get(&vars,i,&name);
+    vector_get(&layers,i,&addLayer);
+    addLayer+=typeLayer;
+    addVal_valtbl(funcTranslator->partialValTbl,name,NULL,0,type.defaultName,addLayer);
+  }
+  //对子表达式进行递归分析,为了降低递归深度,是分别取出分析
+  // 因为数组维度大小表达式已经分析了,所以要分析赋值的内容
+  //从前面往后面分析
+  track=tokens->next;
+  while(track!=NULL){
+    if(track->token.kind!=OP||
+      strcmp(track->token.val,"==")!=0
+    ){
+      track=track->next;
+      continue;
+    }
+    //TODO
+    //进行表达式分析,往前搜索直到取到前面类型名
+
+    //往后取到逗号为止
+
+    //对取出的赋值表达式进行分析
+
+    //合并赋值表达式和前面类型为类型
+
+  }
+  
+  return tokens;
 }
 
 //翻译常量定义语句
 TBNode* translateConstDef(FuncTranslator* functranslator,TBNode* tokens){
 
+  return tokens;
 }
 
 //翻译运算语句
@@ -600,59 +1007,14 @@ TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
 
 //翻译函数调用语句
 TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
-
+  //TODO
+  return tokens;
 }
 
 //翻译赋值语句
 TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
-
-  //TODO,主要做类型检查,判断赋值类型是否匹配
-  if(1) return tokens;  //不检查
-
-
-
-  //首先获取类型的typeId
-
-  //然后把后面的每个变量都加入该类型,以括号为间隔
-  char* typeName=tokens->token.val; //首先取出类型名
-
-  TBNode* track=tokens->next;
-  TBNode* tHead=NULL;
-  int state=0;
-  int leftPar=1; //统计左括号数量,只有左括号数量为0的时候遇到右括号才进行处理
   //TODO
-  while(track!=NULL){
-    if(state==0){
-      //取出变量名
-      if(track->token.kind!=VAR) return NULL;
-      addVal_valtbl(functranslator->partialValTbl,track->token.val,NULL,0,typeName);
-      tHead=track;
-      state=1;
-    }
-    else if(state!=1) return NULL;
-    //如果到一个句子的结尾
-    else if(leftPar==0&&track->token.kind==COMMA){
-      //截取出这个句子进行处理
-      TBNode* tail=track->last;
-      TBNode* preHead=tHead->last;
-      tHead->last=NULL;
-      tail->next=NULL;
-      tHead=process_singleLine(functranslator,tHead); //返回新双向链表头部
-      //TODO
-    }
-    else if(track->token.kind==RIGHT_PAR){
-      leftPar--;
-    }
-    else if(track->token.kind==LEFT_PAR){
-      leftPar++;
-    }
-
-  }
-  //对最后一句进行处理
-  if(tHead->next!=NULL){
-
-  }
-
+  return tokens;
 }
 
 

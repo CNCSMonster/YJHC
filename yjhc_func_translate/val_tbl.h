@@ -63,10 +63,16 @@ ValTbl* recycleValTbl(ValTbl* partialTbl);
 
 
 //往量表中加入值
-void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName);
+void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName,int typeLayer);
+
+
 
 //往量表中加载一个函数的参数
 void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func);
+
+//通过量表查找类型,查找成功返回非0值，查找失败返回0
+int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer);
+
 
 
 //删除一个量表
@@ -77,6 +83,9 @@ void show_val(Val* val);
 
 //删除一个量
 void delVal(Val* val);
+
+//获取带指针层次的类型名
+char* getTypeName(const char* baseTypeName,int layer);
 
 
 #endif

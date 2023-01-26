@@ -156,7 +156,7 @@ int findVal(ValTbl* curTbl,char* valName,Val* retVal,Type* retType,int* typeLaye
     vector_get(&curTbl->typeTbl.types, 0, retType);
     return 1;
   }
-  // 然后根据类型名在类型表内查找
+  // 否则根据类型名在类型表内查找
   int typeIndex = 0;
   do
   {
@@ -203,12 +203,13 @@ Val getVal(char* name,int isConst,char* defaultVal){
 
 
 //往量表中加入值
-void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName){
+void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName,int typeLayer){
   //首先查找类型
   Type find={ //结构体类型的具名初始化
     .kind=TYPE_UNKNOW
   };
   ValTbl* tbl=valTbl;
+  //在量表中查找类型名
   while(tbl!=NULL&&typeName!=NULL){
     int index=findType(&tbl->typeTbl,typeName,NULL);
     if(index>0){
@@ -225,9 +226,10 @@ void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isCon
   vector_push_back(&valTbl->vals,&toAdd);
   //绑定类型
   //如果类型名为NULL,表示未知,则不绑定
+  //如果类型名不等于NULL,则绑定
   if(typeName!=NULL){
     char* val=strcpy(malloc(strlen(valName)+1),valName);
-    char* type=strcpy(malloc(strlen(typeName)+1),typeName);
+    char* type=getTypeName(typeName,typeLayer);
     hashtbl_put(&valTbl->valToType,&val,&type);
   }
 }
@@ -244,7 +246,7 @@ void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func){
     long long typeId=arg.typeId;
     //如果找到的类型为unknown
     if(typeId==0){
-      addVal_valtbl(valTbl,arg.name,NULL,arg.isConst,NULL);
+      addVal_valtbl(valTbl,arg.name,NULL,arg.isConst,NULL,0);
       continue;
     }
     //获取对应global中对应的内容
@@ -259,11 +261,24 @@ void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func){
       typeName[i]='*';
     }
     typeName[strlen(type.defaultName)+typeLayer]='\0';
-    addVal_valtbl(valTbl,arg.name,NULL,arg.isConst,typeName);
+    addVal_valtbl(valTbl,arg.name,NULL,arg.isConst,typeName,0);
     free(typeName);
   }
 }
 
+//通过量表查找类型,查找成功返回非0值，查找失败返回0
+int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer){
+  //
+  if(retType==NULL||topValTbl==NULL) return 0;
+  do{
+    int typeIndex=findType(&topValTbl->typeTbl,typeName,retLayer);
+    if(typeIndex!=0){
+      break;
+    }
+    topValTbl=topValTbl->pre;
+  }while(topValTbl!=NULL);
+  return 1;
+}
 
 //删除一个量表
 void del_valTbl(ValTbl* valTbl){
@@ -302,4 +317,20 @@ void show_val(Val* val){
 void delVal(Val* val){
   free(val->name);
   if(val->val!=NULL) free(val->val);
+}
+
+//获取带指针层次的类型名
+char* getTypeName(const char* baseTypeName,int layer){
+  char* out=malloc(strlen(baseTypeName)+1+layer);
+  strcpy(out,baseTypeName);
+  if(layer<0){
+    fprintf(stderr,"error layer arguement to getTypeName()!\n");
+    layer=0;
+  }
+  char* track=out+strlen(out);
+  for(int i=0;i<layer;i++){
+    strcpy(track,"*");
+    track++;
+  }
+  return out;
 }

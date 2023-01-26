@@ -64,9 +64,12 @@ def countLinesInFiles(files):
         fileName,suffix=os.path.splitext(filePath)
         if suffix!='.c' and suffix!='.h':
             continue
+        
         print(filePath)
         f=open(filePath,'r',encoding= file_encoding(filePath))
-        lines=list(filter(lambda x: x!='\n',f.readlines()))
+        lines=f.readlines()
+        lines=list(filter(lambda x: x!='\n',lines))
+        # lines=list(filter(lambda x: ))
         count+=len(lines)
         # for line in f.readlines():
         #     if line == '\n':

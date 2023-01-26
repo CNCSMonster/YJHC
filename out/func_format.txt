@@ -5,7 +5,10 @@
 	printf ( "Hello,%s!" , helloTo ) ;
 }
 {
+	for ( int i = 1 , int j = b ; i < 2 ; i ++ ) { ;
+	}
 	int a , b , c ;
+	c = ( int ) 1 ;
 	int a = 1 , b = 2 , c = 3 ;
 	People Mike = getPeople ( ) ;
 	People* mkp = & Mike ;

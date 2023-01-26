@@ -51,6 +51,9 @@ void fput_tokenLine(FILE* fout,TBNode* tokens);
 
 void fshow_tokenLine(FILE* fout,TBNode* tokens);
 
+//合并节点得到一个节点,指定中间符号,被合并的节点空间
+TBNode* connect_tokens(TBNode* head,TokenKind kind,const char* sepStr);
+
 //打印tokenLine的语句信息
 void show_tokenLine(TBNode* tokens);
 

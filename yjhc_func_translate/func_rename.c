@@ -16,15 +16,3 @@ char* rename_member_method(char* funcName,char* ownerDefaultName){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-

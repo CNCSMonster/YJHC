@@ -110,6 +110,45 @@ void fshow_tokenLine(FILE* fout,TBNode* tokens){
   if(track!=NULL) fprintf(fout,"%s",track->token.val);
 }
 
+//合并节点得到一个节点,指定中间符号,被合并的节点空间
+TBNode* connect_tokens(TBNode* head,TokenKind kind,const char* sepStr){
+  if(head==NULL) return NULL;
+  TBNode* out=head;
+  //使用二次遍历
+  int size=1;
+  //第一次遍历获取所需要的空间大小
+  while(out!=NULL){
+    size+=strlen(out->token.val);
+    if(out->next!=NULL) size+=strlen(sepStr);
+    out=out->next;
+  }
+  char* name=malloc(size);
+  //第二次遍历进行写入
+  char* track=name;
+  strcpy(track,head->token.val);
+  track+=strlen(head->token.val);
+  out=head;
+  while(out->next!=NULL){
+    //加入sepStr
+    strcpy(track,sepStr);
+    track+=strlen(sepStr);
+    //加入待删除节点字符串
+    strcpy(track,out->next->token.val);
+    track+=strlen(out->next->token.val);
+    //删除待删除节点
+    TBNode* toDel=out->next;
+    out->next=toDel->next;
+    out->next->last=out;
+    delToken(toDel->token);
+    free(toDel);
+  }
+  free(out->token.val);
+  out->token.val=name;
+  out->token.kind=kind;
+  if(out!=NULL&&out->last==NULL&&out->next==NULL) return out; //安全返回
+  return NULL;
+}
+
 
 //以token的(类型编号,字符字面值)的形式写入文件
 void fput_tokenLine(FILE* fout,TBNode* tokens){

@@ -1,0 +1,12 @@
+void doA(){
+    //变量定义
+    int a,b=2,c;
+    //数组定义,TODO
+
+    //变量赋值
+    a=2;
+
+//常量定义
+    const int aa=5;
+    aa=6;
+}

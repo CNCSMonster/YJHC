@@ -16,9 +16,11 @@ int (*getCount(int i))(int){
     else return countB;
 }
 
+const int arr[]={1,2};
+
 int main(char* argv[])
 {    
-    int a,b,c;
+
     //测试按位取反
     return 1;
 }

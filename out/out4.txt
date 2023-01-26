@@ -1,4 +1,4 @@
 typedef struct struct_people{ char name[100]; int age; void sayHello(char* helloTo); }People
 People getPeople(char* name){ strcpy(self.name,name); }
 People->void sayHello(char* helloTo){ printf("Hello,%s!",helloTo); }
-int main(){ int a,b,c; int a=1,b=2,c=3; People Mike=getPeople(); People* mkp=&Mike; mkp->age=1; Mike.sayHello(); return 0; }
+int main(){ for(int i=1,int j=b;i<2;i++){ ; } int a,b,c; c=(int)1; int a=1,b=2,c=3; People Mike=getPeople(); People* mkp=&Mike; mkp->age=1; Mike.sayHello(); return 0; }
