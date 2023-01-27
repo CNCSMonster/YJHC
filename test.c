@@ -18,9 +18,14 @@ int (*getCount(int i))(int){
 
 const int arr[]={1,2};
 
+enum M{
+    Ma=33,
+    Mb
+};
+
 int main(char* argv[])
 {    
-
+    printf("%d",Mb);
     //测试按位取反
     return 1;
 }

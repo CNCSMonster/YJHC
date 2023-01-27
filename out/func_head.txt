@@ -1,3 +1,1 @@
-getPeople|NULL|People|(char* name)
-sayHello|People|void|(char* helloTo)
-main|NULL|int|()
+main|NULL|void|()

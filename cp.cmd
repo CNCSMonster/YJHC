@@ -3,7 +3,7 @@ pause
 ggb
 cls
 @REM 使用doc_del把注释和多余空格换行去除
-exe\dd res\code_example\hello.yjhc out\out1.txt    
+exe\dd res\code_example\test.yjhc out\out1.txt    
 @REM exe\dd test.c out\out1.txt  
 @REM 使用pound_remove 从源程序中分离出pound(#)语句
 exe\pr out\out1.txt out/out2.txt out/pound.txt  

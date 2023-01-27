@@ -4,9 +4,9 @@
 //使用模块前的init方法
 void init_token_reader(FILE* fin){
   tb_fin=fin;
-  head.last=NULL;
-  head.next=NULL;
-  tail=&head;
+  tb_head.last=NULL;
+  tb_head.next=NULL;
+  tail=&tb_head;
   ifSplitAfterAdd=0;
   token_reader_blocks=0;
   oldActionSet.blocks=0;
@@ -23,10 +23,10 @@ TBNode* readTokenSentence(ActionSet* actionSet){
     Token newToken=getToken(tb_fin);
     //读取结束
     if(newToken.val==NULL){
-      if(head.next==NULL) break;
-      TBNode* ret=head.next;
-      head.next=NULL;
-      tail=&head;
+      if(tb_head.next==NULL) break;
+      TBNode* ret=tb_head.next;
+      tb_head.next=NULL;
+      tail=&tb_head;
       return ret;
     }
     //否则正常进行
@@ -60,10 +60,10 @@ TBNode* readTokenSentence(ActionSet* actionSet){
     }
     TBNode* ret=NULL;
     //最后判断是否分割,如果分割，就返回并退出函数
-    if((SplitPreAction_Tbl[symbol][token]==SPLITPRE||ifSplitAfterAdd)&&head.next!=NULL){
-      ret=head.next;
-      head.next=NULL;
-      tail=&head;
+    if((SplitPreAction_Tbl[symbol][token]==SPLITPRE||ifSplitAfterAdd)&&tb_head.next!=NULL){
+      ret=tb_head.next;
+      tb_head.next=NULL;
+      tail=&tb_head;
       if(ifSplitAfterAdd) ifSplitAfterAdd=0;
     }
     //根据splitAfterAction判断下一轮的SplitAfterAction
@@ -138,7 +138,8 @@ TBNode* connect_tokens(TBNode* head,TokenKind kind,const char* sepStr){
     //删除待删除节点
     TBNode* toDel=out->next;
     out->next=toDel->next;
-    out->next->last=out;
+    if(out->next!=NULL)
+      out->next->last=out;
     delToken(toDel->token);
     free(toDel);
   }
@@ -161,6 +162,7 @@ void fput_tokenLine(FILE* fout,TBNode* tokens){
 
 
 void del_tokenLine(TBNode* tokens){
+  if(tokens==NULL) return;
   TBNode* tmp=tokens->next;
   while(tmp!=NULL){
     tokens->next=tmp->next;
@@ -174,8 +176,8 @@ void del_tokenLine(TBNode* tokens){
 
 //释放剩余所有内容,该方法可以在语义分析异常结束的时候使用
 void release_token_reader(){
-  if(head.next!=NULL){
-    del_tokenLine(head.next);
+  if(tb_head.next!=NULL){
+    del_tokenLine(tb_head.next);
   }
   //同时要释放栈里的所有内容
   while(ssStack.next!=NULL){

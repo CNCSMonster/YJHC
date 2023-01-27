@@ -29,7 +29,7 @@ int ifSplitAfterAdd=0;  //标记是否在新加入token后分割的情况
 ActionSet oldActionSet; //用来记录之前的一些动作
 
 
-TBNode head={NULL,NULL,{0,NULL}};  //缓冲区地头节点,头节点不保存值,头节点的下一个节点作为首元节点
+TBNode tb_head={NULL,NULL,{0,NULL}};  //缓冲区地头节点,头节点不保存值,头节点的下一个节点作为首元节点
 
 TBNode* tail;   //最后一个值节点的位置，当没有值节点时，它定位在head的地址
 

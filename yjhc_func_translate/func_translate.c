@@ -805,7 +805,38 @@ TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
 
 //翻译类型强转语句
 TBNode* translateTypeChange(FuncTranslator* funcTranslator,TBNode* tokens){
-  
+  //首先第一个获取类型名
+  char* typeName=tokens->next->token.val;
+
+  //查找类型
+  Type type;
+  int layer;
+  findType_valtbl(funcTranslator->partialValTbl,&type,&layer);
+
+  //然后处理后面表达式
+  TBNode* preHead=tokens->next->next;
+  TBNode* head=tokens->next->next->next;
+
+  //首先切割出后面表达式
+  preHead->next=NULL;
+  head->last=NULL;
+
+  head=process_singleLine(head);  //后面应该是运算表达式
+  if(head==NULL){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+
+
+  //连接回后面表达式
+
+  preHead->next=head;
+  head->last=preHead;
+
+  //然后把后面表达式合并表达成新类型
+  tokens=connect_tokens(tokens,VAR,"");
+  //加入变量表
+  addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,0,type.defaultName,layer);
   return tokens;
 }
 
@@ -817,174 +848,27 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
   int typeLayer;
   //查找类型
   findType_valtbl(funcTranslator->partialValTbl,typeName,&type,&typeLayer);
-  //然后获取后面所有变量
-  vector vars=getVector(sizeof(char*));
-  vector layers=getVector(sizeof(int));
-  TBNode* track=tokens->next;
-  int leftP=0;
-  int state=0;  //用一个状态来辅助分析
-  int isRight=1;
-  //
-  do{
-    //如果状态为0,加入一个变量,进入状态m
-    if(state==0&&track->token.kind==VAR){
-      vector_push_back(&vars,track->token.val);
-      //判断这个变量是否是数组,如果是,则进行数组定义检查
-      int layer=0;
-      vector_push_back(&layers,&layer);
-      state=1;
-    } 
-    //如果是数组
-    else if(state==1&&track->token.kind==LEFT_BRACKET){
-      TBNode* head=track->next;
-      TBNode* tail=head;
-      int leftP=1;
-      while(tail!=NULL){
-        if(tail->token.kind==RIGHT_BRACKET) leftP--;
-        else if(tail->token.kind==RIGHT_BRACKET) leftP++;
-        if(leftP==0) break;
-        tail=tail->next;
-      }
-      if(leftP!=0||tail==head){
-        isRight=0;
-        break;
-      }
-      TBNode* sufTail=tail;
-      tail=sufTail->last;
-      //分割
-      tail->next=NULL;
-      sufTail->last=NULL;
-      track->next=NULL;
 
-      track->next=sufTail;
-      sufTail->last=track;
+  /*变量定义语句可能的形式与效果
+  int* a,b,*c;结果a->int*,b->int,c->int*
+  int arr[2][3]; arr->const int**
+  int a=2,b;
+  int arr[]={2,3,4};
+  */
+ //TODO
 
-      head=process_singleLine(funcTranslator,head); //对该数组定义的维度大小表达式进行处理
-      //如果处理失败
-      if(head==NULL){
-        isRight=0;
-        break;
-      }
-      //如果处理的结果维度表达式不是整型常数类型或者不是常数类型,则错误
-      if(head->token.kind!=CONST
-      &&head->token.kind!=VAR
-      ){
-        isRight=0;
-        break;
-      }
-      //否则如果是变量,取出判断是否是整数类型的常变量
-      Type type;
-      Val val;
-      int typeLayer=0;
-      if(head->token.kind==VAR){
-        //判断是否是常数型的量
-        //如果是,代入值
-        findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&typeLayer);
-        if(typeLayer!=0||!val.isConst){
-          fprintf(funcTranslator->warningFout,"size of arr' axis should be a const int val,but not %s!\n",head->token.val);
-          isRight=0;
-          break;
-        }
-      }
 
-      //否则是合适的内容,没有差错,连接回来
-      track->next=head;
-      head->last=track;
-      head->next=sufTail;
-      sufTail->last=head;
-
-      //对layer进行处理,增加个维度
-      int layer;
-      vector_get(&layers,layers.size-1,&layer);
-      layer++;
-      vector_set(&layers,layers.size-1,&layer,NULL);
-      //然后track跳到sufTail位置
-      track=sufTail;
-    }
-    //如果遇到逗号跳转到期待位置
-    else if(state==1&&track->token.kind==COMMA){
-      state=0;
-    }
-    //如果遇到==号,进入值处理语句
-    else if(state==1&&track->token.kind==OP&&strcmp(track->token.val,"==")==0){
-      state=2;
-    }
-    //处理值表达式,其实是跳过不处理,跳到
-    else if(state==2){
-      TBNode* t2=track;
-      int leftP=0;
-      if(t2==NULL||t2->token.kind==COMMA){
-        isRight=0;
-        break;
-      }
-      //用t2搜索到值表达式的结尾
-      while(t2!=NULL){
-        TokenKind kind=t2->token.kind;
-        if(kind==LEFT_PAR||kind==LEFT_BRACE||kind==LEFT_BRACKET){
-          leftP++;
-        }
-        else if(kind==RIGHT_PAR||kind==RIGHT_BRACE||kind==RIGHT_BRACKET){
-          leftP--;
-        }
-        if(leftP==0&&(t2->next==NULL||t2->next->token.kind==COMMA)) break;
-        t2=t2->next;
-      }
-      //t2搜索到了值表达式的结尾
-      state=1;
-      if(t2->next==NULL){
-        break;
-      }
-      track=t2;
-    }
-    else{
-      isRight=0;
-      break;
-    }
-    track=track->next;
-  }while(track!=NULL);
-  if(!isRight||state!=1){
-    vector_clear(&vars);
-    vector_clear(&layers);
-    del_tokenLine(tokens);
-    return NULL;
-  }
-  //如果没有异常退出,开始注册变量名
-  for(int i=0;i<vars.size;i++){
-    char* name;
-    int addLayer;
-    //首先取出注册变量名和增加的层次
-    vector_get(&vars,i,&name);
-    vector_get(&layers,i,&addLayer);
-    addLayer+=typeLayer;
-    addVal_valtbl(funcTranslator->partialValTbl,name,NULL,0,type.defaultName,addLayer);
-  }
-  //对子表达式进行递归分析,为了降低递归深度,是分别取出分析
-  // 因为数组维度大小表达式已经分析了,所以要分析赋值的内容
-  //从前面往后面分析
-  track=tokens->next;
-  while(track!=NULL){
-    if(track->token.kind!=OP||
-      strcmp(track->token.val,"==")!=0
-    ){
-      track=track->next;
-      continue;
-    }
-    //TODO
-    //进行表达式分析,往前搜索直到取到前面类型名
-
-    //往后取到逗号为止
-
-    //对取出的赋值表达式进行分析
-
-    //合并赋值表达式和前面类型为类型
-
-  }
   
+  //合并tokens为const
+  tokens=connect_tokens(tokens,CONST," ");
   return tokens;
 }
 
 //翻译常量定义语句
 TBNode* translateConstDef(FuncTranslator* functranslator,TBNode* tokens){
+  /*
+  类似于变量定义语句,不过是把变量加入为常量
+  */
 
   return tokens;
 }
@@ -992,6 +876,7 @@ TBNode* translateConstDef(FuncTranslator* functranslator,TBNode* tokens){
 //翻译运算语句
 TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
   //TODO
+
   return tokens;
 }
 
@@ -1008,12 +893,14 @@ TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
 //翻译函数调用语句
 TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   //TODO
+
   return tokens;
 }
 
 //翻译赋值语句
 TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
   //TODO
+
   return tokens;
 }
 
