@@ -1,4 +1,6 @@
 {	1
+int m = ( int** ) ( int* ) 2	1
+;	1
 int a = 1	1
 ;	1
 int c = 2 , d = 4	1

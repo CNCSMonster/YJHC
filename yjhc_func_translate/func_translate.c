@@ -351,7 +351,7 @@ int release_funcTranslator(FuncTranslator* funcTranslator){
 FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
   if(nodes==NULL) return NOT_TRANSLATE_FTK;
   if(funcTranslator->curFunc==NULL) return NOT_TRANSLATE_FTK;
-  
+  if(nodes->token.kind>Tokens_NUM) return NOT_TRANSLATE_FTK;    //如果是一个完整的句子,不用翻译
   //判断是否是不用进行方法调用翻译的句子
   if(ifNotNeedFuncTranslate(funcTranslator,nodes)){
     return NOT_TRANSLATE_FTK;
@@ -811,7 +811,7 @@ TBNode* translateTypeChange(FuncTranslator* funcTranslator,TBNode* tokens){
   //查找类型
   Type type;
   int layer;
-  findType_valtbl(funcTranslator->partialValTbl,&type,&layer);
+  findType_valtbl(funcTranslator->partialValTbl,typeName,&type,&layer);
 
   //然后处理后面表达式
   TBNode* preHead=tokens->next->next;
@@ -821,7 +821,7 @@ TBNode* translateTypeChange(FuncTranslator* funcTranslator,TBNode* tokens){
   preHead->next=NULL;
   head->last=NULL;
 
-  head=process_singleLine(head);  //后面应该是运算表达式
+  head=process_singleLine(funcTranslator,head);  //后面应该是运算表达式
   if(head==NULL){
     del_tokenLine(tokens);
     return NULL;
@@ -834,7 +834,7 @@ TBNode* translateTypeChange(FuncTranslator* funcTranslator,TBNode* tokens){
   head->last=preHead;
 
   //然后把后面表达式合并表达成新类型
-  tokens=connect_tokens(tokens,VAR,"");
+  tokens=connect_tokens(tokens,TYPE_CHANGE_SENTENCE,"");
   //加入变量表
   addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,0,type.defaultName,layer);
   return tokens;
@@ -849,18 +849,21 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
   //查找类型
   findType_valtbl(funcTranslator->partialValTbl,typeName,&type,&typeLayer);
 
-  /*变量定义语句可能的形式与效果
-  int* a,b,*c;结果a->int*,b->int,c->int*
-  int arr[2][3]; arr->const int**
-  int a=2,b;
-  int arr[]={2,3,4};
-  */
- //TODO
+    /*变量定义语句可能的形式与效果
+    int* a,b,*c;结果a->int*,b->int,c->int*
+    int arr[2][3]; arr->const int**
+    int a=2,b;
+    int arr[]={2,3,4};
+    */
+  //首先,获取变量名,然后加入量表
+  
 
+
+  //然后合并整个句子为类型定义句子
 
   
   //合并tokens为const
-  tokens=connect_tokens(tokens,CONST," ");
+  tokens=connect_tokens(tokens,VAR_DEF_SENTENCE," ");
   return tokens;
 }
 
@@ -869,6 +872,8 @@ TBNode* translateConstDef(FuncTranslator* functranslator,TBNode* tokens){
   /*
   类似于变量定义语句,不过是把变量加入为常量
   */
+
+
 
   return tokens;
 }
@@ -892,29 +897,174 @@ TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
 
 //翻译函数调用语句
 TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
-  //TODO
+  char* funcName=tokens->token.val;
+  Func* func=findFunc(functranslator->funcTbl,funcName,NULL);
+  //获取参数类型
+  TBNode* track=tokens->next->next; //来到第一个参数的开头
+  int isRight=1;
+  for(int i=0;i<func->args.size;i++){
+    Arg arg;
+    vector_get(&func->args,i,&arg);
+    //取出这个部分进行分析
+    TBNode* head=track;
+    TBNode* preHead=track->last;
+    TBNode* tail=head;
+    //往后搜索直到这次参数表达式结尾
+    int leftP=0;  //往右边搜索到逗号或者)结尾
+    while(tail->next!=NULL){
+      TokenKind kind=tail->token.kind;
+      if(kind==LEFT_BRACE||kind==LEFT_PAR||kind==LEFT_BRACKET){
+        leftP++;
+      }
+      else if(kind==RIGHT_BRACE||kind==RIGHT_PAR||kind==RIGHT_BRACKET){
+        leftP--;
+      }
+      if(leftP==0&&(tail->next->token.kind==COMMA||tail->next->token.kind==RIGHT_PAR)){
+        break;
+      }
+      tail=tail->next;
+    }
+    if(tail->next==NULL){
+      isRight=0;
+      break;
+    }
+    //TODO,取出表达式,进行处理
+    TBNode* sufTail=tail->next;
+    sufTail->last=NULL;
+    tail->next=NULL;
+    head->last=NULL;
+    preHead->next=NULL;
+    head=process_singleLine(functranslator,head);
+    if(head==NULL){
+      preHead->next=sufTail;
+      sufTail->last=preHead;
+      isRight=0;
+      break;
+    }
+    //否则正确的,连接回来
+    preHead->next=head;
+    head->last=preHead;
+    head->next=sufTail;
+    sufTail->last=head;
+    //类型匹配检查
 
-  return tokens;
+    //如果输入是常量,则不检查,跳过
+    if(head->token.kind==CONST){
+      if(sufTail->token.kind==RIGHT_BRACE){
+        track=sufTail;
+        if(i!=func->args.size-1) isRight=0;
+        break;
+      }
+      else track=sufTail->next;
+      continue;
+    }
+
+
+    //首先搜索对应变量的类型
+    Type type1;
+    int layer1;
+    if(!findVal(functranslator->partialValTbl,head->token.val,NULL,&type1,&layer1)){
+      isRight=0;
+      break;
+    }
+    //搜索type类型
+    Type type2;
+    int layer2;
+    int typeIndex;
+    extractTypeIndexAndPointerLayer(arg.typeId,&typeIndex,&layer2);
+    vector_get(&functranslator->gloabalTypeTbl->types,typeIndex,&type2);
+    if(strcmp(type2.defaultName,type1.defaultName)!=0||layer1!=layer2){
+      char* inputTypeName=getTypeName(type1.defaultName,layer1);
+      char* argTypeName=getTypeName(type2.defaultName,layer2);
+      fprintf(functranslator->warningFout,"arg %d of func %s should be %s type but not %s type\n",i+1,func->func_name,argTypeName,inputTypeName);
+      free(inputTypeName);
+      free(argTypeName);
+      isRight=0;
+      break;
+    }
+    //否则就是合适的类型
+    //把函数调用结果进行处理
+    if(sufTail->token.kind==RIGHT_PAR){
+      track=sufTail;
+      if(i!=func->args.size-1) isRight=0;
+      break;
+    }
+    track=sufTail->next;
+  }
+  if(!isRight){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //这个时候track处于函数调用最后括号的位置
+  //把调用合并
+  TBNode* sufTail=track->next;
+  track->next=NULL;
+  if(sufTail!=NULL)
+    sufTail->last=NULL;
+  tokens=connect_tokens(tokens,VAR,""); //合并式子得到变量
+  if(tokens==NULL){
+    del_tokenLine(sufTail);
+    return NULL;
+  }
+  //加入量表
+  int typeIndex;
+  int typeLayer;
+  extractTypeIndexAndPointerLayer(func->retTypeId,&typeIndex,&typeLayer);
+  Type type;
+  vector_get(&functranslator->gloabalTypeTbl->types,typeIndex,&type);
+  addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,1,type.defaultName,typeLayer);
+  tokens->next=sufTail;
+  sufTail->last=tokens;
+  return process_singleLine(functranslator,tokens);
 }
 
 //翻译赋值语句
 TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
   //TODO
 
+
   return tokens;
 }
 
 
-
-
-
-
 //翻译类型方法调用语句
 TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens){
+  //首先根据变量名查找量和类型
+  Val val;
+  Type type;
+  int layer;
+  if(tokens->token.kind!=VAR){
+    return 0;
+  }
+  if(!findVal(functranslator->partialValTbl,tokens->token.val,&val,&type,&layer)){
+    del_tokenLine(tokens);
+    return NULL;
+  }
 
-  //则第一个位置就是量,对这个量进行翻译
+  //如果类型是含有这个函数指针
+  if(containsStr_StrSet(&type.funcPointerFields,tokens->next->next->token.val)){
+    //翻译函数指针内部参数内容
+    //TODO
+
+  }
+  //如果类型不含有这个类型方法
+  if(!containsStr_StrSet(&type.funcs,tokens->next->next->token.val)){
+    fprintf(functranslator->warningFout,"%s type val %s doesn't have member function %s\n",type.defaultName,tokens->token.val,tokens->next->next->token.val);
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //否则该类型含有该成员方法,进行成员方法改造
+  //TODO
+  //首先找到该方法
+  Func* func=findFunc(functranslator->funcTbl,tokens->next->next->token.val,type.defaultName);
+  //然后,对后面传入的参数进行分析
+  
+  //然后进行成员改造和重命名
+
+  //然后连接函数和后面表达式
 
 
 
+  return NULL;
 }
 

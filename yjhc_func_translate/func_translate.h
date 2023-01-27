@@ -8,6 +8,7 @@
 #include "val_tbl.h"
 #include "token_reader.h"
 #include "config.h"
+#include "sentence_kind.h"
 
 
 
