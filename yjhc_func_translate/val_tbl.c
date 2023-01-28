@@ -270,13 +270,16 @@ void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func){
 int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer){
   //
   if(retType==NULL||topValTbl==NULL) return 0;
+  int typeIndex;
   do{
-    int typeIndex=findType(&topValTbl->typeTbl,typeName,retLayer);
+    typeIndex=findType(&topValTbl->typeTbl,typeName,retLayer);
     if(typeIndex!=0){
       break;
     }
+    if(topValTbl->pre==NULL) break;
     topValTbl=topValTbl->pre;
   }while(topValTbl!=NULL);
+  vector_get(&topValTbl->typeTbl.types,typeIndex,retType);
   return 1;
 }
 

@@ -27,6 +27,7 @@ TBNode* readTokenSentence(ActionSet* actionSet){
       TBNode* ret=tb_head.next;
       tb_head.next=NULL;
       tail=&tb_head;
+      ret->last=NULL;
       return ret;
     }
     //否则正常进行
@@ -83,7 +84,10 @@ TBNode* readTokenSentence(ActionSet* actionSet){
       oldActionSet.blocks++;
     }
     //最后判断是否要分割
-    if(ret!=NULL) return ret;
+    if(ret!=NULL){
+      ret->last=NULL;
+      return ret;
+    }
   }
   return NULL;  //返回NULL表示读取结束
 }

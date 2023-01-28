@@ -1,3 +1,5 @@
-{ ; ; ; ;
-	return 1 ;
+{
+	int b ;
+	m = 2 ;
+	int arr[m] ;
 }

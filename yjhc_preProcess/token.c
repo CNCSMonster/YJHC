@@ -73,3 +73,16 @@ int fputToken(Token token,FILE* fout){
   fprintf(stdout,"%d %s\n",token.kind,token.val); //测试用
   return 1;
 }
+
+//判断token是数字常量token还是字符常量token
+int isConstStrToken(Token token){
+  if(token.kind!=CONST) return 0;
+  return isConstIntToken(token)?0:1;
+}
+
+//判断是否是整数token
+int isConstIntToken(Token token){
+  if(token.kind==CONST&&*(token.val)>=48&&(*(token.val))<57) return 1;
+  return 0;
+}
+

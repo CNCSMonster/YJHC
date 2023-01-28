@@ -8,7 +8,6 @@
 #include "val_tbl.h"
 #include "token_reader.h"
 #include "config.h"
-#include "sentence_kind.h"
 
 
 
@@ -75,6 +74,8 @@ typedef enum func_translate_kind{
   TYPE_CHANGE_FTK,  //类型强转语句
   MEMBER_FIELD_USE_FTK, //类型属性调用语句
   ARR_VISIT_FTK,  //数组元素访问调用语句
+  SELF_FIELD_VISIT_FTK,                //自身成员属性访问语句
+  SELF_FUNC_VISIT_FTK,  //自身方法访问语句
   FTK_NUM   //token的数量
 }FTK;
 
@@ -137,8 +138,14 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens);
 //翻译类型方法调用语句
 TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens);
 
-//常量开头语句
+//翻译自身属性调用语句
+TBNode* translateSelfFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens);
 
+//翻译自身方法调用语句
+TBNode* translateSelfFuncVisit(FuncTranslator* funcTranslator,TBNode* tokens);
+
+
+//常量开头语句
 
 //翻译函数的选择表
 
@@ -154,10 +161,19 @@ TBNode* (*tranFuncs[]) (FuncTranslator*,TBNode*) = {
   [ASSIGN_FTK] translateAssign, //赋值语句
   [ARR_VISIT_FTK] translateArrVisit,  //数组元素访问语句
   [TYPE_CHANGE_FTK] translateTypeChange, //类型强转语句
+  [SELF_FIELD_VISIT_FTK] translateSelfFieldVisit,
+  [SELF_FUNC_VISIT_FTK] translateSelfFuncVisit,
   [MEMBER_FIELD_USE_FTK] translateMemberFieldVisit, //成员属性访问语句
   [MEMBER_FUNCTION_USE_FTK] translateTypeMethodUse   //类型方法调用语句
 };
 
+//从TBNode*某个位置起,读取一个方括号表达式,比如[dsds] 读取的结果从head到tail则为[dsds]
+int searchBracketExpression(TBNode* nodes,TBNode** head,TBNode** tail);
 
+//在参数的开头搜索参数表达式的结尾,通过函数指针返回结尾,搜索成功返回非0值，搜索异常返回0
+int searchArgExpression(TBNode* head,TBNode** tail);
+
+//从head搜索表达式知道遇到某个类型的参数为止(注意,中间括号包起来的部分被视为整体)
+int searchExpressUntil(TBNode* head,TBNode** retTail,TokenKind* kinds,int kindSize);
 
 #endif

@@ -1,7 +1,5 @@
 {
-	int m = ( int** ) ( int* ) 2 ;
-	int a = 1 ;
-	int c = 2 , d = 4 ;
-	int arr [ 2 ] [ c ] ;
-	return 1 ;
+	int b ;
+	m = 2 ;
+	int arr [ m ] ;
 }

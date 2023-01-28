@@ -23,8 +23,6 @@
 #include "..\\mystl\\hashtable.c"
 #include "..\\mystl\\bitmap.c"
 
-#include "sentence_kind.h"
-
 #include "val_tbl.h"
 #include "val_tbl.c"
 

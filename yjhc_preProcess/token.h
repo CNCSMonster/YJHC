@@ -44,5 +44,11 @@ int printToken(Token token);
 //往文件中写回token的符号值和字符字面值
 int fputToken(Token token,FILE* fout);
 
+//判断token是数字常量token还是字符常量token
+int isConstStrToken(Token token);
+
+//判断是否是整数token
+int isConstIntToken(Token token);
+
 
 #endif

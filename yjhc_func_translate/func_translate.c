@@ -28,7 +28,7 @@ FuncTranslator getFuncTranslator(char* typePath,char* funcHeadPath,char* valPath
     return out;
   }
   out.gloabalTypeTbl=malloc(sizeof(TypeTbl));
-  *(out.gloabalTypeTbl)=getTypeTbl();
+  *(out.gloabalTypeTbl)=getGlobalTypeTbl();
   loadFile_typeTbl(out.gloabalTypeTbl,typeFin);
 
   out.funcTbl=malloc(sizeof(FuncTbl));
@@ -245,14 +245,6 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
 TBNode* member_use_complement(FuncTranslator* funcTranslator,TBNode* nodes){
   //如果不是成员方法则不用补全类型
   if(funcTranslator->curFunc==NULL) return nodes;
-  //查找有没有成员方法
-  TBNode* track=nodes;
-  TBNode* pre=NULL;
-  TBNode* prePre=NULL;
-  TBNode head;
-  head.next=nodes;
-  nodes->last=&head;
-  // 取出函数主人
   char* ownerName=funcTranslator->curFunc->owner;
   if(ownerName==NULL) return nodes; //如果函数没有主人名,则不是自身调用函数
   //取出函数主人，找到对应类型
@@ -261,6 +253,14 @@ TBNode* member_use_complement(FuncTranslator* funcTranslator,TBNode* nodes){
   if(typeIndex!=0){
     vector_get(&funcTranslator->gloabalTypeTbl->types,typeIndex,&type);
   }
+  //定义遍历暂存区域
+  TBNode* track=nodes;
+  TBNode* pre=NULL;
+  TBNode* prePre=NULL;
+  TBNode head;
+  head.next=nodes;
+  nodes->last=&head;
+  //开始搜索可能要补全的位置
   while (track!=NULL)
   {
     int ifToComplete=0; //判断是否去补全
@@ -826,15 +826,13 @@ TBNode* translateTypeChange(FuncTranslator* funcTranslator,TBNode* tokens){
     del_tokenLine(tokens);
     return NULL;
   }
-
-
   //连接回后面表达式
 
   preHead->next=head;
   head->last=preHead;
 
-  //然后把后面表达式合并表达成新类型
-  tokens=connect_tokens(tokens,TYPE_CHANGE_SENTENCE,"");
+  //然后把后面表达式合并成变量类型
+  tokens=connect_tokens(tokens,VAR,"");
   //加入变量表
   addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,0,type.defaultName,layer);
   return tokens;
@@ -855,15 +853,211 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
     int a=2,b;
     int arr[]={2,3,4};
     */
-  //首先,获取变量名,然后加入量表
-  
+  vector vars=getVector(sizeof(char*));
+  vector layers=getVector(sizeof(int));
+  //首先,获取第一个定义,
+  TBNode* track=tokens->next;
+  int isFirst=1;  //用来判断是否是该语句定义的第一个变量
+  int state=0;  //用来指导翻译动作
+  int isRight=1;
+  //然后获取后面的定义
+  while (track!=NULL)
+  {
+    //状态0的时候遇到新量符号
+    if(state==0&&track->token.kind==VAR){
+      //判断是否是第一次个定义变量,如果不是统计前面的*数量
+      int layer=0;
+      if(isFirst){
+        layer=typeLayer;
+        isFirst=0;
+      }else{
+        //统计前面的*数量
+        TBNode* countM=track->last;
+        while(countM!=NULL&&countM->token.kind!=TYPE&&countM->token.kind!=COMMA){
+          layer++;
+        }
+      }
+      char* valName=track->token.val;
+      vector_push_back(&vars,&valName);
+      vector_push_back(&layers,&layer);
+      state=1;
+    }
+    else if(state==0&&track->token.kind==OP&&strcmp(track->token.val,"*")==0){
+      // state=0;  //状态保持0不变
+    }
+    //状态1的时候是遇到量符号后,期待方括号,逗号,等号
+    else if(state==1){
+      if(track->token.kind==COMMA) state=0;
+      else if(track->token.kind==LEFT_BRACKET) state=3;
+      else if(track->token.kind==OP&&strcmp(track->token.val,"=")==0){
+        state=2;
+      }
+      else{
+        isRight=0;
+        break;
+      }
+    }
+    //状态2是遇到等号之后,读取一个值表达式并处理
+    else if(state==2){
+      //读取到,结束或者NULL结束
+      TBNode* tail;
+      TBNode* sufTail;
+      TBNode* head;
+      TBNode* preHead;
 
+      //搜索表达式直到遇到
+      TokenKind kinds[]={COMMA,RIGHT_PAR };
+      if(!searchExpressUntil(track,&tail,kinds,2)){
+        isRight=0;
+        break;
+      }
+      head=track;
+      preHead=head->last;
+      sufTail=tail->next;
+      
+      //分离值表达式,对值表达式进行处理
+      preHead->next=NULL;
+      head->last=NULL;
+      tail->next=NULL;
+      if(sufTail!=NULL) sufTail->last=NULL;
+      //处理值表达式
+      head=process_singleLine(funcTranslator,head);
+      if(head==NULL){
+        preHead->next=sufTail;
+        if(sufTail!=NULL) sufTail->last=preHead;
+        isRight=0;
+        break;
+      }
+      //如果处理成功,接回链表
+      preHead->next=head;
+      head->last=preHead;
+      head->next=sufTail;
+      if(sufTail!=NULL)
+        sufTail->last=head;
+      //处理完值表达式进入句子
+      if(sufTail==NULL){
+        state=1;
+        break;
+      }else{
+        track=sufTail;
+        state=0;
+      }
+    }
+    //state3是状态1遇到方括号之后,读取一个维度大小表达式并处理
+    else if(state==3){
+      //读取方括号进行处理,并进入状态1
+      TBNode* head=track;
+      TBNode* preHead=head->last;
+      TBNode* tail=NULL;
+      TBNode* sufTail=NULL;
+      if(!searchBracketExpression(track->last,&head,&tail)){
+        isRight=0;
+        break;
+      }
+      //读取成功后head,tail的为止分别是左右花括号
 
+      //根据方括号表达式获得方括号内维度大小表达式
+      preHead=head;
+      head=preHead->next;
+      sufTail=tail;
+      tail=sufTail->last;
+
+      //分离方括号内表达式,也就是分离出维度大小表达式
+      preHead->next=NULL;head->last=NULL;
+      sufTail->last=NULL;tail->next=NULL;
+      
+      //对该表达式分析
+      head=process_singleLine(funcTranslator,head);
+      if(!head){
+        sufTail->last=preHead;
+        preHead->next=sufTail;
+        isRight=0;
+        break;
+      }
+      //分析成功连接上
+      preHead->next=head;
+      head->last=preHead;
+      head->next=sufTail;
+      sufTail->last=head;
+      //分析维度表达式内的内容是否符合要求
+      int isSuitable=0;
+      if(head->token.kind==CONST){
+        isSuitable=1;
+      }
+      else if(head->token.kind==VAR){
+        //获取量的类型,判断是否是常量
+        //TODO,查找这个量,必须是常整型的量
+        Val val;
+        Type type;
+        int typeLayer;
+        if(findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&typeLayer)
+        &&typeLayer==0&&type.kind==TYPE_INT&&val.isConst
+        ){
+          isSuitable=1;
+        }
+      }else{
+
+      }
+      //如果维度大小表达式不是合适的常量,则进行报错提示
+      if(!isSuitable){
+        fprintf(funcTranslator->warningFout,"arr definition should use const int val,but not %s\n",head->token.val);
+      }
+      //对指针层次进行更新
+      int layer;
+      vector_get(&layers,layers.size-1,&layer);
+      layer++;
+      vector_set(&layers,layers.size-1,&layer,NULL);
+      state=1;
+      track=sufTail;
+    }
+    //异常情况
+    else{
+      isRight=0;
+      break;
+    }
+    track=track->next;
+  }
   //然后合并整个句子为类型定义句子
-
+  //值表达式缺失
+  if(state==2){
+    fprintf(funcTranslator->warningFout,"miss val for inition in ");
+    fshow_tokenLine(funcTranslator->warningFout,tokens);
+    fprintf(funcTranslator->warningFout,"\n");
+    isRight=0;
+  }
+  //数组括号定义异常
+  else if(state==3){
+    fprintf(funcTranslator->warningFout,"syntax error!un complete definition of arr in ");
+    fshow_tokenLine(funcTranslator->warningFout,tokens);
+    fprintf(funcTranslator->warningFout,"\n");
+    isRight=0;
+  }
+  if(!isRight){
+    del_tokenLine(tokens);
+    return NULL;
+  }
   
-  //合并tokens为const
-  tokens=connect_tokens(tokens,VAR_DEF_SENTENCE," ");
+  //加入变量表
+  //TODO,应该对数组名进行标记，因为数组名不能够被赋值，应该标记为指针常量
+  for(int i=0;i<vars.size;i++){
+    //取出名
+    char* valName=NULL;
+    int layer;
+    vector_get(&vars,i,&valName);
+    //取出层次
+    vector_get(&layers,i,&layer);
+    //加入量表
+    addVal_valtbl(funcTranslator->partialValTbl,valName,NULL,0,type.defaultName,layer);
+  }
+  //合并tokens为变量定义句子
+  TBNode* next=tokens->next;
+  tokens->next=NULL;
+  if(next!=NULL)
+    next->last=NULL;
+  next=connect_tokens(next,CONST,"");
+  tokens->next=next;
+  if(next!=NULL) next->last=tokens;
+  tokens=connect_tokens(tokens,CONST," ");
   return tokens;
 }
 
@@ -885,14 +1079,20 @@ TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
   return tokens;
 }
 
+
+
+
 //函数指针定义语句
 TBNode* translateFuncPointerDef(FuncTranslator* functranslator,TBNode* tokens){
+  //对于函数指针,获取函数类型,然后加入全局函数表
+  //函数指针里面不允许有未知类型
 
+  return tokens;
 }
 
 //typedef命名类型别名语句
 TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
-
+  return tokens;
 }
 
 //翻译函数调用语句
@@ -928,7 +1128,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
       isRight=0;
       break;
     }
-    //TODO,取出表达式,进行处理
+    //取出参数表达式,进行处理
     TBNode* sufTail=tail->next;
     sufTail->last=NULL;
     tail->next=NULL;
@@ -958,8 +1158,6 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
       else track=sufTail->next;
       continue;
     }
-
-
     //首先搜索对应变量的类型
     Type type1;
     int layer1;
@@ -1026,6 +1224,15 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
   return tokens;
 }
 
+//翻译自身属性调用语句
+TBNode* translateSelfFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens){
+  
+}
+
+//翻译自身方法调用语句
+TBNode* translateSelfFuncVisit(FuncTranslator* funcTranslator,TBNode* tokens){
+
+}
 
 //翻译类型方法调用语句
 TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens){
@@ -1034,13 +1241,13 @@ TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens){
   Type type;
   int layer;
   if(tokens->token.kind!=VAR){
-    return 0;
+    del_tokenLine(tokens);
+    return NULL;
   }
   if(!findVal(functranslator->partialValTbl,tokens->token.val,&val,&type,&layer)){
     del_tokenLine(tokens);
     return NULL;
   }
-
   //如果类型是含有这个函数指针
   if(containsStr_StrSet(&type.funcPointerFields,tokens->next->next->token.val)){
     //翻译函数指针内部参数内容
@@ -1065,6 +1272,68 @@ TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens){
 
 
 
-  return NULL;
+  return tokens;
 }
 
+
+int searchBracketExpression(TBNode* nodes,TBNode** head,TBNode** tail){
+  //首先查找开头左方括号
+  while(nodes!=NULL){
+    if(nodes->token.kind==LEFT_BRACKET){
+      *head=nodes;
+      break;
+    }
+    nodes=nodes->next;
+  }
+  if(nodes==NULL ) return 0;
+  int leftP=1;
+  do{
+    nodes=nodes->next;
+    TokenKind kind=nodes->token.kind;
+    if(kind==LEFT_PAR||kind==LEFT_BRACE||kind==LEFT_BRACKET) leftP++;
+    else if(kind==RIGHT_PAR||kind==RIGHT_BRACE||kind==RIGHT_BRACKET) leftP--;
+    if(leftP==0&&kind==RIGHT_BRACKET) break;
+  }while(nodes!=NULL);
+  if(nodes==NULL) return 0;
+  *tail=nodes;
+  return 1;
+}
+
+//在参数的开头往后面搜索参数的结尾
+
+int searchArgExpression(TBNode* head,TBNode** tail){
+  int leftP=0;
+  while(head!=NULL){
+    TokenKind kind=head->token.kind;
+    if(kind==LEFT_PAR||kind==LEFT_BRACE||kind==LEFT_BRACKET) leftP++;
+    else if(kind==RIGHT_PAR||kind==RIGHT_BRACE||kind==RIGHT_BRACKET) leftP--;
+    if(leftP==0&&(head->next->token.kind==COMMA||head->next->token.kind==RIGHT_PAR)) break;
+    head=head->next;
+  }
+  if(head==NULL) return 0;
+  *tail=head;
+  return 1;
+}
+
+int searchExpressUntil(TBNode* head,TBNode** retTail,TokenKind* kinds,int kindSize){
+  int leftP=0;
+  while(head!=NULL){
+    TokenKind kind=head->token.kind;
+    if(kind==LEFT_PAR||kind==LEFT_BRACE||kind==LEFT_BRACKET) leftP++;
+    else if(kind==RIGHT_PAR||kind==RIGHT_BRACE||kind==RIGHT_BRACKET) leftP--;
+    int ifBreak=0;
+    if(head->next==NULL) break;
+    kind=head->next->token.kind;
+    for(int i=0;i<kindSize&&leftP==0;i++){
+      if(kinds[i]==kind){
+        ifBreak=1;
+        break;
+      }
+    }
+    if(ifBreak) break;
+    head=head->next;
+  }
+  if(head==NULL) return 0;
+  *retTail=head;
+  return 1;
+}
