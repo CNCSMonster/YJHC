@@ -1,1 +1,2 @@
 const int m=11
+int m

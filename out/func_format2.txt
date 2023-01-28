@@ -1,5 +1,0 @@
-{
-	int b ;
-	m = 2 ;
-	int arr[m] ;
-}

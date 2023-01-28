@@ -1,1 +1,2 @@
+doa|struct M|void|()
 main|NULL|void|()

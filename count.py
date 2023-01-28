@@ -38,7 +38,7 @@ def string_encoding(data: bytes):
   
 
 def findAllFilesWithSpecifiedSuffix(target_dir):
-    print(target_dir)
+    # print(target_dir)
     find_res = []
     # target_suffix_dot = "." + target_suffix
     walk_generator = os.walk(target_dir)
@@ -51,7 +51,7 @@ def findAllFilesWithSpecifiedSuffix(target_dir):
             find_res.append(os.path.join(root_path, file))
         for pdir in dir:
             if pdir=="." or pdir == '..':
-                print(pdir)
+                # print(pdir)
                 continue
             find_res+= findAllFilesWithSpecifiedSuffix(os.path.join(root_path,pdir))
     return find_res
@@ -60,17 +60,22 @@ def findAllFilesWithSpecifiedSuffix(target_dir):
 
 def countLinesInFiles(files):
     count =0
+    paths=set()
     for filePath in files:
         fileName,suffix=os.path.splitext(filePath)
         if suffix!='.c' and suffix!='.h':
             continue
-        
-        print(filePath)
+        if filePath in paths:
+            continue
+        paths.add(filePath)
+        print(filePath,end="\t")
         f=open(filePath,'r',encoding= file_encoding(filePath))
         lines=f.readlines()
         lines=list(filter(lambda x: x!='\n',lines))
         # lines=list(filter(lambda x: ))
-        count+=len(lines)
+        add=len(lines)
+        print(add)
+        count+=add
         # for line in f.readlines():
         #     if line == '\n':
         #         continue

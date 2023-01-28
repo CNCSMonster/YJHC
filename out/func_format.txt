@@ -1,5 +1,14 @@
 {
+	if ( a == 2 ) {
+		return ;
+	}
+	else if ( a > 2 ) {
+		doa ( ) ;
+}
+	a ++ ;
+}
+{
 	int b ;
-	m = 2 ;
-	int arr [ m ] ;
+	M aa ;
+	b = aa . b ;
 }

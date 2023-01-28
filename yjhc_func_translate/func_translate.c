@@ -193,6 +193,11 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
     // 对一个句子补充函数
     nodes=process_singleLine(funcTranslator,nodes);
 
+    if(nodes==NULL){
+      isRight=0;
+      break;
+    }
+
     //然后把处理结果写入文件
     if(nodes!=NULL) 
       fput_tokenLine(fout,nodes);
@@ -232,10 +237,15 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
     del_tokenLine(nodes);
     nodes=NULL;
   }
+  
   if(nodes!=NULL) del_tokenLine(nodes);
   release_token_reader();
   fclose(fin);
   fclose(fout);
+  //如果是错误的内容
+  if(!isRight){
+    fprintf(funcTranslator->warningFout,"syntax error!\n");
+  }
   if(!isRight) return 0;
   return 1;
 }
@@ -368,8 +378,17 @@ FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
   if(nodes->token.kind==TYPEDEF_KEYWORD){
     return TYPEDEF_FTK;
   }
+  //判断是否是自身属性调用语句,self.var的形式
+  if(nodes->token.kind==SELF_KEYWORD){
+    if(nodes->next->token.kind==OP&&strcmp(nodes->next->token.val,".")==0){
+      if(nodes->next->next->token.kind==VAR) return SELF_FIELD_VISIT_FTK;
+      else if(nodes->next->next->token.kind==FUNC) return SELF_FUNC_VISIT_FTK;
+      else return NOT_LEAGAL_FTK;
+    }
+    else return NOT_LEAGAL_FTK;
+  }
 
-  //判断是否是类型强转语句，TODO
+  //判断是否是类型强转语句
   if(isTypeChangeSentence(funcTranslator,nodes)){
     return TYPE_CHANGE_FTK;
   }
@@ -1099,6 +1118,64 @@ TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
 TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   char* funcName=tokens->token.val;
   Func* func=findFunc(functranslator->funcTbl,funcName,NULL);
+  //如果返回的函数结构体指针为NULL的话,说明是未知的函数,对未知函数不用对每个参数进行类型匹配
+  //对每个参数只需要进行表达处理即可
+  if(func==NULL){
+    //TODO
+    TBNode* track=tokens->next->next; //首先让足迹来到第一个参数的头部
+    int argIndex=0; //记录当前分析的参数下标
+    int isRight=1;  //标记分析过程是否出现异常
+    //然后每次读取一个参数直到读取到函数的最后一个参数为止
+    while(track!=NULL){
+      TBNode* argHead=track;  //参数头部
+      TBNode* argTail=NULL; //参数尾
+      //搜索参数的尾部
+      //如果搜索参数尾部失败,说明参数表达式存在异常
+      if(!searchArgExpression(argHead,&argTail)){
+        //
+        isRight=0;
+        break;
+      }
+      //如果搜索成功,首先把参数表达式摘出,处理,然后再接回,然后分析下一个
+      TBNode* preHead=argHead->last;
+      TBNode* sufTail=argTail->next;
+
+      preHead->next=NULL;argHead->last=NULL;
+      sufTail->last=NULL;argTail->next=NULL;
+      preHead->next=sufTail;sufTail->last=preHead;
+
+      argHead=process_singleLine(functranslator,tokens);
+      if(argHead->next!=NULL||argHead==NULL||argHead->last==NULL){
+        del_tokenLine(argHead);
+        isRight=0;
+        break;
+      }
+      
+      //如果参数处理成功,连接回来
+      preHead->next=argHead;argHead->last=preHead;
+      sufTail->last=argHead;argHead->next=sufTail;
+      //判断是否要结束
+      if(sufTail->token.kind==RIGHT_PAR){
+        break;
+      }
+      track=sufTail->next;
+      if(track==NULL){
+        isRight=0;
+        break;
+      }
+    }
+    //TODO,异常处理
+    if(!isRight){
+      del_tokenLine(tokens);
+      return NULL;
+    }
+    //连接整个函数调用,整体化作一个unknown类型的变量
+    tokens=connect_tokens(tokens,VAR,"");
+    //作为unknown类型变量加入量表
+    addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,0,NULL,0);
+    return tokens;
+  }
+  //否则是可以查到的已经加载的全局函数
   //获取参数类型
   TBNode* track=tokens->next->next; //来到第一个参数的开头
   int isRight=1;
@@ -1226,12 +1303,82 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
 
 //翻译自身属性调用语句
 TBNode* translateSelfFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens){
-  
+  //对于自身属性调用语句,.处理成->
+  free(tokens->next->token.val);
+  tokens->next->token.val=strcpy(malloc(strlen("->")),"->");
+  //查询变量,然后把这个合并成一个整体
+  if(funcTranslator->curFunc==NULL){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //查找当前方法的主人
+  char* ownerName=funcTranslator->curFunc->owner;
+  //查找主人类型
+  Type type;
+  if(!findType_valtbl(funcTranslator->globalValTbl,ownerName,&type,NULL)){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //如果该主人不含有该属性,进行报错提示
+  char* fieldName=tokens->next->next->token.val;
+  if(!hashtbl_get(&type.fields,&fieldName,NULL)){
+    //如果不含该属性
+    fprintf(funcTranslator->warningFout,"visit unexistable field %s in type %s->%s function\n",fieldName,type.defaultName,funcTranslator->curFunc->func_name);
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //否则合并为该类型,查找函数的返回类型
+  int typeIndex;
+  int typeLayer;
+  extractTypeIndexAndPointerLayer(funcTranslator->curFunc->retTypeId,&typeIndex,&typeLayer);
+  //取出类型
+  vector_get(&funcTranslator->gloabalTypeTbl->types,typeIndex,&type);
+  //截断后面部分
+  TBNode* tail=tokens->next->next;
+  TBNode* sufTail=tail->next;
+  tail->next=NULL;
+  if(sufTail!=NULL) sufTail->last=NULL;
+  //合并tokens
+  tokens=connect_tokens(tokens,VAR,"");
+  if(tokens==NULL){
+    del_tokenLine(sufTail);
+    return NULL;
+  }
+  //加入量表
+  addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,0,type.defaultName,typeLayer);
+  tokens->next=sufTail;
+  sufTail->last=tokens;
+  return process_singleLine(funcTranslator,tokens);
 }
 
 //翻译自身方法调用语句
 TBNode* translateSelfFuncVisit(FuncTranslator* funcTranslator,TBNode* tokens){
+  //进行参数检查
+  if(funcTranslator->curFunc==NULL){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //获取当前方法的主人类型
+  char* ownerName=funcTranslator->curFunc->owner;
+  Type type;
+  int layer=0;
+  findType_valtbl(funcTranslator->globalValTbl,ownerName,&type,&layer);
+  //默认之前的约束条件经过严格的判断，因此方法主人的类型要么是union要么是strcut，而且指针层次为0
 
+  //通过self调用函数的情况有两种,一种是函数指针调用,另一种是类型自身方法调用
+
+  //TODO
+  //如果是使用函数指针
+  if(containsStr_StrSet(&type.funcPointerFields,tokens->next->next->token.val)){
+    //把自身合成函数,函数的类型为未知类型函数
+
+  }
+  //否则如果是调用自身方法
+  else{
+
+  }
+
+  return tokens;
 }
 
 //翻译类型方法调用语句
@@ -1314,6 +1461,7 @@ int searchArgExpression(TBNode* head,TBNode** tail){
   *tail=head;
   return 1;
 }
+
 
 int searchExpressUntil(TBNode* head,TBNode** retTail,TokenKind* kinds,int kindSize){
   int leftP=0;
