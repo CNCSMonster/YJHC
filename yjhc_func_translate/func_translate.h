@@ -76,6 +76,7 @@ typedef enum func_translate_kind{
   ARR_VISIT_FTK,  //数组元素访问调用语句
   SELF_FIELD_VISIT_FTK,                //自身成员属性访问语句
   SELF_FUNC_VISIT_FTK,  //自身方法访问语句
+  SET_EXP_FTK,  //处理像是{a1,a2}这样的枚举表达式
   FTK_NUM   //token的数量
 }FTK;
 
@@ -120,8 +121,30 @@ TBNode* translateVarDef(FuncTranslator* functranslator,TBNode* tokens);
 //翻译常量定义语句
 TBNode* translateConstDef(FuncTranslator* functranslator,TBNode* tokens);
 
+//翻译枚举表达式
+TBNode* translateSetExp(FuncTranslator* funcTranslator,TBNode* tokens);
+
 //翻译运算语句
 TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens);
+
+//翻译运算语句的子函数
+
+//处理完self表达式
+TBNode* removeSelfExp(FuncTranslator* funcTranslator,TBNode* tokens);
+
+//处理完数组访问表达式
+TBNode* removeArrVisit(FuncTranslator* funcTranslator,TBNode* tokens);
+
+//处理完方法调用表达式
+TBNode* removeFuncUse(FuncTranslator* funcTranslator,TBNode* tokens);
+
+//处理完方括号表达式
+TBNode* removeFuncUse(FuncTranslator* funcTranslator,TBNode* tokens);
+
+//处理运算符
+TBNode* removeOP(FuncTranslator* funcTranslator,TBNode* tokens);
+
+
 
 //函数指针定义语句
 TBNode* translateFuncPointerDef(FuncTranslator* functranslator,TBNode* tokens);
@@ -163,6 +186,7 @@ TBNode* (*tranFuncs[]) (FuncTranslator*,TBNode*) = {
   [TYPE_CHANGE_FTK] translateTypeChange, //类型强转语句
   [SELF_FIELD_VISIT_FTK] translateSelfFieldVisit,
   [SELF_FUNC_VISIT_FTK] translateSelfFuncVisit,
+  [SET_EXP_FTK] translateSetExp,  //翻译枚举表达式,或者说翻译集合表达式
   [MEMBER_FIELD_USE_FTK] translateMemberFieldVisit, //成员属性访问语句
   [MEMBER_FUNCTION_USE_FTK] translateTypeMethodUse   //类型方法调用语句
 };

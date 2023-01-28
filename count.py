@@ -72,25 +72,12 @@ def countLinesInFiles(files):
         f=open(filePath,'r',encoding= file_encoding(filePath))
         lines=f.readlines()
         lines=list(filter(lambda x: x!='\n',lines))
+        # for str in lines:
+        #     print(str)
         # lines=list(filter(lambda x: ))
         add=len(lines)
         print(add)
         count+=add
-        # for line in f.readlines():
-        #     if line == '\n':
-        #         continue
-        #     count+=1
-        # count+=len(f.readlines())
-        # try:
-        #     f = open(filePath,"r",encoding='utf8')
-        #     count+=len(f.readlines())
-        # except:
-        #     try:
-        #         f = open(filePath,"r",encoding='GB18030')
-        #         count+=len(f.readlines())
-        #     except:
-        #         f = open(filePath,"r",encoding='BIG5')
-        #         count+=len(f.readlines())  
     return count
 
 
