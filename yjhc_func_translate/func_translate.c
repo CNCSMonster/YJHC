@@ -493,7 +493,16 @@ int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
   BitMap bm=getBitMap(&bmu);
   TBNode* track=nodes;
   while(track!=NULL){
-    if(track->token.kind==OP&&strcmp(track->token.val,".")==0){
+    int ifRet=0;
+    TokenKind kind=track->token.kind;
+    if(kind==LEFT_BRACE||kind==LEFT_PAR||kind==LEFT_BRACKET
+    ){
+      ifRet=1;
+    }
+    else if(track->token.kind==OP&&strcmp(track->token.val,".")==0){
+      ifRet=1;
+    }
+    if(ifRet){
       delBitMap(&bm);
       return 0;
     }
@@ -765,6 +774,7 @@ TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   }
   //否则如果下标表达式为空,也就是方括号内为空内容,也就是非法情况
   else if(sufTail==head){
+    fprintf(funcTranslator->warningFout,"warning!can not visit arr element with empty index!\n");
     del_tokenLine(tokens);
     return NULL;
   }
@@ -772,9 +782,9 @@ TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   
   //首先分离出下标表达式
   head->last=NULL;
-  preHead->next=NULL;
+  preHead->next=sufTail;
   sufTail->last->next=NULL;
-  sufTail->last=NULL;
+  sufTail->last=preHead;
 
 
   //然后处理下标表达式
@@ -782,36 +792,71 @@ TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   //如果下标表达式分析错误
   if(head==NULL){
     del_tokenLine(tokens);
-    del_tokenLine(sufTail);
     return NULL;
   }
-  //否则判断下标表达式的类型
-  Type type;
-  Val val;
-  int layer;
-  //从表中搜索获取下标表达式类型
-  findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&layer);
-  //判断表达式的类类型
-  //如果下标不是int类型或者不是long long类型,则为错误的下标表达式,返回异常值
-  if(layer!=0||type.kind!=TYPE_INT){
-    del_tokenLine(tokens);
-    del_tokenLine(sufTail);
-    del_tokenLine(head);
-    return NULL;
-  }
-  //否则是正确类型的表达式,合并前后内容
-  TBNode* sufSufTail=sufTail->next;
+  //连接回原来的接口
   preHead->next=head;
   head->last=preHead;
   head->next=sufTail;
   sufTail->last=head;
+  //判断下标表达式的类型
+  Type type;
+  Val val;
+  int layer;
+  int isRight=1;
+  //如果下标表达式是整数常量,则是正确的下标表达式
+  if(head->token.kind==CONST){
+    if(!isConstIntToken(head->token)){
+      isRight=0;
+      fprintf(funcTranslator->warningFout,"index to visit arr should be int,but not const string %s\n",head->token.val);
+    }
+  }
+  //从表中搜索获取下标表达式的变量信息,如果查找不到,说明出现异常
+  else if(!findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&layer)){
+    //如果是莫名变量,提示,然后返回错误信息
+    fprintf(funcTranslator->warningFout,"var %s used but not defined!\n",head->token);  //使用未定义变量
+    isRight=0;
+  }
+  //判断表达式的类类型
+  //如果下标不是int类型或者不是指针层次为0,则为错误的下标表达式,返回异常值
+  else if(layer!=0||type.kind!=TYPE_INT){
+    char* typeName=getTypeName(type.defaultName,layer);
+    fprintf(funcTranslator->warningFout,"you must use int val to visit arr elements but not val %s of %s type\n",head->token.val,typeName);
+    free(typeName);
+    isRight=0;
+  }
+  if(!isRight){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //否则是正确类型的表达式
+
+  //TODO,然后获取数组名的指针层次
+  if(!findVal(funcTranslator->partialValTbl,preHead->last->token.val,&val,&type,&layer)){
+    fprintf(funcTranslator->warningFout,"unknown arr %s!\n",preHead->last->token.val);
+    isRight=0;
+  }
+  else if(layer<1){
+    fprintf(funcTranslator->warningFout,"visit un-arr val %s!\n",preHead->last->token.val);
+    isRight=0;
+  }
+  if(!isRight){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  
+  //加入后面的点
+  TBNode* sufSufTail=sufTail->next;
+
 
   //分离数组元素访问表达式,
+  
   sufTail->next=NULL;
   if(sufSufTail!=NULL) sufSufTail->last=NULL;
   
   //处理数组访问表达式,数组表达式处理完后应该是一个var
   tokens=connect_tokens(tokens,VAR,"");
+
 
   //合并处理后的数组访问表达式和之前分离的内容
   tokens->next=sufSufTail;
@@ -898,6 +943,7 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
         TBNode* countM=track->last;
         while(countM!=NULL&&countM->token.kind!=TYPE&&countM->token.kind!=COMMA){
           layer++;
+          countM=countM->last;
         }
       }
       char* valName=track->token.val;
@@ -1030,6 +1076,8 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
       vector_get(&layers,layers.size-1,&layer);
       layer++;
       vector_set(&layers,layers.size-1,&layer,NULL);
+
+      vector_get(&layers,layers.size-1,&layer);
       state=1;
       track=sufTail;
     }
@@ -1057,6 +1105,8 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
   }
   if(!isRight){
     del_tokenLine(tokens);
+    vector_clear(&layers);
+    vector_clear(&vars);
     return NULL;
   }
   

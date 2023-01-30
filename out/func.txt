@@ -1,1 +1,1 @@
-int main(){ struct M a; a.m=3; return 2; }
+int main(){ int a[2]; char m=2; a["nihao"]; return 2; }

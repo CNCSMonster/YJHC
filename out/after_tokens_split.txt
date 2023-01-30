@@ -1,7 +1,9 @@
 {	1
-struct M a	1
+int a [ 2 ]	1
 ;	1
-a . m = 3	1
+char m = 2	1
+;	1
+a [ "nihao" ]	1
 ;	1
 return 2	1
 ;	0

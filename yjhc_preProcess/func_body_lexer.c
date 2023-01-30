@@ -3,8 +3,8 @@
 
 #define ERR printf("something wrong in parser")
 
-//第二次遍历，合并运算符
-int token_mergeOp(FILE* fin,FILE* code);
+//第二次遍历，合并运算符,并且合并两个类型
+int token_mergeOpAndType(FILE* fin,FILE* code);
 
 //第三次遍历补充流程控制中缺省的界符
 int token_addlayer(FILE* fin,FILE* code);
@@ -65,7 +65,7 @@ int main(int argc,char* argv[]){
   if(tokens==NULL){
     fclose(body);exit(-1);
   }
-  if(!token_mergeOp(body,tokens)) ERR;
+  if(!token_mergeOpAndType(body,tokens)) ERR;
   fclose(body);fclose(tokens);
 
   //进行第三次遍历,补充流程控制中缺省的界符
@@ -136,7 +136,8 @@ int is_preSentence_token(Token token){
   return 0;
 }
 
-int token_mergeOp(FILE* fin,FILE* code){
+
+int token_mergeOpAndType(FILE* fin,FILE* code){
   Token last;   //上一个token,最多只要保留两个token(因为最多两个token来合成)
   Token cur;
   last=getToken(fin);
@@ -144,8 +145,21 @@ int token_mergeOp(FILE* fin,FILE* code){
   cur=getToken(fin);
   while(cur.val!=NULL){
     //TODO 比较cur的字符字面值和各种字符串,返回比较结果
+    
+    //如果当前是类型而且上一个字符也是类型,两个都是long,则可以合并成long long
+    if(cur.kind==TYPE&&last.kind==TYPE&&strcmp(cur.val,"long")==0&&strcmp(last.val,"long")==0){
+      Token new=connectToken(last,cur,TYPE," ");
+      delToken(last);
+      delToken(cur);
+      last=new;
+      cur=getToken(fin);
+      continue;
+    }
+    else if(last.kind==TYPE&&cur.kind==OP&&strcmp(cur.val,"*")==0){
+
+    }
     //目前当且仅当为op或者关键字的时候需要考试是否是某个token的部分
-    if(cur.kind==OP&&last.kind==OP){
+    else if(cur.kind==OP&&last.kind==OP){
       //运算符组合不用都不用空格
       if(
         (strcmp(cur.val,"=")==0)
@@ -593,6 +607,7 @@ int code_parse(FILE *fin, FILE *code)
       //判断是否是基础数据类型
       if (isBaseType(tmp))
       {
+        //如果是基础数据类型
         fprintf(code, "%d %s\n", TYPE, tmp);
       }
       //判断是否是常量类型修饰符const

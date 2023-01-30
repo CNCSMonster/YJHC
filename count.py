@@ -63,7 +63,7 @@ def countLinesInFiles(files):
     paths=set()
     for filePath in files:
         fileName,suffix=os.path.splitext(filePath)
-        if suffix!='.c' and suffix!='.h':
+        if suffix!='.c' and suffix!='.h' :
             continue
         if filePath in paths:
             continue

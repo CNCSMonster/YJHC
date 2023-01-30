@@ -136,7 +136,7 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
 //返回的基本类型为int,返回的指针层次为0
 int findVal(ValTbl* curTbl,char* valName,Val* retVal,Type* retType,int* typeLayer){
   if(curTbl==NULL) return 0;
-  int id=-1;
+  long long id=-1;
   //首先查找变量,从当前表开始往上逐层查找
   while(curTbl!=NULL){
     //第一步,根据变量名字查找对应的下标

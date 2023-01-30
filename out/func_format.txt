@@ -1,5 +1,6 @@
 {
-	struct M a ;
-	a . m = 3 ;
+	int a [ 2 ] ;
+	char m = 2 ;
+	a [ "nihao" ] ;
 	return 2 ;
 }

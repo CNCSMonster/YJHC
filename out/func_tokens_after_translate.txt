@@ -1,3 +1,5 @@
 19 {
-1 struct M a
+1 int a[2]
+21 ;
+1 char m=2
 21 ;
