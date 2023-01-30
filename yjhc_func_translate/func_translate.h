@@ -129,21 +129,23 @@ TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens);
 
 //翻译运算语句的子函数
 
-//处理完self表达式
-TBNode* removeSelfExp(FuncTranslator* funcTranslator,TBNode* tokens);
 
-//处理完数组访问表达式
-TBNode* removeArrVisit(FuncTranslator* funcTranslator,TBNode* tokens);
+//翻译运算语句的子函数
 
-//处理完方法调用表达式
-TBNode* removeFuncUse(FuncTranslator* funcTranslator,TBNode* tokens);
+//去除括号表达式
+TBNode* removeParExp(FuncTranslator* translator,TBNode* tokens);
 
-//处理完方括号表达式
-TBNode* removeFuncUse(FuncTranslator* funcTranslator,TBNode* tokens);
+//去除序列表达式
+TBNode* removeSetExp(FuncTranslator* translator,TBNode* tokens);
 
-//处理运算符
-TBNode* removeOP(FuncTranslator* funcTranslator,TBNode* tokens);
+//去除self表达式
+TBNode* removeSelfExp(FuncTranslator* translator,TBNode* tokens);
 
+//去除所有成员访问表达式和数组访问表达式,(事实上,因为成员访问的效果和数组访问的效果是本质一样的)
+TBNode* removeMemVisitAndArrVisit(FuncTranslator* translator,TBNode* tokens);
+
+//去除运算符,要根据优先级,先去除优先级最高的运算符
+TBNode* removeOP(FuncTranslator* translator,TBNode* tokens);
 
 
 //函数指针定义语句

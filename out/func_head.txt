@@ -1,2 +1,1 @@
-doa|struct M|void|()
-main|NULL|void|()
+main|NULL|int|()

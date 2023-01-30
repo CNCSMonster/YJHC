@@ -5,10 +5,10 @@ struct M{
     void doa();
 };
 struct M->void doa(){
-    if(a==2) return;
-    else if(a>2){
-        doa();
-    }
+if(a==2) return;
+else if(a>2){
+    doa();
+}
     a++;
 }
 

@@ -486,13 +486,17 @@ int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
   //则取反后者1110_0000,然后拿后者与前者做与运算
   //如果结果不为0,则说明目标句子含有其他符号,否则没有
 
-  //如果只有运算表达式和的符号,则是不需要方法调用翻译的句子
+  //如果只有运算表达式和量符号,而且没有属性访问语句,则是不需要方法调用翻译的句子
   BitMapUtil bmu={
     .mapSize=sizeof(long long)
   };
   BitMap bm=getBitMap(&bmu);
   TBNode* track=nodes;
   while(track!=NULL){
+    if(track->token.kind==OP&&strcmp(track->token.val,".")==0){
+      delBitMap(&bm);
+      return 0;
+    }
     put_bitmap(&bmu,&bm,track->token.kind);
     track=track->next;
   }
@@ -1321,22 +1325,22 @@ TBNode* translateSetExp(FuncTranslator* funcTranslator,TBNode* tokens){
 
 //翻译运算语句
 TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
-  //往后面找一个运算符号,根据运算符号进行运算
-  TBNode* track=NULL;
-  int isRight=1;
-  //首先处理所有self调用
-  while(track!=NULL){
+  
+  //首先小括号决定运算优先级别
+  //先去除除了函数调用外的小括号,小括号的运算结果只能是量,而且一般只能够是运算常量,除非小括号里面的内容是单一变量
+  tokens=removeParExp(functranslator,tokens);
+  
+  //然后花括号是序列表达式,对序列表达式进行分析处理,去除所有花括号
+  tokens=removeSetExp(functranslator,tokens);
 
-  }
-  if(!isRight){
+  //然后去除所有self.引用表达式
+  tokens=removeSelfExp(functranslator,tokens);
 
-  }
+  //然后去掉所有成员访问表达式和数组访问表达式
+  tokens=removeMemVisitAndArrVisit(functranslator,tokens);
 
-  //然后处理所有成员属性,方法调用
-
-  //然后处理所有的括号表达式
-
-  //最后处理所有的运算符
+  //去除运算表达式
+  tokens=removeOP(functranslator,tokens);
 
   return tokens;
 }
@@ -1344,30 +1348,162 @@ TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
 
 //翻译运算语句的子函数
 
-//处理完self表达式
-TBNode* removeSelfExp(FuncTranslator* funcTranslator,TBNode* tokens){
-
+//去除括号表达式
+TBNode* removeParExp(FuncTranslator* translator,TBNode* tokens){
+  //TODO
+  return tokens;
 }
 
-//处理完数组访问表达式
-TBNode* removeArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
+//去除序列表达式
+TBNode* removeSetExp(FuncTranslator* translator,TBNode* tokens){
+  //TODO,序列表达式翻译成一个序列值,能够用来对结构体类型或者数组类型进行初始化
+  //TODO,序列表达式不能够调用方法,也不能够进行操作,所以可以赋一个常量类型标志
+  //TODO,然后序列表达式类型可以作为一个特殊的类型处理
+  if(tokens==NULL) return NULL;
 
+  //首先处理括号表达式里面的每个子表达式,对每个子表达式进行处理
+  //当前先不考虑具名初始化的内容,假设每个子表达式都是没有具名的,也没有指定下标的
+  TBNode head;
+  head.token.kind=UNKNOWN;
+  head.last=NULL;
+  head.next=tokens;
+  TBNode* track=tokens->next;
+  TBNode* tail;
+  TokenKind kinds[]={RIGHT_BRACE,COMMA};
+  int kindsSize=2;
+  int isRight=1;
+  while(searchExpressUntil(track,&tail,kinds,kindsSize)){
+    TBNode* preHead=track->last;
+    TBNode* sufTail=tail->next;
+
+    //分离出子表达式
+    preHead->next=sufTail;sufTail->last=preHead;
+    track->last=NULL;tail->next=NULL;
+
+    //对子表达式分析
+    track=translateCountDef(translator,track);
+    if(track==NULL){
+      isRight=0;
+      break;
+    }
+    if(sufTail->token.kind==RIGHT_BRACE) break;
+    track=sufTail->next;
+  }
+  tokens=head.next;
+  tokens->last=NULL;
+  if(!isRight){
+    del_tokenLine(tokens);
+    return NULL;
+    
+  }
+  tokens=connect_tokens(tokens,CONST," ");
+  return tokens;
 }
 
-//处理完方法调用表达式
-TBNode* removeFuncUse(FuncTranslator* funcTranslator,TBNode* tokens){
+//去除self表达式
+TBNode* removeSelfExp(FuncTranslator* translator,TBNode* tokens){
+  if(tokens==NULL) return NULL;
+  TBNode* track=tokens;
+  TBNode head={
+    .last=NULL,
+    .next=NULL,
+    .token={.kind=UNKNOWN,.val=NULL}
+  };
+  head.next=tokens;
+  tokens->last=&head;
+  int isRight=1;
+  while(track!=NULL){
+    if(track->token.kind!=SELF_KEYWORD){
+      track=track->next;
+      continue;
+    }
+    if(track->next==NULL||track->next->next==NULL||track->next->token.kind!=OP||strcmp(track->next->token.val,".")!=0){
+      isRight=0;
+      break;
+    }
+    //处理self属性调用
+    if(track->next->next->token.kind==VAR){
+      TBNode* preHead=track->last;
+      TBNode* tail=track->next->next;
+      TBNode* sufTail=tail->next;
+      preHead->next=NULL;track->last=NULL;
+      tail->next=NULL;if(sufTail!=NULL) sufTail->last=NULL;
+      preHead->next=sufTail;if(sufTail!=NULL) sufTail->last=NULL;
+      track=translateSelfFieldVisit(translator,track);
+      if(track==NULL){
+        isRight=0;
+        break;
+      }
+      preHead->next=track;track->last=preHead;
+      track->next=sufTail;if(sufTail!=NULL) sufTail->last=track;
+      track=head.next;  //让track来到第一个元素位置,重新搜索
+    }
+    //处理self方法调用
+    else if(track->next->next->token.kind==FUNC&&track->next->next->next!=NULL
+      &&track->next->next->next->token.kind==LEFT_PAR
+    ){
+      TBNode* preHead=track->last;
+      TBNode* tail=track->next->next->next->next;
+      TBNode* sufTail=NULL;
+      if(!searchArgExpression(tail,&tail)){
+        isRight=0;
+        break;
+      }
+      sufTail=tail->next;
 
+      preHead->next=sufTail;if(sufTail!=NULL) sufTail->last=preHead;
+      track->last=NULL;tail->next=NULL;
+
+      track=translateSelfFuncVisit(translator,track);
+      if(track==NULL){
+        isRight=0;
+        break;
+      }
+      preHead->next=track;track->last=preHead;
+      track->next=sufTail;if(sufTail!=NULL) sufTail->last=track;
+      track=head.next;
+    }
+    else{
+      isRight=0;
+      break;
+    }
+  }
+  tokens=head.next;
+  tokens->last=NULL;
+  if(!isRight){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  return tokens;
 }
 
-//处理运算符
-TBNode* removeOP(FuncTranslator* funcTranslator,TBNode* tokens){
-
+//去除所有成员访问表达式和数组访问表达式,(事实上,因为成员访问的效果和数组访问的效果是本质一样的)
+TBNode* removeMemVisitAndArrVisit(FuncTranslator* translator,TBNode* tokens){
+  //TODO
+  return tokens;
 }
+
+//去除运算符,要根据优先级,先去除优先级最高的运算符
+TBNode* removeOP(FuncTranslator* translator,TBNode* tokens){
+  //TODO
+  return tokens;
+}
+
+
 
 //函数指针定义语句
 TBNode* translateFuncPointerDef(FuncTranslator* functranslator,TBNode* tokens){
   //对于函数指针,获取函数类型,然后加入全局函数表
   //函数指针里面不允许有未知类型
+
+
+
+
+
+
+
+
+
 
   return tokens;
 }

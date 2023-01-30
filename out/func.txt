@@ -1,2 +1,1 @@
-struct M->void doa(){ if(a==2) return; else if(a>2){ doa(); } a++; }
-void main(){ int b; M aa; b=aa.b; }
+int main(){ struct M a; a.m=3; return 2; }

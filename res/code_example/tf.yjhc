@@ -1,0 +1,11 @@
+
+struct M{
+    int a;
+    int c;
+};
+
+int main(){
+    struct M a;
+    a.m=3;
+    return 2;
+}

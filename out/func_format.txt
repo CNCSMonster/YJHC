@@ -1,14 +1,5 @@
 {
-	if ( a == 2 ) {
-		return ;
-	}
-	else if ( a > 2 ) {
-		doa ( ) ;
-}
-	a ++ ;
-}
-{
-	int b ;
-	M aa ;
-	b = aa . b ;
+	struct M a ;
+	a . m = 3 ;
+	return 2 ;
 }

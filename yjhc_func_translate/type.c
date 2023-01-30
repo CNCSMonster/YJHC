@@ -803,6 +803,7 @@ int loadFuncPointerFieldDef(Type* typep,char* str){
   }
   if(end=='\0')return 0;
   addStr_StrSet(&typep->funcPointerFields,tmp);
+  //TODO,给类型表加入函数指针属性
   return 1;
 }
 

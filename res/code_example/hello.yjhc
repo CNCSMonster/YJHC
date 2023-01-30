@@ -1,29 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//
-typedef struct struct_people{
-    char name[100];
+struct man{
     int age;
-    void sayHello(char* helloTo);
-}People;
-People getPeople(char* name){
-    //strcpy(name,name);
-    strcpy(self.name,name);
+    void sayHi();
 }
-People->void sayHello(char* helloTo){
-    printf("Hello,%s!",helloTo);
+
+struct man->void sayHi(){
+    printf("hi,I'm %d years old",age);
 }
+
 int main(){
-    for(int i=1,int j=b;i<2;i++){
-        ;
-    }
-    //int a,b,c;
-    c=(int)1;
-    int a=1,b=2,c=3;
-    People Mike=getPeople();
-    People* mkp=&Mike;
-    mkp->age=1;
-    Mike.sayHello();
-    return 0;
+    struct man m={
+        .age=11
+    };
+    m.sayHi();
+    return 1;
 }

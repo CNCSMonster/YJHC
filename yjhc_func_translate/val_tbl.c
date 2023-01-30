@@ -29,8 +29,13 @@ int loadFile_valtbl(ValTbl* valTbl, FILE* fin){
   return 1;
 }
 
-//从一个量定义语句中加载量到量表中,TODO,debug
+//从一个量定义语句中加载量到量表中
 int loadLine_valtbl(ValTbl* valTbl,char* str){
+
+  //TODO,补丁,首先判断是否是函数指针定义语句,如果是,加入函数指针
+
+
+
   //首先读取第一个词,判断是否是常量定义语句
   char tmp[1000];
   char end=mysgets(tmp," ",str);
