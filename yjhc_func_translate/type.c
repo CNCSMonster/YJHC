@@ -371,11 +371,12 @@ char* refectorFuncPointerName(char* str){
     //否则加入这次要加入的字符串
     char tmpType[300];
     strncpy(tmpType,str+fromIndex+1,toIndex-fromIndex);
+    tmpType[toIndex-fromIndex]='\0';
     formatTypeName(tmpType);
     char* tmpStr=strcpy(malloc(strlen(tmpType)+1),tmpType);
     vector_push_back(&argTypes,&tmpStr);
     toIndex=fromIndex-1;
-    fromIndex=toIndex-1;
+    fromIndex=toIndex;
   }
   //如果没有正确执行该语句,进行错误处理
   if(!isRight){
@@ -394,15 +395,17 @@ char* refectorFuncPointerName(char* str){
   char* track=str;
   sprintf(track,"%s(*)(",retType);
   track+=strlen(retType)+strlen("(*)(");
-  char* argType;
-  for(int i=0;i<argTypes.size-1;i++){
+  char* argType=NULL;
+  for(int i=argTypes.size-1;i>0;i--){
     vector_get(&argTypes,i,&argType);
+    myStrStrip(argType," "," ");
     sprintf(track,"%s,",argType);
     track+=strlen(track);
     free(argType);
   }
   if(argTypes.size>=1){
-    vector_get(&argTypes,argTypes.size-1,&argType);
+    vector_get(&argTypes,0,&argType);
+    myStrStrip(argType," "," ");
     sprintf(track,"%s)",argType);
     free(argType);
   }
@@ -705,10 +708,13 @@ Type extractStruct(char* str){
 
 //格式化类型字符串
 int formatTypeName(char* str){
+  //首先去除前后空格
+  myStrStrip(str," "," ");
   //如果判断是函数指针类型字符串,则格式函数指针类型字符串
   if(isFuncPointerType(str)){
     return refectorFuncPointerName(str)==NULL?0:1;
   }
+
   vector vec=getVector(sizeof(char));
   int i=0;
   //首先越过前面所有空格
@@ -804,6 +810,7 @@ int loadFuncPointerFieldDef(Type* typep,char* str){
   if(end=='\0')return 0;
   addStr_StrSet(&typep->funcPointerFields,tmp);
   //TODO,给类型表加入函数指针属性
+
   return 1;
 }
 
@@ -889,5 +896,36 @@ int delTypeTbl(TypeTbl* tbl){
   vector_clear(&tbl->types);
   return 1;
 }
+
+//从函数指针属性定义中提取函数指针量名
+int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName){
+  if(!isFuncPointerFieldDef(funcPointerFieldDef)) return 0;
+  
+  //查找到第一个(的出现
+  char end;
+  char tmp[1000];
+  end=mysgets(tmp," (",funcPointerFieldDef);
+  char* track=funcPointerFieldDef+strlen(tmp);
+  while(*track!='\0'){
+    char c=*track;
+    if(c!='('&&c!=')'&&c!='*'&&c!=' ') break;
+    track++;
+  }
+  if(*track=='\0') return 0;
+  //TODO
+  int i=0;
+  while(track[i]!='\0'){
+    if(track[i]=='(') break;
+    if(track[i]==')') break;
+    if(track[i]==' ') break;
+    if(track[i]=='*') break;
+    retName[i++]=track[i];
+  }
+  if(track[i]=='\0') return 0;
+  retName[i]='\0';
+  return 1;
+}
+
+
 
 

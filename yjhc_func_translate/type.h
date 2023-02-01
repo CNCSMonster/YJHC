@@ -172,7 +172,9 @@ void delType(Type* type);
 int delTypeTbl(TypeTbl* tbl);
 
 
-//为了简单考虑,取代了函数内结构体定义以及函数内typedef的使用的支持
+//从函数指针属性定义中提取函数指针量名
+
+int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName);
 
 
 
