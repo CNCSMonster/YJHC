@@ -6,12 +6,8 @@ TypeTbl getGlobalTypeTbl(){
   //加入基础数据类型
   for(int i=0;i<sizeof(baseTypeNames)/sizeof(baseTypeNames[0]);i++){
     if(i==TYPE_STRUCT||i==TYPE_ENUM||i==TYPE_UNION||i==TYPE_UNKNOW||i==TYPE_FUNC_POINTER) continue;
-    Type toAdd;
-    toAdd.kind=i;
-    toAdd.funcs=getStrSet(myStrHash);
-    toAdd.defaultName=strcpy(malloc(strlen(baseTypeNames[i])+1),baseTypeNames[i]);
-    toAdd.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
-    toAdd.funcPointerFields=getStrSet(myStrHash);
+    char* defaultName=strcpy(malloc(strlen(baseTypeNames[i])+1),baseTypeNames[i]);
+    Type toAdd=getType(defaultName,i);
     //放进去的字符串要动态分配空间
     char* key=strcpy(malloc(strlen(baseTypeNames[i])+1),baseTypeNames[i]);
     putStrId(out.strIds,key,getTypeId(out.types.size,0));
@@ -20,6 +16,17 @@ TypeTbl getGlobalTypeTbl(){
   return out;
 }
 
+//生成类型结构体变量
+Type getType(char* defaultName,TypeKind kind){
+  Type out;
+  out.kind = kind;
+  out.funcs = getStrSet(myStrHash);
+  out.defaultName = defaultName;
+  out.fields = getHashTbl(0, sizeof(char *), sizeof(char *), typeFieldNameHash, typeFieldEq);
+  out.funcPointerFields = getStrSet(myStrHash);
+  out.fpFieldToType=getHashTbl(8,sizeof(char*),sizeof(char*),typeFieldNameHash, typeFieldEq);
+  return out;
+}
 
 
 TypeTbl getTypeTbl(){
@@ -27,20 +34,10 @@ TypeTbl getTypeTbl(){
   out.strIds=getStrIdTable();
   out.types=getVector(sizeof(Type));
   //out的第一位保存unknown
-  Type unknownType;
-  unknownType.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
-  unknownType.kind=TYPE_UNKNOW;
-  unknownType.defaultName=NULL;
-  unknownType.funcPointerFields=getStrSet(myStrHash);
-  unknownType.funcs=getStrSet(myStrHash);  
+  Type unknownType=getType(NULL,TYPE_UNKNOW);
   vector_push_back(&out.types,&unknownType);
   //第二个位置,也就是下标0处保存func_pointer类型
-  Type funcPointerType;
-  funcPointerType.fields=getHashTbl(0,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
-  funcPointerType.kind=TYPE_FUNC_POINTER;
-  funcPointerType.defaultName=NULL;
-  funcPointerType.funcPointerFields=getStrSet(myStrHash);
-  funcPointerType.funcs=getStrSet(myStrHash);
+  Type funcPointerType=getType(NULL,TYPE_FUNC_POINTER);
   vector_push_back(&out.types,&funcPointerType);
   return out;
 }
@@ -756,7 +753,7 @@ int formatTypeName(char* str){
 }
 
 //判断语句是否是函数指针类型属性定义语句,是返回非0值,不是返回0
-int isFuncPointerFieldDef(char* str){
+int isFuncPointerFieldDef(const char* str){
   //函数指针属性定义语句可以用一个自动机来识别
   //字符串->左括号->星号->右括号->左括号->类型列表->右括号
   //void (*p2) (int,int)
@@ -789,28 +786,21 @@ int isFuncPointerType(const char* str){
 
 
 int loadFuncPointerFieldDef(Type* typep,char* str){
-  char* stops="(";
-  char tmp[1000];
-  char end=mysgets(tmp,stops,str);
-  str+=strlen(tmp)+1;
-  //往后面查找剩下的内容
-  end=mysgets(tmp,"*",str);
+  char fieldName[1000];
+  if(!extractFuncPointerFieldName(str,fieldName)) return 0;
+  char typeName[1000];
+  strcpy(typeName,str);
   //
-  if(end!='*') return 0;
-  str+=strlen(tmp)+1;
-  //然后后面查找,找到字符串尽头
-  char* stops2="()* ";
-  while((end=mysgets(tmp,stops2,str))!='\0'){
-    if(strlen(tmp)==0){
-      str+=1;
-      continue;
-    }
-    break;
+  if(!formatTypeName(typeName)) return 0;
+  //不能重复定义同名变量
+  if(containsStr_StrSet(&typep->funcPointerFields)){
+    return 0;
   }
-  if(end=='\0')return 0;
-  addStr_StrSet(&typep->funcPointerFields,tmp);
-  //TODO,给类型表加入函数指针属性
-
+  addStr_StrSet(&typep->funcPointerFields,fieldName); //提取函数指针属性名
+  //绑定函数指针属性名与函数指针类型名
+  char* key=strcpy( malloc(strlen(fieldName)+1),fieldName);
+  char* val=strcpy( malloc(strlen(typeName)+1),typeName);
+  if(!hashtbl_put(&typep->fpFieldToType,&key,&val)) return 0;
   return 1;
 }
 

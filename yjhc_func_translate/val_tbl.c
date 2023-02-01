@@ -209,6 +209,26 @@ Val getVal(char* name,int isConst,char* defaultVal){
 
 //往量表中加入值
 void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName,int typeLayer){
+  //s首先判断是否是未确定类型量,如果是则不绑定类型,只是加入量
+  int isfpt=isFuncPointerType(typeName);
+  if(typeName==NULL||isfpt){
+    defaultVal=NULL;
+    Val toAdd=getVal(valName,isConst,defaultVal);
+    putStrId(valTbl->valIds,toAdd.name,valTbl->vals.size);
+    vector_push_back(&valTbl->vals,&toAdd);
+  }
+  //然后判断是否是函数类型
+  if(isfpt){
+    //加入类型
+    char tmp[1000];
+    strcpy(tmp,typeName);
+    if(!formatTypeName(tmp)){
+      char* val=strcpy(malloc(strlen(valName)+1),valName);
+      char* type=strcpy(malloc(strlen(tmp)+1),tmp);
+      hashtbl_put(&valTbl->valToType,&val,&type);
+    }
+  }
+  if(typeName==NULL||isfpt) return;
   //首先查找类型
   Type find={ //结构体类型的具名初始化
     .kind=TYPE_UNKNOW
@@ -230,12 +250,19 @@ void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isCon
   putStrId(valTbl->valIds,toAdd.name,valTbl->vals.size);
   vector_push_back(&valTbl->vals,&toAdd);
   //绑定类型
-  //如果类型名为NULL,表示未知,则不绑定
-  //如果类型名不等于NULL,则绑定
-  if(typeName!=NULL){
+  if(find.kind!=TYPE_UNKNOW&&find.kind!=TYPE_FUNC_POINTER){
+    //如果类型不是未知的,绑定类型
     char* val=strcpy(malloc(strlen(valName)+1),valName);
     char* type=getTypeName(typeName,typeLayer);
     hashtbl_put(&valTbl->valToType,&val,&type);
+  }
+  else if(find.kind==TYPE_UNKNOW){
+    //TODO
+
+  }
+  else if(find.kind==TYPE_FUNC_POINTER){
+    //TODO
+    //绑定古老的指针类型
   }
 }
 

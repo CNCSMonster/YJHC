@@ -24,11 +24,12 @@ typedef struct struct_val_tbl{
   vector vals;
   StrIdTable valIds;
 
-  //再保存一个变量名与类型名的映射
+  //再保存一个变量名与类型名的映射,这里的变量名可以是函数指针名,绑定的类型则为格式化后的函数指针类型
   hashtbl valToType;
   
   //局部类型表
   TypeTbl typeTbl;  //可以定义一个空的类型表
+
 
   //局部类型表,对于局部定义的类型可以在这里查询,TODO,但是笔者不打算实现局部类型
   struct struct_val_tbl* pre;   //上一个量表
@@ -67,11 +68,14 @@ void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isCon
 
 
 
+
 //往量表中加载一个函数的参数
 void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func);
 
 //通过量表查找类型,查找成功返回非0值，查找失败返回0
 int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer);
+
+//从量表中查找函数指针名,返回的结果为对应的函数指针的名字和类型
 
 
 

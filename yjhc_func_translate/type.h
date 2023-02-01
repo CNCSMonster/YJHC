@@ -86,6 +86,7 @@ typedef struct struct_type{
   //funcs用来快速地判断一个函数名是否存在该类型中
   StrSet funcs; //funcs保存的是结构体方法,是所有结构体共有的
   StrSet funcPointerFields; //funcField保存的是类型的函数指针类型的属性名,该属性名允许修改
+  hashtbl fpFieldToType;  //绑定函数指针类型名和变量名
 }Type;
 
 //notice,规定第0位保存的内容为unknown类型
@@ -100,6 +101,9 @@ typedef struct struct_type_table
 
 //获取全局类型表,里面有基础数据类型
 TypeTbl getGlobalTypeTbl();
+
+//生成类型结构体变量
+Type getType(char* defaultName,TypeKind kind);
 
 //获取一个只有0位置的unknown数据类型的类型表
 TypeTbl getTypeTbl();
@@ -118,6 +122,8 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str);
 //long long前32位为对应基础type的下标,后32位为这个类型对应的指针层次
 //long long
 void extractTypeIndexAndPointerLayer(long long code,int* typeIndex,int* pointerLayer );
+
+
 
 //根据kindIndex和pointerLayer获得对应的long long编码
 long long getTypeId(int typeIndex,int pointerLayer);
@@ -151,7 +157,7 @@ Type extractStruct(char* str);
 int formatTypeName(char* str);
 
 //判断语句是否是函数指针类型属性定义语句,是返回非0值,不是返回0
-int isFuncPointerFieldDef(char* str);
+int isFuncPointerFieldDef(const char* str);
 
 //判断是否是函数指针类型名或者函数指针参数名,如果是返回非0值,如果不是返回0
 int isFuncPointerType(const char* str);
