@@ -146,12 +146,15 @@ int loadLine_typetbl(TypeTbl* tbl,char* str){
 
 //提取出加载typedefline信息的内容
 int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
+  char tmpStr[1000];
+  strcpy(tmpStr,str);
+  char* typeDefLine=tmpStr;
   char tmp[200];
   char end;
   // 如果先读到左括号，说明是重命名
   // 如果先读到结尾符,说明是对已知类型进行重命名
-  end = mysgets(tmp, "{(", str);
-  char *track = str + strlen("typedef") + 1;
+  end = mysgets(tmp, "{(", typeDefLine);
+  char *track = typeDefLine + strlen("typedef") + 1;
   // 如果先遇到(,说明是给函数指针类型起别名
   if(end=='('){
     //给函数指针起别名,
@@ -183,23 +186,25 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
     char oldName[400];
     char newName[400];
     // 截取旧名,然后读取新名
-    int last = strlen(str) - 1;
+    int last = strlen(typeDefLine) - 1;
     // 首先从后往前读取掉所有空格来到第一个非空格的字符处
-    while (str[last] == ' ')
+    while (typeDefLine[last] == ' ')
       last--;
-    str[last + 1] = '\0';
+    typeDefLine[last + 1] = '\0';
     // 继续往前找到最后一个单词前面第一个空格
-    while (str[last] != ' ')
+    while (typeDefLine[last] != ' ')
       last--;
     // 这个位置往后就是新名的名字
-    strcpy(newName, str + last + 1);
-    str[last] = '\0';
-    strcpy(oldName, str + strlen("typedef") + 1);
+    strcpy(newName, typeDefLine + last + 1);
+    typeDefLine[last] = '\0';
+    strcpy(oldName, typeDefLine + strlen("typedef") + 1);
     formatTypeName(oldName); // 格式化旧的名字
-    // 然后查找旧的名字对应的id是否存在
-    long long id = strToId(tbl->strIds, oldName);
-    // 如果返回-1,说明这个id不存在,设置为对应的unknownid
-    if (id < 0)
+    // 然后查找旧类型名对应的类型下标以及指针层次
+    int layer;
+    int typeIndex=findType(tbl,oldName,&layer);
+    long long id=getTypeId(typeIndex,layer);
+    // 如果typeIndex等于0,说明对应函数名不存在
+    if (typeIndex == 0)
     {
       putStrId(tbl->strIds, oldName, 0); // 设置绑定该字符为0下标
       id = 0;
@@ -316,7 +321,7 @@ int loadTypedefFuncPointer_typetbl(TypeTbl* tbl,char* str){
   //获取简化的函数指针类型名称,
   char funcPointerSimplyType[1000];
   strcpy(funcPointerSimplyType,str);
-  char* t=refectorFuncPointerName(funcPointerSimplyType);
+  char* t=formatFuncPointerTypeName(funcPointerSimplyType);
   //加入到tbl中
   //首先绑定到typeTbl,tbl的滴二个位置,也就是下标0处是func_type的位置
   int typeIndex=1;
@@ -328,7 +333,7 @@ int loadTypedefFuncPointer_typetbl(TypeTbl* tbl,char* str){
 }
 
 //获得规格化的函数指针类型名
-char* refectorFuncPointerName(char* str){
+char* formatFuncPointerTypeName(char* str){
   myStrStrip(str," "," ");  //去掉前后空格
   vector argTypes=getVector(sizeof(char*)); //保存参数类型名称
   //保存返回类型名
@@ -410,6 +415,79 @@ char* refectorFuncPointerName(char* str){
   return str;
 }
 
+
+//从规格化的函数指针类型中提取返回类型名以及参数类型列表,提取成功返回非0值，提取失败返回0
+int extractRetTypeNameAndArgTypes(const char* str,char* retTypeName,vector* argTypes){
+  if(retTypeName==NULL||argTypes==NULL||argTypes->valSize!=sizeof(char*)) return 0;
+  //保存返回类型名
+  char end=mysgets(retTypeName," (",str);
+  formatTypeName(retTypeName); //规范设定返回类型不能以函数指针的形式给出,
+  //开始搜索类型名
+  if(str[strlen(str)-1]!=')') return 0;
+  int toIndex=strlen(str)-2;
+  int fromIndex=toIndex-1;
+  //修改fromIndex的内容
+  int except=1; //是否期待遇到一个参数类型
+  int isRight=1;
+  while(except){
+    //往左找到参数类型的尽头
+    int rightPar=0; //一个完整的类型字符串,哪怕是函数指针类型字符串
+    //里面的左右括号应该是成对出现的
+    while(fromIndex>=0&&(str[fromIndex]!=','&&(str[fromIndex]!='('))||rightPar!=0){
+      if(str[fromIndex]=='(') rightPar--;
+      else if(str[fromIndex]==')') rightPar++;
+      if(rightPar<0){
+        isRight=0;
+        break;
+      }
+      fromIndex--;
+    }
+    if(fromIndex==0){
+      isRight=0;
+    }
+    if(!isRight){
+      break;
+    }
+    //如果是左括号,说明前面已经加入完了
+    if(str[fromIndex]=='('){
+      except=0;
+    }
+    //否则加入这次要加入的字符串
+    char tmpType[300];
+    strncpy(tmpType,str+fromIndex+1,toIndex-fromIndex);
+    tmpType[toIndex-fromIndex]='\0';
+    formatTypeName(tmpType);
+    char* tmpStr=strcpy(malloc(strlen(tmpType)+1),tmpType);
+    vector_push_back(argTypes,&tmpStr);
+    toIndex=fromIndex-1;
+    fromIndex=toIndex;
+  }
+  //如果没有正确执行该语句,进行错误处理
+  if(!isRight){
+    //错误处理
+    printf("err in extractRetTypeNameAndArgTypes\n");  //打印提示语句
+    //释放空间
+    for(int i=0;i<argTypes->size;i++){
+      char* t;
+      vector_get(argTypes,i,&t);
+      free(t);
+    }
+    vector_clear(argTypes);
+    return 0;
+  }
+  
+  //因为这个时候数组的参数类型属性是倒排的，进行一个倒置
+  for(int i=0;i<argTypes->size/2;i++){
+    char* s1=NULL;
+    char* s2=NULL;
+    int i1=i;
+    int i2=argTypes->size-1-i1;
+    vector_get(argTypes,i1,&s1);
+    vector_set(argTypes,i2,&s1,&s2);
+    vector_set(argTypes,i1,&s2,NULL);
+  }
+  return 1;
+}
 
 
 //展示type
@@ -709,7 +787,7 @@ int formatTypeName(char* str){
   myStrStrip(str," "," ");
   //如果判断是函数指针类型字符串,则格式函数指针类型字符串
   if(isFuncPointerType(str)){
-    return refectorFuncPointerName(str)==NULL?0:1;
+    return formatFuncPointerTypeName(str)==NULL?0:1;
   }
 
   vector vec=getVector(sizeof(char));
@@ -772,6 +850,7 @@ int isFuncPointerFieldDef(const char* str){
 
 //判断是否是函数指针类型名或者函数指针参数名,
 int isFuncPointerType(const char* str){
+  if(str==NULL) return 0;
   //进行粗糙判断
   //TODO进行更精细判断
   //如果有两个括号则是函数指针类型名
@@ -787,13 +866,14 @@ int isFuncPointerType(const char* str){
 
 int loadFuncPointerFieldDef(Type* typep,char* str){
   char fieldName[1000];
-  if(!extractFuncPointerFieldName(str,fieldName)) return 0;
+  int isConst;
+  if(!extractFuncPointerFieldName(str,fieldName,&isConst)) return 0;
   char typeName[1000];
   strcpy(typeName,str);
   //
   if(!formatTypeName(typeName)) return 0;
   //不能重复定义同名变量
-  if(containsStr_StrSet(&typep->funcPointerFields)){
+  if(containsStr_StrSet(&typep->funcPointerFields,fieldName)){
     return 0;
   }
   addStr_StrSet(&typep->funcPointerFields,fieldName); //提取函数指针属性名
@@ -831,12 +911,14 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
     pointerLayer++;
     i--;
   }
+  char old=ts[i+1];
   ts[i+1]='\0';
   id=strToId(tbl->strIds,ts);
-  ts[i+1]='*';
+  ts[i+1]=old;
   //如果找不到这个字符串对应的id,则绑定unknow
   if(id<0){
-    id=getTypeId(0,pLayer);
+    typeIndex=0;
+    id=getTypeId(typeIndex,pLayer);
   }else{
     extractTypeIndexAndPointerLayer(id,&typeIndex,&pLayer);
     pLayer+=pointerLayer;
@@ -888,31 +970,42 @@ int delTypeTbl(TypeTbl* tbl){
 }
 
 //从函数指针属性定义中提取函数指针量名
-int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName){
+int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName,int* isConst){
   if(!isFuncPointerFieldDef(funcPointerFieldDef)) return 0;
   
   //查找到第一个(的出现
   char end;
   char tmp[1000];
   end=mysgets(tmp," (",funcPointerFieldDef);
-  char* track=funcPointerFieldDef+strlen(tmp);
+  char* track=(char*)funcPointerFieldDef+strlen(tmp);
   while(*track!='\0'){
     char c=*track;
     if(c!='('&&c!=')'&&c!='*'&&c!=' ') break;
     track++;
   }
   if(*track=='\0') return 0;
-  //TODO
   int i=0;
   while(track[i]!='\0'){
     if(track[i]=='(') break;
     if(track[i]==')') break;
-    if(track[i]==' ') break;
     if(track[i]=='*') break;
     retName[i++]=track[i];
   }
   if(track[i]=='\0') return 0;
   retName[i]='\0';
+  //判断是否是常量类型
+  end=mysgets(tmp," ",retName);
+  if(end==' '&&strcmp(tmp,"const")==0){
+    if(isConst!=NULL) *isConst=1;
+    strcpy(tmp,retName+strlen("const")+1);
+    //判断是否是合法的id,TODO
+    strcpy(retName,tmp);
+  }else{
+    if(isConst!=NULL) *isConst=0;
+  }
+  myStrStrip(retName," "," ");
+  //TODO,判断retName是否是合法的id
+  if(!isLegalId(retName)) return 0;
   return 1;
 }
 

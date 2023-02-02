@@ -139,7 +139,10 @@ int loadLine_typetbl(TypeTbl* tbl,char* str);
 int loadTypedefFuncPointer_typetbl(TypeTbl* tbl,char* str);
 
 //获得规格化的函数指针类型名,获取成功返回对应函数指针,获取失败返回NULL
-char* refectorFuncPointerName(char* str);
+char* formatFuncPointerTypeName(char* str);
+
+//从规格化的函数指针类型中提取返回类型名以及参数类型列表,提取成功返回非0值，提取失败返回0
+int extractRetTypeNameAndArgTypes(const char* str,char* retTypeName,vector* argTypes);
 
 void showType(Type* type);
 
@@ -180,7 +183,7 @@ int delTypeTbl(TypeTbl* tbl);
 
 //从函数指针属性定义中提取函数指针量名
 
-int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName);
+int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName,int* isConst);
 
 
 

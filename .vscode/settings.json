@@ -27,7 +27,8 @@
         "str_set.h": "c",
         "bitmap.h": "c",
         "lib_use.h": "c",
-        "func_translate.h": "c"
+        "func_translate.h": "c",
+        "mystring.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

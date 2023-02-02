@@ -29,21 +29,79 @@ int loadFile_valtbl(ValTbl* valTbl, FILE* fin){
   return 1;
 }
 
+//判断是否是函数指针变量定义语句,包括函数指针常量和函数指针变量两种形式,如果是返回非0值,如果不是返回0
+int isFuncPointerValDef_valtbl(const char* str){
+  //如果读取不到(,则一定不是函数指针定义语句
+  char end;
+  char tmp[1000];
+  end= mysgets(tmp,"(=",str);
+  if(end!='(') return 0;
+  //因为如果是函数指针定义 则，格式如 fpDef 或者fpDef = val 的形式 ,其中fpDef中含有(
+  return 1;
+}
+
+//加载函数指针变量定义语句,如果加载成功返回非0值,如果加载失败返回0
+int loadFuncPointerValDef_valtbl(ValTbl* valTbl,const char* str){
+  //首先,读取到等号位置,分割等号前后内容
+  char tmp[1000];
+  strcpy(tmp,str);  //首先复制下来再分析
+  char* track=tmp;  
+  //查找直到等号位置
+  while(*track!='\0'){
+    if(*track=='=') break;
+    track++;
+  }
+  char* defaultVal=NULL;
+  //则说明赋值对象不存在
+  if(*track=='\0'){
+    defaultVal=NULL;
+  }
+  else{
+    *track='\0';
+    track++;
+    defaultVal=strcpy(malloc(strlen(track)+1),track);
+    myStrStrip(defaultVal," "," "); //去除前后多余空格
+  }
+  //然后对默认指针值进行判断,如果有初始化值的话
+  if(defaultVal!=NULL){
+    if(!isLegalId(defaultVal)) return 0;
+  }
+  
+  //到达这个位置的defaultVal都是正常的
+  //接下来获取函数指针定义
+  track=tmp;
+  char fpName[300];
+  //获取函数指针变量名
+  //由提取的变量名判断是否含有const
+  int isConst=0;
+  if(! extractFuncPointerFieldName(track,fpName,&isConst)) return 0;
+  //格式化函数指针定义,也就是获取函数指针类型
+  if(!formatFuncPointerTypeName(tmp)) return 0;
+  //如果获取类型和量名都成功了,则可以加入量表了
+  addVal_valtbl(valTbl,fpName,defaultVal,isConst,tmp,0);
+  if(defaultVal!=NULL) free(defaultVal);
+  return 1;
+}
+
+
+
 //从一个量定义语句中加载量到量表中
-int loadLine_valtbl(ValTbl* valTbl,char* str){
-
-  //TODO,补丁,首先判断是否是函数指针定义语句,如果是,加入函数指针
-
-
-
+int loadLine_valtbl(ValTbl* valTbl,char* line){
+  //TODO,首先判断是否是函数指针变量定义语句,如果是,则加入函数指针
+  if(isFuncPointerValDef_valtbl(line)) {
+    return loadFuncPointerValDef_valtbl(valTbl,line);
+  }
+  char tmpStr[1000];
+  strcpy(tmpStr,line);
+  line=tmpStr;
   //首先读取第一个词,判断是否是常量定义语句
   char tmp[1000];
-  char end=mysgets(tmp," ",str);
+  char end=mysgets(tmp," ",line);
   int isConst=0;
   vector* vec=&valTbl->vals;
   if(strcmp(tmp,"const")==0){
     isConst=1;
-    str+=strlen(tmp)+1;
+    line+=strlen(tmp)+1;
   }
   int st=vec->size;
   do{
@@ -53,43 +111,43 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
     //从后往前依次获取是否存在的初始化值以及对应的量名
     //然后获取类型和量名
     //首先判断是否有等号,如果有等号说明有赋值
-    int eqId=strlen(str)-1; //记录等号坐标
-    while(eqId>=0&&str[eqId]!='=') eqId--;
+    int eqId=strlen(line)-1; //记录等号坐标
+    while(eqId>=0&&line[eqId]!='=') eqId--;
     //如果找到等号,则等号后面是值
     if(eqId>=0){
       eqId++;
-      myStrStrip(str+eqId," "," ");
-      toAdd.val=strcpy(malloc(strlen(str+eqId)+1),str+eqId);
-      str[--eqId]='\0';
+      myStrStrip(line+eqId," "," ");
+      toAdd.val=strcpy(malloc(strlen(line+eqId)+1),line+eqId);
+      line[--eqId]='\0';
       eqId--;
     }else{
-      eqId=strlen(str)-1;
+      eqId=strlen(line)-1;
     }
     //然后往前是变量名
     //首先越过等号前所有空格
-    while(eqId>=0&&str[eqId]==' ') str[eqId--]='\0';
+    while(eqId>=0&&line[eqId]==' ') line[eqId--]='\0';
     //然后越过所有非空格来到最后一个词前的第一个空格处
-    while(eqId>=0&&str[eqId]!=' '&&str[eqId]!=',') eqId--;
+    while(eqId>=0&&line[eqId]!=' '&&line[eqId]!=',') eqId--;
     eqId++;
-    toAdd.name=strcpy(malloc(strlen(str+eqId)+1),str+eqId);
-    str[eqId]='\0';
+    toAdd.name=strcpy(malloc(strlen(line+eqId)+1),line+eqId);
+    line[eqId]='\0';
     vector_push_back(vec,&toAdd);
     //判断前面是否还有空格逗号
     int isEnd=1;
     eqId--;
-    while(str[eqId]==' '||str[eqId]==','){
-      if(str[eqId]==','){
+    while(line[eqId]==' '||line[eqId]==','){
+      if(line[eqId]==','){
         isEnd=0;
-        str[eqId]='\0';
+        line[eqId]='\0';
         break;
       }
-      str[eqId]='\0';
+      line[eqId]='\0';
       eqId--;
     }
     if(isEnd) break;
   }while(1);
   //剩下的str就是新加入量的类型
-  formatTypeName(str);  //首先进行一下格式化
+  formatTypeName(line);  //首先进行一下格式化
   //查找类型,如果类型没有初始化的话,而且是常量的话,则设置其默认值
   Type type={
     .kind=UNKNOWN
@@ -98,7 +156,7 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
   ValTbl* tmpTbl=valTbl;
   int layer;
   do{
-    int index=findType(&tmpTbl->typeTbl,str,&layer);
+    int index=findType(&tmpTbl->typeTbl,line,&layer);
     if(index>0){
       vector_get(&tmpTbl->typeTbl.types,index,&type);
       break;
@@ -115,14 +173,14 @@ int loadLine_valtbl(ValTbl* valTbl,char* str){
       if(layer==0)
         val.val=strcpy(malloc(strlen(defaultValueOfBaseTypes[type.kind])+1),defaultValueOfBaseTypes[type.kind]);
       else{
-        val.val=malloc(strlen(str)+5);
-        sprintf(val.val,"(%s)0",str);
+        val.val=malloc(strlen(line)+5);
+        sprintf(val.val,"(%s)0",line);
       }
       vector_set(vec,i,&val,NULL);
     }
     putStrId(valTbl->valIds,val.name,i);
     //注册量名与类型的关系
-    char* typeName=strcpy(malloc(strlen(str)+1),str);
+    char* typeName=strcpy(malloc(strlen(line)+1),line);
     char* valName=strcpy(malloc(strlen(val.name)+1),val.name);
     hashtbl_put(&valTbl->valToType,&valName,&typeName);
   }
@@ -158,9 +216,13 @@ int findVal(ValTbl* curTbl,char* valName,Val* retVal,Type* retType,int* typeLaye
   // 获取类型名失败,说明加入的是未知类型
   if (!hashtbl_get(&curTbl->valToType, &valName, &typeName))
   {
+    *typeLayer=0;
     vector_get(&curTbl->typeTbl.types, 0, retType);
     return 1;
   }
+  //又或者类型名是函数指针类型名,说明该名字的量为函数指针变量,则查找一般变量过程失败
+  if(isFuncPointerType(typeName)) return 0;
+
   // 否则根据类型名在类型表内查找
   int typeIndex = 0;
   do
@@ -209,11 +271,15 @@ Val getVal(char* name,int isConst,char* defaultVal){
 
 //往量表中加入值
 void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName,int typeLayer){
+  //typeName先暂存到一个位置,
+  char tmpTypeName[1000];
+  strcpy(tmpTypeName,typeName);
+  typeName=tmpTypeName;
   //s首先判断是否是未确定类型量,如果是则不绑定类型,只是加入量
   int isfpt=isFuncPointerType(typeName);
   if(typeName==NULL||isfpt){
-    defaultVal=NULL;
-    Val toAdd=getVal(valName,isConst,defaultVal);
+    if(typeName==NULL) defaultVal=NULL;
+    Val toAdd=getVal(valName,isConst,defaultVal); //函数指针变量的默认值可能是函数名,要看定义的时候是否有初始化
     putStrId(valTbl->valIds,toAdd.name,valTbl->vals.size);
     vector_push_back(&valTbl->vals,&toAdd);
   }
@@ -222,7 +288,8 @@ void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isCon
     //加入类型
     char tmp[1000];
     strcpy(tmp,typeName);
-    if(!formatTypeName(tmp)){
+    //如果格式化类型名成功,加入类型
+    if(formatTypeName(tmp)){
       char* val=strcpy(malloc(strlen(valName)+1),valName);
       char* type=strcpy(malloc(strlen(tmp)+1),tmp);
       hashtbl_put(&valTbl->valToType,&val,&type);
@@ -308,12 +375,59 @@ int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer
     if(typeIndex!=0){
       break;
     }
-    if(topValTbl->pre==NULL) break;
     topValTbl=topValTbl->pre;
   }while(topValTbl!=NULL);
+  if(topValTbl==NULL) return 0;
   vector_get(&topValTbl->typeTbl.types,typeIndex,retType);
   return 1;
 }
+
+//从量表中查找函数指针名,返回的结果为对应的函数指针的名字和类型,通过val返回其量属性,通过func返回其类型属性
+//查找成功返回1,查找失败返回0
+int findFuncPointer_valtbl(ValTbl* topValTbl,char* fpName,Val* val,char* retTypeName,vector* args){
+  //TODO
+  if(topValTbl==NULL) return 0;
+  long long id=-1;
+  //首先查找变量,从当前表开始往上逐层查找
+  while(topValTbl!=NULL){
+    //第一步,根据变量名字查找对应的下标
+    id=strToId(topValTbl->valIds,fpName);
+    //如果id小于0,说明这个表没有这个量
+    if(id<0){
+      //往之前的表查找这个量
+      topValTbl=topValTbl->pre;
+      continue;
+    }
+    else{
+      break;
+    }
+  }
+  if(id<0) return 0;
+  vector_get(&topValTbl->vals,id,val);
+  //获取类型名
+  char *typeName; // 获取类型名
+  // 获取类型名失败,说明加入的是未知类型,说明不存在该名字的函数指针量
+  if (!hashtbl_get(&topValTbl->valToType, &fpName, &typeName))
+  {
+    return 0;
+  }
+  //然后判断类型名是否是函数指针类型名
+  if(!isFuncPointerType(typeName)){
+    return 0;
+  }
+  vector_clear(args);
+  if(args->valSize!=sizeof(char*)) {
+    //如果传入参数异常,TODO
+    return 0;
+  }
+  //否则是正常的args,进行获取信息
+  vector_clear(args); //首先清掉args里的内容
+  //然后加载类型信息里的内容
+  if(!extractRetTypeNameAndArgTypes(typeName,retTypeName,args)) return 0;
+  return 1;
+}
+
+
 
 //删除一个量表
 void del_valTbl(ValTbl* valTbl){

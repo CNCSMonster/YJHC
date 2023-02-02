@@ -4,7 +4,9 @@
 void del_func(Func* func){
   // showFunc(func);
   if(func->owner!=NULL) free(func->owner);
-  free(func->func_name);
+  if(func->func_name!=NULL) free(func->func_name);
+  func->owner=NULL;
+  func->func_name=NULL;
   for(int i=0;i<func->args.size;i++){
     Arg arg;
     vector_get(&func->args,i,&arg);
@@ -12,6 +14,9 @@ void del_func(Func* func){
   }
   vector_clear(&func->args);
 }
+
+
+
 
 //展示一个函数
 void showFunc(Func* func){

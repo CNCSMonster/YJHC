@@ -293,19 +293,108 @@
 //   return 0;
 // }
 
+// int main(){
+//   char* str="int ( * ( * a ) (int) )  (int(*)(int,int),long long*,char,int   )";
+//   char tmpStr[1000];
+//   strcpy(tmpStr,str);
+//   //对于str,进行提取和格式化
+//   // if(!formatTypeName(tmpStr)){
+//   //   printf("err\n");
+//   // }
+//   // printf("%s$\n",tmpStr);
+//   //提取名字
+//   char name[200];
+//   int isConst=0;
+//   extractFuncPointerFieldName(str,name,&isConst);
+//   printf("%s$%d\n",name,isConst);
+
+//   //测试提取返回类型字符串和参数字符串
+//   vector args=getVector(sizeof(char*));
+//   char retTypeName[200];
+//   //从中拿到
+//   extractRetTypeNameAndArgTypes(str,retTypeName,&args);
+
+//   printf("retType:%s;\n",retTypeName);
+//   for(int i=0;i<args.size;i++){
+//     char* arg;
+//     vector_get(&args,i,&arg);
+//     printf("%s$\n",arg);
+//     free(arg);
+//   }
+//   vector_clear(&args);
+//   return 0;
+// }
+
+//测试量表的查找类型
 int main(){
-  char* str="int ( * ( *   a ) (int) )  (int(*)(int,int),int   )";
-  char tmpStr[1000];
-  strcpy(tmpStr,str);
-  //对于str,进行提取和格式化
-  if(!formatTypeName(tmpStr)){
-    printf("err\n");
+  //获取类型表和量表
+  TypeTbl typeTbl=getGlobalTypeTbl();
+  //类型表执行语句
+  loadLine_typetbl(&typeTbl,"typedef int* M");
+  loadTypedefLine_typetbl(&typeTbl,"typedef M** MP2");
+
+  ValTbl valTbl=getValTbl(typeTbl);
+  //然后量表执行语句
+  loadLine_valtbl(&valTbl,"const M aa=2");
+  loadLine_valtbl(&valTbl,"M (*a)(int,char,long long)");
+  loadLine_valtbl(&valTbl,"int (*const bb)(int,short)=gm");
+  
+  vector args=getVector(sizeof(char*));
+  char retTypeName[300];
+  Type type;
+  Val val;  
+  int retLayer;
+  
+  //对量表进行查找
+  while(1){
+    char s[200];
+    printf("\n********************************************\n");
+    myfgets(s,"\n",stdin);
+    if(strcmp(s,"")==0) break;
+    //否则查找变量,或者查找类型,或者查找函数指针
+
+    //如果查找到是类型
+    if(findType_valtbl(&valTbl,s,&type,&retLayer)){ 
+      printf("type:\n");
+      printf("layer:%d\n",retLayer);
+      showType(&type);
+    }
+    //如果查找到是指针
+    else if(findFuncPointer_valtbl(&valTbl,s,&val,retTypeName,&args)){
+      printf("func pointer:\n");
+      printf("isConst:%d\n",val.isConst);
+      printf("default Val:%s\n",val.val);
+      printf("ret Type:%s\n",retTypeName);
+      //查找args里面的字符串
+      for(int i=0;i<args.size;i++){
+        char* arg;
+        vector_get(&args,i,&arg);
+        printf("arg%d,%s\n",i+1,arg);
+        free(arg);
+      }
+    }
+    //如果查找到是非函数指针变量
+    else if(findVal(&valTbl,s,&val,&type,&retLayer)){
+      //打印结果
+      printf("val:\n");
+      printf("isConst:%d\n",val.isConst);
+      printf("default val:%s\n",val.val);
+      printf("layer:%d\n",retLayer);
+      showType(&type);
+    }
+    //
+    else{
+      //TODO,异常处理
+      printf("unrecognised id\n");
+    }
+    vector_clear(&args);
+    val.name=NULL;
+    val.val=NULL;
+
   }
-  printf("%s$\n",tmpStr);
-  //提取名字
-  char name[200];
-  extractFuncPointerFieldName(str,name);
-  printf("%s$\n",name);
+
+  //删除量表
+  del_valTbl(&valTbl);
 
   return 0;
 }

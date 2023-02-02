@@ -127,6 +127,31 @@ int isOp(char c){
   return 0;
 }
 
+//判断一个字符串是否是合法的自定义名,如果是返回非0值,如果不是返回0
+//c中合法的id，应该以字母或者下划线开头,而且后面字符只能够是字母或者下划线或者数字
+int isLegalId(const char* str){
+  char c = *str;
+  if (
+  ! (
+  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+  ))
+  {
+    return 0;
+  }
+  // TODO,把id合理性分析提取成函数
+  // 函数名中不能够存在字母，数字，下划线意外的符号
+  for (int i = 1; i < strlen(str); i++)
+  {
+    char c = str[i];
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
+      continue;
+    if (c >= '0' && c <= '9')
+      continue;
+    return 0;
+  }
+  return 1;
+}
+
 //对字符串去除前后不必要字符
 int myStrStrip(char* str,const char* prefexs,const char* suffixs){
   if(str==NULL) return 0;

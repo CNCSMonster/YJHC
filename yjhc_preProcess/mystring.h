@@ -54,5 +54,9 @@ int isSep(char c);
 //判断是否是运算符组成或者大运算符的组成部分
 int isOp(char c);
 
+//判断一个字符串是否是合法的自定义名,如果是返回非0值,如果不是返回0
+//c中合法的id，应该以字母或者下划线开头,而且后面字符只能够是字母或者下划线或者数字
+int isLegalId(const char* str);
+
 
 #endif

@@ -43,6 +43,13 @@ ValTbl getValTbl(TypeTbl typeTbl);
 //从文件加载全局变量信息表,成功返回非0值，失败返回0
 int loadFile_valtbl(ValTbl* valTbl,FILE* fin);
 
+//判断是否是函数指针变量定义语句,包括函数指针常量和函数指针变量两种形式,如果是返回非0值,如果不是返回0
+int isFuncPointerValDef_valtbl(const char* str);
+
+//加载函数指针变量定义语句,如果加载成功返回非0值,如果加载失败返回0
+int loadFuncPointerValDef_valtbl(ValTbl* valTbl,const char* str);
+
+
 //从一个量定义语句中加载量到量表中，成功返回非0值，失败返回0
 int loadLine_valtbl(ValTbl* val_tbl,char* str);
 
@@ -75,7 +82,10 @@ void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func);
 //通过量表查找类型,查找成功返回非0值，查找失败返回0
 int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer);
 
-//从量表中查找函数指针名,返回的结果为对应的函数指针的名字和类型
+
+//从量表中查找函数指针名,返回的结果为对应的函数指针的名字和类型,通过val返回其量属性,通过func返回其类型属性
+//查找成功返回1,查找失败返回0
+int findFuncPointer_valtbl(ValTbl* topValTbl,char* fpName,Val* val,char* retTypeName,vector* args);
 
 
 
