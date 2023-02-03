@@ -1,19 +1,5 @@
 const int m=11;
-int m;  //现在没有做重复定义提醒,所以后面的变量其实在编译分析过程中会替换前面的变量
-struct M{
-    int a;
-    void doa();
-};
-struct M->void doa(){
-if(a==2) return;
-else if(a>2){
-    doa();
-}
-    a++;
-}
-
 void main(){
-    int b;
-    M aa;
-    b=aa.b;
+    int b=1;
+    int arr[b];
 }

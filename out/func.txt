@@ -1,3 +1,1 @@
-int main(){ int a,b,c; if(a>2) if(a<3) return 1; else return 5; return 0; }
-void do(){ if ( i > a ) { return 2 ; } else { if ( a > 5 ) { return 4 ; } else if ( a < 6 ) { return 9 ; } } }
-void testA(){ for ( int i = 0 ; i < a ; i ++ ) { if ( i > a ) { return 2 ; } else { if ( a > 5 ) { return 4 ; } else if ( a < 6 ) { return 9 ; } } } }
+void main(){ int b=1; int arr[b]; }

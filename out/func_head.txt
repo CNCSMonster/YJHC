@@ -1,3 +1,1 @@
-main|NULL|int|()
-do|NULL|void|()
-testA|NULL|void|()
+main|NULL|void|()

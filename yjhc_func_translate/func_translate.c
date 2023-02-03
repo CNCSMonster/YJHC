@@ -975,8 +975,8 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
       TBNode* preHead;
 
       //搜索表达式直到遇到
-      TokenKind kinds[]={COMMA,RIGHT_PAR };
-      if(!searchExpressUntil(track,&tail,kinds,2)){
+      TokenKind kinds[]={COMMA };
+      if(!searchExpressUntil(track,&tail,kinds,1)){
         isRight=0;
         break;
       }
@@ -1077,7 +1077,7 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
       layer++;
       vector_set(&layers,layers.size-1,&layer,NULL);
 
-      vector_get(&layers,layers.size-1,&layer);
+      // vector_get(&layers,layers.size-1,&layer);
       state=1;
       track=sufTail;
     }
@@ -1122,6 +1122,10 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
     //加入量表
     addVal_valtbl(funcTranslator->partialValTbl,valName,NULL,0,type.defaultName,layer);
   }
+  //清除表
+  vector_clear(&vars);
+  vector_clear(&layers);
+
   //合并tokens为变量定义句子
   TBNode* next=tokens->next;
   tokens->next=NULL;
@@ -1146,7 +1150,12 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
   Type type;
   int typeLayer;
   //查找类型
-  findType_valtbl(funcTranslator->partialValTbl,typeName,&type,&typeLayer);
+  if(!findType_valtbl(funcTranslator->partialValTbl,typeName,&type,&typeLayer)){
+    //类型不存在的情况，TODO,报错
+
+  }
+  //TODO,常量表害需要处理初始化值
+
 
     /*常量定义语句可能的形式与效果
     const int* a,b,*c;结果a->int*,b->int,c->int*
@@ -1156,8 +1165,10 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
     */
   vector vars=getVector(sizeof(char*));
   vector layers=getVector(sizeof(int));
+  //值表,每个常量定义的时候都要分配一个值,如果没有初始化就初始化为默认值
+  vector initVals=getVector(sizeof(char*));
   //首先,获取第一个定义,
-  TBNode* track=tokens->next;
+  TBNode* track=tokens->next->next;
   int isFirst=1;  //用来判断是否是该语句定义的第一个变量
   int state=0;  //用来指导翻译动作
   int isRight=1;
@@ -1178,9 +1189,16 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
           layer++;
         }
       }
+      //根据layer和typeName获取默认值
+      char* defaultVal;
+      if(!getDefaultValOfCertainType(&defaultVal,type.kind,layer)){
+        isRight=0;break;
+      }
       char* valName=track->token.val;
       vector_push_back(&vars,&valName);
       vector_push_back(&layers,&layer);
+      //开始时,设置对应值为默认值
+      vector_push_back(&initVals,&defaultVal);
       state=1;
     }
     else if(state==0&&track->token.kind==OP&&strcmp(track->token.val,"*")==0){
@@ -1207,8 +1225,8 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
       TBNode* preHead;
 
       //搜索表达式直到遇到
-      TokenKind kinds[]={COMMA,RIGHT_PAR };
-      if(!searchExpressUntil(track,&tail,kinds,2)){
+      TokenKind kinds[]={COMMA };
+      if(!searchExpressUntil(track,&tail,kinds,1)){
         isRight=0;
         break;
       }
@@ -1239,6 +1257,10 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
       head->next=sufTail;
       if(sufTail!=NULL)
         sufTail->last=head;
+
+      //把值表达式加入赋值表,但是这个值就是动态的值,要回收空间
+      vector_set(&initVals,initVals.size-1,&(head->token.val),NULL);
+
       //处理完值表达式进入句子
       if(sufTail==NULL){
         state=1;
@@ -1324,6 +1346,7 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
   }
   //然后合并整个句子为类型定义句子
   //值表达式缺失
+  
   if(state==2){
     fprintf(funcTranslator->warningFout,"miss val for inition in ");
     fshow_tokenLine(funcTranslator->warningFout,tokens);
@@ -1339,6 +1362,9 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
   }
   if(!isRight){
     del_tokenLine(tokens);
+    vector_clear(&vars);
+    vector_clear(&initVals);
+    vector_clear(&layers);
     return NULL;
   }
   
@@ -1347,13 +1373,20 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
     //取出名
     char* valName=NULL;
     int layer;
+    char* defaultVal=NULL;
+    int ifFree;
     vector_get(&vars,i,&valName);
     //取出层次
     vector_get(&layers,i,&layer);
+    //取出常量初始值
+    vector_get(&initVals,i,&defaultVal);
     //加入量表
-    addVal_valtbl(funcTranslator->partialValTbl,valName,NULL,isConst,type.defaultName,layer);
+    addVal_valtbl(funcTranslator->partialValTbl,valName,defaultVal,isConst,type.defaultName,layer);
   }
-  
+  //清空三个表
+  vector_clear(&vars);
+  vector_clear(&layers);
+  vector_clear(&initVals);
   //合并tokens为变量定义句子
   TBNode* next=tokens->next;
   tokens->next=NULL;
@@ -1921,6 +1954,7 @@ int searchArgExpression(TBNode* head,TBNode** tail){
 
 int searchExpressUntil(TBNode* head,TBNode** retTail,TokenKind* kinds,int kindSize){
   int leftP=0;
+  if(head==NULL) return 0;
   while(head!=NULL){
     TokenKind kind=head->token.kind;
     if(kind==LEFT_PAR||kind==LEFT_BRACE||kind==LEFT_BRACKET) leftP++;
@@ -1937,7 +1971,7 @@ int searchExpressUntil(TBNode* head,TBNode** retTail,TokenKind* kinds,int kindSi
     if(ifBreak) break;
     head=head->next;
   }
-  if(head==NULL) return 0;
+  if(leftP!=0) return 0;
   *retTail=head;
   return 1;
 }

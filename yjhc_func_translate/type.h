@@ -25,7 +25,8 @@ typedef enum enum_type_kind{
   TYPE_STRUCT,
   TYPE_UNION,
   TYPE_FUNC_POINTER,  //补充函数指针类型
-  TYPE_UNKNOW     //未知类型
+  TYPE_UNKNOW,  //未知类型
+  TYPE_KIND_NUM   //记录类型种类的数量
 }TypeKind;
 
 char* baseTypeNames[]={
@@ -114,6 +115,8 @@ TypeTbl getTypeTbl();
 //加载成功返回非0值,加载失败返回0
 int loadFile_typeTbl(TypeTbl* tbl,FILE* fin);
 
+
+
 //提取出加载typedefline信息的内容
 int loadTypedefLine_typetbl(TypeTbl* tbl,char* str);
 
@@ -185,6 +188,8 @@ int delTypeTbl(TypeTbl* tbl);
 
 int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName,int* isConst);
 
+//获取类型对应的默认值,结果返回静态分配空间的字符串指针,如果获取失败返回0,获取成功返回非0值
+int getDefaultValOfCertainType(char** retDefaultVal,TypeKind typeKind,int layer);
 
 
 #endif

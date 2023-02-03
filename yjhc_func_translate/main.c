@@ -13,7 +13,7 @@ int main(int argc,char* argv[]){
   char* tokenInPath=argv[4];
   char* tokenOutPath=argv[5];  //函数输出结果
 
-  //debug使用的内容
+  // debug使用的内容
   // char* typesPath="..\\out\\type.txt";
   // char* valPath="..\\out\\global.txt";
   // char* funcPath="..\\out\\func_head.txt";

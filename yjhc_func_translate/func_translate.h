@@ -199,7 +199,8 @@ int searchBracketExpression(TBNode* nodes,TBNode** head,TBNode** tail);
 //在参数的开头搜索参数表达式的结尾,通过函数指针返回结尾,搜索成功返回非0值，搜索异常返回0
 int searchArgExpression(TBNode* head,TBNode** tail);
 
-//从head搜索表达式知道遇到某个类型的参数为止(注意,中间括号包起来的部分被视为整体)
+//从head搜索表达式知道遇到某个类型的token,或者搜索到表达式尽头为止(注意,中间括号包起来的部分被视为整体)
+//如果正常搜索返回非0值,如果搜索结果不存在返回0,如果搜索异常也返回0
 int searchExpressUntil(TBNode* head,TBNode** retTail,TokenKind* kinds,int kindSize);
 
 #endif

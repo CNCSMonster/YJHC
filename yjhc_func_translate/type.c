@@ -973,6 +973,10 @@ int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName,in
   return 1;
 }
 
-
-
+//获取类型对应的默认值,结果是一个动态分配空间的字符串,获取失败返回NULL,只有unknown类型才有默认为NULL的值
+int getDefaultValOfCertainType(char** retDefaultVal,TypeKind typeKind,int layer){
+  if(typeKind>=TYPE_KIND_NUM||typeKind<0) return 0;
+  *retDefaultVal= defaultValueOfBaseTypes[typeKind];
+  return 1;
+}
 

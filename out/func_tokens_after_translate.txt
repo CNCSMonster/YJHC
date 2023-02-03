@@ -1,4 +1,6 @@
 19 {
-1 int a,b,c
+1 int b=1
 21 ;
-5 if
+1 int arr[b]
+21 ;
+20 }
