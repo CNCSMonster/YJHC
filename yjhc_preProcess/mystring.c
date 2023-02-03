@@ -138,7 +138,6 @@ int isLegalId(const char* str){
   {
     return 0;
   }
-  // TODO,把id合理性分析提取成函数
   // 函数名中不能够存在字母，数字，下划线意外的符号
   for (int i = 1; i < strlen(str); i++)
   {

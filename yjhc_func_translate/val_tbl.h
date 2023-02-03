@@ -31,7 +31,6 @@ typedef struct struct_val_tbl{
   TypeTbl typeTbl;  //可以定义一个空的类型表
 
 
-  //局部类型表,对于局部定义的类型可以在这里查询,TODO,但是笔者不打算实现局部类型
   struct struct_val_tbl* pre;   //上一个量表
   struct struct_val_tbl* next;  //下一个量表
 }ValTbl;

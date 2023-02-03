@@ -331,12 +331,14 @@ int main(){
   TypeTbl typeTbl=getGlobalTypeTbl();
   //类型表执行语句
   loadLine_typetbl(&typeTbl,"typedef int* M");
+  loadLine_typetbl(&typeTbl,"typedef int (*G)(int,long long)");
   loadTypedefLine_typetbl(&typeTbl,"typedef M** MP2");
+  //重命名函数指针类型
 
   ValTbl valTbl=getValTbl(typeTbl);
   //然后量表执行语句
   loadLine_valtbl(&valTbl,"const M aa=2");
-  loadLine_valtbl(&valTbl,"M (*a)(int,char,long long)");
+  loadLine_valtbl(&valTbl,"M (*a)(  int  ,  char  , long long)");
   loadLine_valtbl(&valTbl,"int (*const bb)(int,short)=gm");
   
   vector args=getVector(sizeof(char*));

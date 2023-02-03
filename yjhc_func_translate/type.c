@@ -36,9 +36,6 @@ TypeTbl getTypeTbl(){
   //out的第一位保存unknown
   Type unknownType=getType(NULL,TYPE_UNKNOW);
   vector_push_back(&out.types,&unknownType);
-  //第二个位置,也就是下标0处保存func_pointer类型
-  Type funcPointerType=getType(NULL,TYPE_FUNC_POINTER);
-  vector_push_back(&out.types,&funcPointerType);
   return out;
 }
 
@@ -159,25 +156,7 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
   if(end=='('){
     //给函数指针起别名,
     //提取名
-    char funcPointerType[1000];
-    strcpy(funcPointerType,track);
-    //首先提取字符串
-    char newName[300];
-    int i=0;
-    while(track[i]!='('&&track[i]!='\0') i++;
-    if(track[i]=='\0') return 0;
-    else i++;
-    while(track[i]!='*'&&track[i]!='\0') i++;
-    if(track[i]=='\0') return 0;
-    else i++;
-    //获取终点
-    int num=1;
-    while(track[i+num]!='\0'&&!myIsCharInStr("*()",track[i+num])){
-      num++;
-    }
-    strncpy(newName,track+i,num);
-    if(!formatTypeName(funcPointerType)) return 0;
-    putStrId(tbl->strIds,newName,getTypeId(1,0));
+    if(!loadTypedefFuncPointer_typetbl(tbl,typeDefLine)) return 0;
     return 1;
   }
   //如果不能找到(或者{,说明是给已知类型起别名
@@ -301,36 +280,21 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
 int loadTypedefFuncPointer_typetbl(TypeTbl* tbl,char* str){
   //首先来到typedef之后的位置
   str+=strlen("typedef")+1; //越过第一个位置的typedef,并越过typedef后面的一个空格
-  // refectorTypeName();
-  //往右查找名字
-  int i=0;
-  char end;
-  char newName[200];
-  
-  //首先查找新名字
-  //首先找到第一个(处,然后查找后面的名字
-  while(str[i]!='('&&str[i]!='\0') i++;
-  if(str[i]=='\0') return 0;
-  else i++;
-  while(str[i]!='\0'&&myIsCharInStr("()* ",str[i])) i++;
-  if(str[i]=='\0') return 0;
-  int num=1;
-  while(str[i+num]!='\0'&&!myIsCharInStr("(*)",str[i])) num++;
-  if(str[i+num]=='\0') return 0;
-  strncpy(newName,str+i,num);
-  //获取简化的函数指针类型名称,
-  char funcPointerSimplyType[1000];
-  strcpy(funcPointerSimplyType,str);
-  char* t=formatFuncPointerTypeName(funcPointerSimplyType);
-  //加入到tbl中
-  //首先绑定到typeTbl,tbl的滴二个位置,也就是下标0处是func_type的位置
-  int typeIndex=1;
-  int layer=0;
-  long long typeId=getTypeId(typeIndex,layer);
-  putStrId(tbl->strIds,t,typeId);
-  putStrId(tbl->strIds,newName,typeId);
+  char funcPointerType[1000];
+  strcpy(funcPointerType,str);  //用来保存函数指针的别名
+  // 首先提取字符串
+  char newName[300]; // 用来保存函数指针的别名
+  extractFuncPointerFieldName(funcPointerType, newName, NULL);
+  if (!formatTypeName(funcPointerType))
+    return 0;
+  // 或者是函数指针类型产生个新类型加入
+  char *fpType = strcpy(malloc(strlen(funcPointerType) + 1), funcPointerType);
+  Type newFpType = getType(fpType, TYPE_FUNC_POINTER);
+  putStrId(tbl->strIds, newName, getTypeId(tbl->types.size, 0));
+  vector_push_back(&tbl->types, &newFpType);
   return 1;
 }
+
 
 //获得规格化的函数指针类型名
 char* formatFuncPointerTypeName(char* str){
@@ -493,8 +457,8 @@ int extractRetTypeNameAndArgTypes(const char* str,char* retTypeName,vector* argT
 //展示type
 void showType(Type* type){
   //打印类型种类名字
-  if(type->defaultName==NULL) printf("typeName:%s\n",typeKindName[type->kind]);
-  else printf("typeName:%s\n",type->defaultName);
+  printf("typeKind:%s\n",typeKindName[type->kind]);
+  printf("typeName:%s\n",type->defaultName);
   //然后打印类型拥有的函数指针类型变量
   printf("func pointer fields:\n");
   //打印函数指针属性

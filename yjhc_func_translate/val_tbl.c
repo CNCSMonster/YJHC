@@ -66,7 +66,6 @@ int loadFuncPointerValDef_valtbl(ValTbl* valTbl,const char* str){
   if(defaultVal!=NULL){
     if(!isLegalId(defaultVal)) return 0;
   }
-  
   //到达这个位置的defaultVal都是正常的
   //接下来获取函数指针定义
   track=tmp;
@@ -385,7 +384,7 @@ int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer
 //从量表中查找函数指针名,返回的结果为对应的函数指针的名字和类型,通过val返回其量属性,通过func返回其类型属性
 //查找成功返回1,查找失败返回0
 int findFuncPointer_valtbl(ValTbl* topValTbl,char* fpName,Val* val,char* retTypeName,vector* args){
-  //TODO
+  //
   if(topValTbl==NULL) return 0;
   long long id=-1;
   //首先查找变量,从当前表开始往上逐层查找

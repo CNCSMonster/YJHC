@@ -4,16 +4,33 @@
 struct man{
     int age;
     void sayHi();
-}
+};
+sturct student{
+    int score;
+    void sayHi();
+};
 
+struct old_man{
+    int age;
+};
 struct man->void sayHi(){
     printf("hi,I'm %d years old",age);
+}
+
+struct student->void sayHi(){
+    printf("hi myscore is %d",score);
 }
 
 int main(){
     struct man m={
         .age=11
     };
+    struct student stu={
+        .score=22
+    };
     m.sayHi();
+    stu.sayHi();
+    m.age=22;
+
     return 1;
 }

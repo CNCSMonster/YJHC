@@ -6,7 +6,7 @@
 //第二次遍历，合并运算符,并且合并两个类型
 int token_mergeOpAndType(FILE* fin,FILE* code);
 
-//第三次遍历补充流程控制中缺省的界符,TODO,多重嵌套补全中存在的bug
+//第三次遍历补充流程控制中缺省的界符(目前只是补充花括号),多重嵌套补全
 int token_addlayer(FILE* fin,FILE* code);
 
 //获取确定的token,获取到合适的token返回非0值,失败返回0
@@ -15,12 +15,12 @@ int getCertainToken(FILE* fin,Token* tokenp,TokenKind kind);
 //读取一个块,直到遇到右花括号结束,或者遇到NULL结束,如果读取成功返回非0值,如果读取失败返回0
 int readBlock(FILE* fin,FILE* code);
 
-//TODO读取并用花括号包裹一个完整的整体，比如if-elif-else整体,又比如for整体,又比如单个分号结束的句子,又比如while 或者do-while整体
+//读取并用花括号包裹一个完整的整体，比如if-elif-else整体,又比如for整体,又比如单个分号结束的句子,又比如while 或者do-while整体
 int packOneSentence(FILE* fin,FILE* code);
 
 int readOneSentence(FILE* fin,FILE* code);
 
-//第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索,TODO
+//第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索
 int token_guess(FILE* fin,FILE* code);
 
 //第五遍扫描,确定函数指针,给函数指针变量标记为函数
@@ -155,8 +155,7 @@ int token_mergeOpAndType(FILE* fin,FILE* code){
   if(last.val==NULL) return 0;
   cur=getToken(fin);
   while(cur.val!=NULL){
-    //TODO 比较cur的字符字面值和各种字符串,返回比较结果
-    
+    //比较cur的字符字面值和各种字符串,返回比较结果
     //如果当前是类型而且上一个字符也是类型,两个都是long,则可以合并成long long
     if(cur.kind==TYPE&&last.kind==TYPE&&strcmp(cur.val,"long")==0&&strcmp(last.val,"long")==0){
       Token new=connectToken(last,cur,TYPE," ");
