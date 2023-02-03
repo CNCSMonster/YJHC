@@ -6,8 +6,19 @@
 //第二次遍历，合并运算符,并且合并两个类型
 int token_mergeOpAndType(FILE* fin,FILE* code);
 
-//第三次遍历补充流程控制中缺省的界符
+//第三次遍历补充流程控制中缺省的界符,TODO,多重嵌套补全中存在的bug
 int token_addlayer(FILE* fin,FILE* code);
+
+//获取确定的token,获取到合适的token返回非0值,失败返回0
+int getCertainToken(FILE* fin,Token* tokenp,TokenKind kind);
+
+//读取一个块,直到遇到右花括号结束,或者遇到NULL结束,如果读取成功返回非0值,如果读取失败返回0
+int readBlock(FILE* fin,FILE* code);
+
+//TODO读取并用花括号包裹一个完整的整体，比如if-elif-else整体,又比如for整体,又比如单个分号结束的句子,又比如while 或者do-while整体
+int packOneSentence(FILE* fin,FILE* code);
+
+int readOneSentence(FILE* fin,FILE* code);
 
 //第四次遍历,猜测指针,函数,类型,使用前缓冲和超前搜索,TODO
 int token_guess(FILE* fin,FILE* code);
@@ -206,88 +217,129 @@ int token_mergeOpAndType(FILE* fin,FILE* code){
 //第三遍处理,给代码补充层次,比如for结构和if结构如果条件语句后面没有花括号的话补充上花括号
 int token_addlayer(FILE* fin,FILE* code){
   Token cur;    //记录当前读取到的token
+  //不断地读取块
+  while(readBlock(fin,code));
   cur=getToken(fin);
-  //读到关键字才进行操作,否则直接写回
-  while(cur.val!=NULL){
-    fputToken(cur,stdout);
-    if(!isKeyForProcessControl(cur.val)){
-      fputToken(cur,code);
-      delToken(cur);
-      cur=getToken(fin);
-      continue;
-    }
-    //后面先跟条件语句,再为块
-    if(cur.kind==IF||cur.kind==ELIF||cur.kind==WHILE||cur.kind==FOR){
-      //读条件语句的token出来
+  if(cur.val==NULL) return 1;
+  delToken(cur);
+  return 0;
+}
+
+//读取并用花括号包裹一个完整的整体，比如if-elif-else整体,又比如for整体,又比如单个分号结束的句子,又比如while 或者do-while整体
+int packOneSentence(FILE* fin,FILE* code){
+  //开头补上花括号
+  fputToken(leftBraceToken,code);
+  if(!readOneSentence(fin,code)) return 0;
+  //当作结尾没有花括号,补上
+  fputToken(rightBraceToken,code);
+  return 1;
+}
+
+//获取确定的token,获取到合适的token返回非0值,失败返回0
+int getCertainToken(FILE* fin,Token* tokenp,TokenKind kind){
+  *tokenp=getToken(fin);
+  if(tokenp->val==NULL) return 0;
+  if(tokenp->kind!=kind) return 0;
+  return 1;
+}
+
+//读取一个块,直到遇到右花括号结束,或者遇到NULL结束,如果读取成功返回非0值,如果读取失败返回0
+int readBlock(FILE* fin,FILE* code){
+  //每次读取一句,直到读到花括号结束,如果没有遇到开头的花括号,则补全一句
+  Token cur;
+  cur=getToken(fin);
+  if(cur.val==NULL) return 0;
+  if(cur.kind!=LEFT_BRACE){
+    ungetToken(fin,cur);delToken(cur);
+    if(!packOneSentence(fin,code)) return 0;
+    return 1;
+  }
+  delToken(cur);
+  fputToken(leftBraceToken,code);
+  while((cur=getToken(fin)).val!=NULL){
+    if(cur.kind==RIGHT_BRACE) break;
+    ungetToken(fin,cur);delToken(cur);
+    if(!readOneSentence(fin,code)) return 0;
+  }
+  if(cur.val==NULL) return 0;
+  fputToken(cur,code);delToken(cur);
+  if(cur.kind!=RIGHT_BRACE) return 0;
+  return 1;
+}
+
+
+//读取一个整体结构或者一句话
+int readOneSentence(FILE* fin,FILE* code){
+  //递归基线
+  Token cur;
+  cur=getToken(fin);
+  if(cur.kind!=IF&&cur.kind!=FOR&&cur.kind!=DO&&cur.kind!=WHILE&&cur.kind!=LEFT_BRACE){
+    while(cur.val!=NULL&&cur.kind!=SEMICOLON){
       fputToken(cur,code);delToken(cur);
-      if(!readCase(fin,code)){
-        return 0;
-      }
       cur=getToken(fin);
-      if(cur.val==NULL) return 0;
-      //如果后面缺乏块包裹符号的话,添加上层次
-      if(cur.kind!=LEFT_BRACE){
-        fputToken(leftBraceToken,code);
-        //然后输出下一个语句,然后输出右花括号
-        fputToken(cur,code);delToken(cur);cur=getToken(fin);
-        while(cur.val!=NULL&&cur.kind!=SEMICOLON){
-          fputToken(cur,code);delToken(cur);cur=getToken(fin);
-        }
-        if(cur.val==NULL) return 0;
-        fputToken(cur,code);delToken(cur);cur=getToken(fin);
-        fputToken(rightBraceToken,code);
-      }
-      //如果后面为{,则打印然后正常输出
-      else{
-        fputToken(cur,code);delToken(cur);cur=getToken(fin);
-      }
     }
-    //直接后面为块
-    else if(cur.kind==ELSE||cur.kind==DO){
-      TokenKind tmpKind=cur.kind;
-      fputToken(cur,code);delToken(cur);cur=getToken(fin);
-      if(cur.val==NULL) return 0;
-      //如果后面检查不到块花括号,则补充
-      if(cur.kind!=LEFT_BRACE){
-        fputToken(leftBraceToken,code);
-        fputToken(cur,code);delToken(cur);cur=getToken(fin);
-        while(cur.val!=NULL&&cur.kind!=SEMICOLON){
-          fputToken(cur,code);delToken(cur);cur=getToken(fin);
-        }
-        if(cur.val==NULL) return 0;
-        fputToken(cur,code);delToken(cur);cur=getToken(fin);
-        fputToken(rightBraceToken,code);
-        if(tmpKind==DO){
-          if(cur.val==NULL) return 0;
-          if(cur.kind!=WHILE){
-            delToken(cur);
-            return 0;
-          }
-          fputToken(cur,code);delToken(cur);
-          if(!readCase(fin,code)){
-            return 0;
-          }
-          cur=getToken(fin);
-          if(cur.val==NULL) return 0;
-          if(cur.kind!=SEMICOLON){
-            delToken(cur);
-            return 0;
-          }
-          fputToken(cur,code);delToken(cur);cur=getToken(fin);
-        }
-      }
-      //否则跳过
-      else{
-        fputToken(cur,code);delToken(cur);cur=getToken(fin);
-      }
+    if(cur.val==NULL) return 0;
+    fputToken(cur,code);delToken(cur);
+    return 1;
+  }
+
+  //如果该句为一个嵌套块
+  if(cur.kind==LEFT_BRACE){
+    ungetToken(fin,cur);delToken(cur);
+    if(!readBlock(fin,code)) return 0;
+    return 1;
+  }
+  
+  //如果遇到结构语句,则进行递归
+  fputToken(cur,code);delToken(cur);
+  if(cur.kind==IF){
+    //首先先读取一个条件语句
+    if(! readCase(fin,code)) return 0;
+    if(!readBlock(fin,code)) return 0;
+    //然后是elif的处理
+    while((cur=getToken(fin)).val!=NULL){
+      if(cur.kind!=ELIF) break;
+      //读取一句话进行判断
+      fputToken(cur,code);delToken(cur);
+      if(!readCase(fin,code)) return 0;
+      if(!readBlock(fin,code)) return 0;
     }
-    //否则可能是continue,break,return之类的关键字
+    if(cur.val==NULL) return 1;
+    //最后是else的处理
+    if(cur.kind==ELSE){
+      fputToken(cur,code);delToken(cur);
+      if(!readBlock(fin,code)) return 0;
+    }
     else{
-      fputToken(cur,code);delToken(cur);cur=getToken(fin);
+      ungetToken(fin,cur);delToken(cur);
     }
+    return 1;
+  }
+  else if(cur.kind==FOR){
+    //首先读取后面一个括号内容
+    if(!readCase(fin,code)) return 0;
+    if(!readBlock(fin,code)) return 0;
+  }
+  else if(cur.kind==DO){
+    if(!readBlock(fin,code)) return 0;
+    if(!getCertainToken(fin,&cur,WHILE)) return 0;
+    fputToken(cur,code); delToken(cur);
+    if(!readCase(fin,code)) return 0;
+    if(!getCertainToken(fin,&cur,SEMICOLON)) return 0;
+    fputToken(cur,code);delToken(cur);
+    return 1;
+  }
+  else if(cur.kind==WHILE){
+    if(!readCase(fin,code)) return 0;
+    if(!readBlock(fin,code)) return 0;
+  }
+  else{
+    //异常
+    return 0;
   }
   return 1;
 }
+
 
 //读取一个括号包裹的逻辑表达式，读取成功返回非0值,否则返回0
 int readCase(FILE* fin,FILE* code){

@@ -1,1 +1,3 @@
+dob|A|void|()
+doa|A|void|()
 main|NULL|int|()

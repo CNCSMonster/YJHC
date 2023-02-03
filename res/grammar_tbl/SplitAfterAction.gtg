@@ -54,7 +54,6 @@ DO_WHILE_BLOCK_IN,FOR,SPLITAFTER
 
 
 #case_in进入后要分割
-syntax add SplitAfterAction -n 1
+syntax add SplitAfterAction -n 2
 WHILE_OF_DO,LEFT_PAR,SPLITAFTER
-
-
+FOR_CONDITION_IN,SEMICOLON,SPLITAFTER

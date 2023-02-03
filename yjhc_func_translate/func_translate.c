@@ -689,7 +689,7 @@ TBNode* translateMemberFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens)
   Val val;
   int retLayer;
   char* newTypeName=NULL;  //新变量的类型名
-  //TODO 如果表没有找到这个量，可能是因为是c标准库里定义的结构体量,因为还没有加载c库的定义
+  //如果表没有找到这个量，可能是因为是c标准库里定义的结构体量,因为还没有加载c库的定义
   if(!findVal(funcTranslator->partialValTbl,tokens->token.val,&val,&type,&retLayer)){
     //TODO 异常情况
     del_tokenLine(tokens);

@@ -384,7 +384,6 @@ int main(){
     }
     //
     else{
-      //TODO,“Ï≥£¥¶¿Ì
       printf("unrecognised id\n");
     }
     vector_clear(&args);

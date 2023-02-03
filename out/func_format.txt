@@ -1,6 +1,11 @@
 {
-	int a [ 2 ] ;
-	char m = 2 ;
-	a [ "nihao" ] ;
-	return 2 ;
+	self . doa ( ) ;
+	return ;
+}
+{
+	self . c = 1 ;
+	return ;
+}
+{
+	return 0 ;
 }

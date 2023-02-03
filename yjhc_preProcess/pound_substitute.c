@@ -258,7 +258,7 @@ char* pound_substitute_string(char* toChange,struct poundline val){
       }
     }
   }
-  //TODO,遇到\0退出后还有最后一次分离出的tmp1要处理
+  //,遇到\0退出后还有最后一次分离出的tmp1要处理
   strcpy(tmp+i,tmp1);
   i+=strlen(tmp1);
   //然后最后要加入字符串结束符

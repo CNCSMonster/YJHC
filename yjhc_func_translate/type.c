@@ -1004,7 +1004,7 @@ int extractFuncPointerFieldName(const char* funcPointerFieldDef,char* retName,in
     if(isConst!=NULL) *isConst=0;
   }
   myStrStrip(retName," "," ");
-  //TODO,判断retName是否是合法的id
+  //判断retName是否是合法的id
   if(!isLegalId(retName)) return 0;
   return 1;
 }

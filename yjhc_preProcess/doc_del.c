@@ -6,6 +6,9 @@ void showError();
 int stateDo(int* state,char cur,FILE* fout);
 int doc_del(int argc,char* argv[]);
 
+//判断某个字符是否是空类型字符
+int isEmpChar(char c);
+
 //该程序作用是用来去除文件中的注释和多余空格和换行符
 //使用命令行参数操控
 /*
@@ -35,7 +38,7 @@ int stateDo(int* state,char cur,FILE* fout){
 switch (*state)
 {
 case 0:
-  if(cur==' '||cur=='\n') ;
+  if(isEmpChar(cur)) ;
   //如果遇到反斜杆
   else if(cur=='/') *state=1;
   else{
@@ -51,8 +54,8 @@ case 1:
   }
   break;
 case 2:
-  if(cur==' '||cur=='\n'){
-    fprintf(fout,"%c",cur);
+  if(isEmpChar(cur)){
+    fprintf(fout," ");
     *state=33;
   }
   else if(cur=='/') *state=10;
@@ -62,12 +65,12 @@ case 2:
   }
   break;
 case 3:
-  if(cur=='\n') *state=0;
+  if(isEmpChar(cur)) *state=0;
   else *state=3;
   break;
 case 33:
   //不小心两个状态都写成3了，
-  if(cur==' '||cur=='\n') *state=33;
+  if(isEmpChar(cur)) *state=33;
   else if(cur=='/') *state=6;
   else{
     fprintf(fout,"%c",cur);
@@ -86,7 +89,7 @@ case 5:
 case 6:
   if(cur=='*') *state=8;
   else if(cur=='/') *state=7;
-  else if(cur==' '||cur=='\n'){
+  else if(isEmpChar(cur)){
     fprintf(fout,"/\n");
     *state=33;
   }else{
@@ -95,7 +98,7 @@ case 6:
   }
   break;
 case 7:
-  if(cur=='\n') *state=33;
+  if(isEmpChar(cur)) *state=33;
   else *state=7;
   break;
 case 8:
@@ -108,8 +111,8 @@ case 9:
   else *state=8;
   break;
 case 10:
-  if(cur=='\n'||cur==' '){
-    fprintf(fout,"%c",cur);
+  if(isEmpChar(cur)){
+    fprintf(fout,"\n");
     *state=33;
   }
   else if(cur=='/') *state=11;
@@ -120,8 +123,8 @@ case 10:
   }
   break;
 case 11:
-  if(cur=='\n'){
-    fprintf(fout,"%c",cur);
+  if(isEmpChar(cur)){
+    fprintf(fout," ");
     *state=33;
   }
   else *state=11;
@@ -149,14 +152,14 @@ int doc_del(int argc,char* argv[]){
     exit(-1);
   }
   FILE* fin=fopen(argv[1],"r"); //打开要读取文件，获取句柄
-  // FILE* fin=fopen("code.yjhc","r"); //打开要读取文件，获取句柄
+  // FILE* fin=fopen("../res/code_example/example13.yjhc","r"); //打开要读取文件，获取句柄
   if(!fin){
     //如果打开文件失败
     printf("fail to open %s",argv[1]);
     exit(-1);
   }
   FILE* fout=fopen(argv[2],"w");
-  // FILE* fout=fopen("out.txt","w"); //打开要读取文件，获取句柄
+  // FILE* fout=fopen("../out/out1.txt","w"); //打开要读取文件，获取句柄
   if(!fout){
     fclose(fin);
     printf("fail to open %s for write",argv[2]);
@@ -173,5 +176,11 @@ int doc_del(int argc,char* argv[]){
   if(cur!=EOF||state==4||state==5||state==8||state==9||state==12||state==13) showError();
   fclose(fin);
   fclose(fout);
+  return 0;
+}
+
+//判断某个字符是否是空类型字符
+int isEmpChar(char c){
+  if(c=='\n'||c=='\r'||c=='\t'||c==' ') return 1;
   return 0;
 }

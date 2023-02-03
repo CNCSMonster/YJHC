@@ -1,10 +1,1 @@
-struct M{
-int a;
-int c;
-};
-int main(){
-int a[2];
-char m=2;
-a["nihao"];
-return 2;
-}
+typedef struct sa{ int c; void doa(); void dob(); }A; A->void dob(){ self.doa(); return ; } A->void doa(){ self.c=1; return ; } int main(){ return 0; }

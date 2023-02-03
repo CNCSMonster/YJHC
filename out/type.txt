@@ -1,1 +1,1 @@
-struct M{ int a; int c; }
+typedef struct sa{ int c; void doa(); void dob(); }A

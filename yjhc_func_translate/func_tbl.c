@@ -183,7 +183,7 @@ void del_functbl(FuncTbl* funcTbl){
   Func** funcs=malloc(sizeof(Func*)*funcTbl->funcs.size);
   hashtbl_toArr(&funcTbl->funcs,keys,funcs);
   for(int i=0;i<funcTbl->funcs.size;i++){
-    //TODO，调试语句,在删除的时候查看信息
+    //调试语句,在删除的时候查看信息
     // printf("keys:%s,",keys[i]);
     free(keys[i]);
     del_func(funcs[i]);
