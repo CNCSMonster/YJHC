@@ -1,0 +1,7 @@
+
+action add UngetAction -n 1
+UN_GET
+
+#该动作指导是否退回当前读取的token
+syntax add UngetAction -n 1
+ELIF_BLOCK_OUT,RIGHT_BRACE,UN_GET

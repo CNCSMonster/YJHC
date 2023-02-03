@@ -11,9 +11,15 @@ ELIF ELSE DO WHILE FOR RETURN
 BREAK CONTINUE OP LEFT_PAR RIGHT_PAR LEFT_BRACKET
 RIGHT_BRACKET LEFT_BRACE RIGHT_BRACE SEMICOLON COMMA FUNC
 UNKNOWN SELF_KEYWORD
-actionkind add -n 7
+actionkind add -n 8
 PrintAction BlockAction StackPopAction StackPushAction SplitPreAction SplitAfterAction
-PrintTblAction
+PrintTblAction UngetAction
+action add UngetAction
+UN_GET
+set defaultAction UngetAction
+NOT_DEFINE
+syntax add UngetAction -n 1
+UngetAction:ELIF_BLOCK_OUT,RIGHT_BRACE,UN_GET
 action add PrintTblAction
 PRINT_TBL_PRE PRINT_TBL_AFTER
 set defaultAction PrintTblAction
@@ -409,7 +415,7 @@ StackPushAction:FOR_REFRESH_IN,LEFT_PAR,LEFTPAR
 StackPushAction:FOR_REFRESH_END,LEFT_BRACE,FOR_BODY_IN
 StackPushAction:FOR_REFRESH_IN,RIGHT_PAR,FOR_REFRESH_END
 StackPushAction:FOR_CONDITION_IN,SEMICOLON,FOR_REFRESH_IN
-StackPushAction:FOR_INIT_IN,SEMICOLON,FOR_REFRESH_IN
+StackPushAction:FOR_INIT_IN,SEMICOLON,FOR_CONDITION_IN
 StackPushAction:FOR_SYMBOL,LEFT_PAR,FOR_INIT_IN
 StackPushAction:FOR_BODY_IN,FOR,FOR_SYMBOL
 StackPushAction:WHILE_BLOCK_IN,FOR,FOR_SYMBOL
@@ -584,7 +590,7 @@ action add StackPopAction
 Pop Nop
 set defaultAction StackPopAction
 Pop
-syntax add StackPopAction -n 411
+syntax add StackPopAction -n 412
 StackPopAction:FOR_REFRESH_IN,RIGHT_PAR,Pop
 StackPopAction:FOR_REFRESH_IN,SELF_KEYWORD,Nop
 StackPopAction:FOR_REFRESH_IN,UNKNOWN,Nop
@@ -741,6 +747,7 @@ StackPopAction:ELSE_BLOCK_IN,WHILE,Nop
 StackPopAction:ELIF_BLOCK_IN,WHILE,Nop
 StackPopAction:IF_BLOCK_IN,WHILE,Nop
 StackPopAction:BLOCK_IN,WHILE,Nop
+StackPopAction:ELIF_BLOCK_OUT,RIGHT_BRACE,Pop
 StackPopAction:ELSE_BLOCK_IN,RIGHT_BRACE,Pop
 StackPopAction:ELIF_CASE_IN,RIGHT_PAR,Pop
 StackPopAction:ELIF_CASE_IN,SELF_KEYWORD,Nop

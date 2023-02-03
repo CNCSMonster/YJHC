@@ -35,6 +35,10 @@ run SplitPreAction.gtg
 #加入新token加入后分割动作指导
 run SplitAfterAction.gtg
 
+#加入回退动作指导
+run UngetAction.gtg
+
+
 #导出语法表
 output -g yjhc.tbl
 

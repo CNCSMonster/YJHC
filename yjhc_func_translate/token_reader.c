@@ -59,6 +59,13 @@ TBNode* readTokenSentence(ActionSet* actionSet){
       add->next=ssStack.next;
       ssStack.next=add;
     }
+    //TODO,新的表,用来判断是否回退(这是一个补丁)
+    if(UngetAction_Tbl[symbol][token]==UN_GET){
+      ungetToken(tb_fin,newToken);delToken(newToken);
+      continue;
+    }
+
+
     TBNode* ret=NULL;
     //最后判断是否分割,如果分割，就返回并退出函数
     if((SplitPreAction_Tbl[symbol][token]==SPLITPRE||ifSplitAfterAdd)&&tb_head.next!=NULL){

@@ -67,3 +67,7 @@ syntax add StackPushAction
 ELSE_SYMBOL,LEFT_BRACE,ELSE_BLOCK_IN
 syntax add StackPopAction
 ELSE_BLOCK_IN,RIGHT_BRACE,Pop
+
+#elif结构遇到右边花括号弹出
+syntax add StackPopAction -n 2
+ELIF_BLOCK_OUT,RIGHT_BRACE,Pop
