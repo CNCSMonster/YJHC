@@ -1,5 +1,0 @@
-const int m=11;
-void main(){
-    int b=1;
-    int arr[b];
-}

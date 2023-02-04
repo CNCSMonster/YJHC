@@ -1,6 +1,2 @@
 19 {
-1 int b=1
-21 ;
-1 int arr[b]
-21 ;
-20 }
+1 const intb=1

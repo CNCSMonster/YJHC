@@ -1,0 +1,10 @@
+const int m=11;
+typedef int a;
+void main(){
+    const int b=1;
+    {
+        int b;
+    }
+    long long a;
+    int arr[b];
+}

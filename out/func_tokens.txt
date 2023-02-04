@@ -1,8 +1,17 @@
 19 {
+4 const
 0 int
 2 b
 14 =
 1 1
+21 ;
+19 {
+0 int
+2 b
+21 ;
+20 }
+0 long long
+2 a
 21 ;
 0 int
 2 arr

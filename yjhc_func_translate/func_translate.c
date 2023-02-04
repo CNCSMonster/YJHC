@@ -244,7 +244,7 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
   fclose(fout);
   //如果是错误的内容
   if(!isRight){
-    fprintf(funcTranslator->warningFout,"syntax error!\n");
+    fprintf(funcTranslator->warningFout,"\nsyntax error!\n");
   }
   if(!isRight) return 0;
   return 1;
@@ -1119,12 +1119,24 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
     vector_get(&vars,i,&valName);
     //取出层次
     vector_get(&layers,i,&layer);
+
+    //TODO,增加待增加变量检查
+    if(!preValNameAddJudge(funcTranslator,valName)){
+      fprintf(funcTranslator->warningFout,"fail to define var %s in:\n\t",valName);
+      fshow_tokenLine(funcTranslator->warningFout,tokens);
+      isRight=0;
+      break;
+    }
+
     //加入量表
     addVal_valtbl(funcTranslator->partialValTbl,valName,NULL,0,type.defaultName,layer);
   }
   //清除表
   vector_clear(&vars);
   vector_clear(&layers);
+  if(!isRight){
+    del_tokenLine(tokens); return NULL;
+  }
 
   //合并tokens为变量定义句子
   TBNode* next=tokens->next;
@@ -1380,6 +1392,13 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
     vector_get(&layers,i,&layer);
     //取出常量初始值
     vector_get(&initVals,i,&defaultVal);
+    //TODO,增加待增加常量检查
+    if(!preValNameAddJudge(funcTranslator,valName)){
+      fprintf(funcTranslator->warningFout,"fail to define const val %s in:\n\t",valName);
+      fshow_tokenLine(funcTranslator->warningFout,tokens);
+      isRight=0;
+      break;
+    }
     //加入量表
     addVal_valtbl(funcTranslator->partialValTbl,valName,defaultVal,isConst,type.defaultName,layer);
   }
@@ -1387,6 +1406,9 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
   vector_clear(&vars);
   vector_clear(&layers);
   vector_clear(&initVals);
+  if(!isRight){
+    del_tokenLine(tokens); return NULL;
+  }
   //合并tokens为变量定义句子
   TBNode* next=tokens->next;
   tokens->next=NULL;
@@ -1910,6 +1932,31 @@ TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens){
 
   return tokens;
 }
+
+
+int preValNameAddJudge(FuncTranslator* funcTranslator,char* s){
+  if(strToId(funcTranslator->partialValTbl->valIds,s)>=0){
+    fprintf(funcTranslator->warningFout,"redefinition of val %s\n",s);
+    return 0;
+  }
+  //判断是否是类型名
+  Type type;
+  if(findType_valtbl(funcTranslator->partialValTbl,s,&type,NULL)){
+    fprintf(funcTranslator->warningFout,"the same typeName %s has exist !\n",s);
+    return 0;
+  }
+  //再判断是否是合法的名字
+  if(!isLegalId(s)){
+    //事实上这一步并不必要,但是解释执行的时候可以用到,
+    //因为编译执行的时候,前面已经做了语法检查，如果发生这样的语法错误前面的过程无法通过
+    //事实上translate这一阶段应该负责语义检查
+    fprintf(funcTranslator->warningFout,"unlegal syntax in val name %s\n",s);
+    return 0;
+  }
+  return 1;
+}
+
+
 
 
 int searchBracketExpression(TBNode* nodes,TBNode** head,TBNode** tail){

@@ -170,6 +170,10 @@ TBNode* translateSelfFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens);
 TBNode* translateSelfFuncVisit(FuncTranslator* funcTranslator,TBNode* tokens);
 
 
+//单句翻译辅助,判断字符串是否是能够增加的量名或者类型名
+int preValNameAddJudge(FuncTranslator* funcTranslator,char* s);
+
+
 //常量开头语句
 
 //翻译函数的选择表

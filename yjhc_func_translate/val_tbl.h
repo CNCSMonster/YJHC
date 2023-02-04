@@ -69,6 +69,8 @@ ValTbl* extendValTbl(ValTbl* curTbl);
 ValTbl* recycleValTbl(ValTbl* partialTbl);
 
 
+
+
 //往量表中加入值
 void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isConst,char* typeName,int typeLayer);
 

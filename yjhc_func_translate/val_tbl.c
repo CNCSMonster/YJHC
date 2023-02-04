@@ -299,16 +299,10 @@ void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isCon
   Type find={ //结构体类型的具名初始化
     .kind=TYPE_UNKNOW
   };
-  ValTbl* tbl=valTbl;
-  //在量表中查找类型名
-  while(tbl!=NULL&&typeName!=NULL){
-    int index=findType(&tbl->typeTbl,typeName,NULL);
-    if(index>0){
-      vector_get(&tbl->typeTbl.types,index,&find);
-      break;
-    }
-    tbl=tbl->pre;
-  }
+  int addLayer;
+  findType_valtbl(valTbl,typeName,&find,&addLayer);
+  typeLayer+=addLayer;
+
   //否则根据类型获取默认值或者采取默认值
   if(defaultVal==NULL) defaultVal=defaultValueOfBaseTypes[find.kind];
   //然后生成val结构体
