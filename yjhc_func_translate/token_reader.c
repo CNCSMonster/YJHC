@@ -215,14 +215,24 @@ TBNode* getTBNode(const char* str,TokenKind kind){
 int sprint_tbnodes(char* str,int n,TBNode* nodes){
   int i=0;  //记录写入长度
   TBNode* nt=nodes;
-  while(nt!=NULL){
+  while(nt->next!=NULL){
     //获取nt位置字符串长度
-    int len=strlen(nodes->token.val);
+    int len=strlen(nt->token.val);
     if(i+len>=n) return 0;
-    strcpy(str+i,nodes->token.val);
+    sprintf(str+i,"%s ",nt->token.val);
+    i+=len+1;
+    nt=nt->next;
+  }
+  if(nt!=NULL){
+    //获取nt位置字符串长度
+    int len=strlen(nt->token.val);
+    if(i+len>=n) return 0;
+    sprintf(str+i,"%s",nt->token.val);
     i+=len;
     nt=nt->next;
   }
+  //最后一个位置设置为\0
+  str[i]='\0';
   return 1;
 }
 

@@ -1618,8 +1618,8 @@ TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
   //首先读取到第一个字符串的地方,如果遇到左括号,说明是函数指针定义语句
   TokenKind kinds[]={LEFT_PAR};
   TBNode* tail=NULL;
-  //判断是否是函数指针重命名类型
-  if(!searchExpressUntil(tokens,&tail,kinds,1)){
+  //判断是否不是函数指针重命名类型
+  if(!searchExpressUntil(tokens,&tail,kinds,1)||tail->next==NULL||tail->next->token.kind!=LEFT_PAR){
     //如果不是函数指针重名名类型,则是普通类型重名名类型
     if(tail==NULL||tail->token.kind!=LEFT_PAR){
       if(tokens->next==NULL||tokens->next->next==NULL){
@@ -1658,10 +1658,11 @@ TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
     del_tokenLine(tokens);
     return NULL;
   }
+  
   //否则是函数指针定义语句
   char newFuncPointerTypeName[1000];
   char funcPointerTypeName[1000];
-  sprint_tbnodes(funcPointerTypeName,sizeof(newFuncPointerTypeName),tokens);
+  sprint_tbnodes(funcPointerTypeName,sizeof(funcPointerTypeName),tokens->next);
   if(!extractFuncPointerFieldName(funcPointerTypeName,newFuncPointerTypeName,NULL)){
     fprintf(functranslator->warningFout,"fail to extract funcPointer Type in:\n");
     fshow_tokenLine(functranslator->warningFout,tokens);
@@ -1687,6 +1688,13 @@ TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
     del_tokenLine(tokens);
     return NULL;
   }
+  tail=tokens->next;
+  tail->last=NULL;
+  tokens->next=NULL;
+  tail=connect_tokens(tail,CONST,"");
+  tail->last=tokens;
+  tokens->next=tail;
+  tokens=connect_tokens(tokens,CONST," ");
   return tokens;
 }
 
@@ -1697,7 +1705,12 @@ int isLegalNewTypeName(FuncTranslator* funcTranslator,const char* newName){
   //复制一个newName进行处理
   char tmpName[1000];
   strcpy(tmpName,newName);
-  if (findType_valtbl(funcTranslator->partialValTbl, tmpName, NULL, NULL))
+  //判断新名字是否是被注册的别名
+  if(hashtbl_get(&funcTranslator->partialValTbl->newOld,&newName,NULL)){
+    fprintf(funcTranslator->warningFout,"%s has been used as another type name\n",newName);
+    return 0;
+  }
+  else if (findType_valtbl(funcTranslator->partialValTbl, tmpName, NULL, NULL))
   {
     fprintf(funcTranslator->warningFout,"type %s has defined!\n",tmpName);
     return 0;

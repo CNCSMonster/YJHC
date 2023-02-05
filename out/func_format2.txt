@@ -1,7 +1,3 @@
 {
-	const inta=3 ;
-	int arr[a] ;
-	int M ;
-	M c=4 ;
-	return 1 ;
-}
+	typedef int M ;
+	typedef int(*G)(int,long long) 	; 

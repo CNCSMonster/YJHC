@@ -102,19 +102,8 @@ int loadTypeDefLine_valtbl(ValTbl* valTbl,char* str){
   //如果是函数指针重命名语句,则有(,否则没有,TODO,更细致的语法分析
   if(myIsCharInStr(str,'(')){
     //对函数指针重命名的情况
-    str+=strlen("typedef")+1;
-    char tmp[1000];
-    char newName[200];
-    strcpy(tmp,str);
-    if(!extractFuncPointerFieldName(tmp,newName,NULL)){
-      //TODO,报错提示
-      return 0;
-    }
-    if(!formatFuncPointerTypeName(tmp)){
-      //TODO,报错提示
-      return 0;
-    }
-    return assignTypeNewName(valTbl,tmp,0,newName);
+    //直接对typeTbl进行操作
+    return loadTypedefFuncPointer_typetbl(&(valTbl->typeTbl),str);
   }
   //如果不是typedef函数指针类型
   //则是typedef普通类型
@@ -483,6 +472,11 @@ int findFuncPointer_valtbl(ValTbl* topValTbl,char* fpName,Val* val,char* retType
 
 //在某个指定的单独量表中给类型起别名,
 int assignTypeNewName(ValTbl* thisTbl,const char* defaultTypeName,const int oldTypeLayer,const char* newTypeName){
+  // {
+  //   //调试语句
+  //   printf("assign new type name:%s for %s,layer:%d\n",newTypeName,defaultTypeName,oldTypeLayer);
+  // }
+  
   //TODO,加入别名前的一些安全性检查
   if(defaultTypeName==NULL||newTypeName==NULL) return 0;
   //直接加入别名

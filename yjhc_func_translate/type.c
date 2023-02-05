@@ -278,6 +278,11 @@ int loadTypedefLine_typetbl(TypeTbl* tbl,char* str){
 
 //函数指针的重命名
 int loadTypedefFuncPointer_typetbl(TypeTbl* tbl,char* str){
+  // {
+  //   //调试语句
+  //   printf("loadTypeDefFuncPointer:%s\n",str);
+  // }
+
   //首先来到typedef之后的位置
   str+=strlen("typedef")+1; //越过第一个位置的typedef,并越过typedef后面的一个空格
   char funcPointerType[1000];

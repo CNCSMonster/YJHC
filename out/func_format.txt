@@ -1,7 +1,6 @@
 {
-	const int a = 3 ;
-	int arr [ a ] ;
-	int M ;
-	M c = 4 ;
+	typedef int M ;
+	typedef int ( * G ) ( int , long long ) ;
+	typedef int ( * M ) ( char ) ;
 	return 1 ;
 }
