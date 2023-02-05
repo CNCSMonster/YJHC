@@ -1615,8 +1615,119 @@ TBNode* translateFuncPointerDef(FuncTranslator* functranslator,TBNode* tokens){
 
 //typedef命名类型别名语句
 TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
+  //首先读取到第一个字符串的地方,如果遇到左括号,说明是函数指针定义语句
+  TokenKind kinds[]={LEFT_PAR};
+  TBNode* tail=NULL;
+  //判断是否是函数指针重命名类型
+  if(!searchExpressUntil(tokens,&tail,kinds,1)){
+    //如果不是函数指针重名名类型,则是普通类型重名名类型
+    if(tail==NULL||tail->token.kind!=LEFT_PAR){
+      if(tokens->next==NULL||tokens->next->next==NULL){
+        del_tokenLine(tokens);return NULL;
+      }
+      char* oldName=tokens->next->token.val;
+      char* newName=tokens->next->next->token.val;
+      //TODO,新类型名合法性检查
+      //如果不是合法的新类型
+      if(!isLegalNewTypeName(functranslator,newName)){
+        fprintf(functranslator->warningFout,"\nfail to use %s as new type name!\n",newName);
+        del_tokenLine(tokens);
+        return NULL;
+      }
+      //检查旧类型名是否已经存在
+      Type type;
+      int layer;
+      //如果旧的类型名不存在,或者是未知类型
+      if(!findType_valtbl(functranslator->partialValTbl,oldName,&type,&layer)||type.kind==TYPE_UNKNOW){
+        fprintf(functranslator->warningFout,"undefined old type %s in:\n",oldName);
+        fshow_tokenLine(functranslator->warningFout,tokens);  
+        del_tokenLine(tokens);
+        return NULL;
+      }
+      //TODO,加入新类型
+      if(!assignTypeNewName(functranslator->partialValTbl,oldName,layer,newName)){
+        fprintf(functranslator->warningFout,"fail to assign new type name %s to %s in:\n",newName,oldName);
+        fshow_tokenLine(functranslator->warningFout,tokens);  
+        del_tokenLine(tokens);
+        return NULL;
+      }
+      //然后合并tokens为CONST
+      tokens=connect_tokens(tokens,CONST," ");
+      return tokens;
+    }
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //否则是函数指针定义语句
+  char newFuncPointerTypeName[1000];
+  char funcPointerTypeName[1000];
+  sprint_tbnodes(funcPointerTypeName,sizeof(newFuncPointerTypeName),tokens);
+  if(!extractFuncPointerFieldName(funcPointerTypeName,newFuncPointerTypeName,NULL)){
+    fprintf(functranslator->warningFout,"fail to extract funcPointer Type in:\n");
+    fshow_tokenLine(functranslator->warningFout,tokens);
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  if(formatFuncPointerTypeName(funcPointerTypeName)==NULL){
+    fprintf(functranslator->warningFout,"unlegal funcPointerType definition in:\n");
+    fshow_tokenLine(functranslator->warningFout,tokens);
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //对新类型名进行判断
+  if(!isLegalNewTypeName(functranslator,newFuncPointerTypeName)){
+    fprintf(functranslator->warningFout,"\nfail to use %s as new type name!\n",newFuncPointerTypeName);
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  if (!assignTypeNewName(functranslator->partialValTbl, funcPointerTypeName, 0, newFuncPointerTypeName))
+  {
+    fprintf(functranslator->warningFout, "fail to assign new type name %s to %s in:\n", newFuncPointerTypeName, funcPointerTypeName);
+    fshow_tokenLine(functranslator->warningFout, tokens);
+    del_tokenLine(tokens);
+    return NULL;
+  }
   return tokens;
 }
+
+//判断是否是合法的新类型名,如果是返回非0值,如果不是返回0
+int isLegalNewTypeName(FuncTranslator* funcTranslator,const char* newName){
+  // 新类型名合法性检查
+  // 如果新类型名已经注册为类型
+  //复制一个newName进行处理
+  char tmpName[1000];
+  strcpy(tmpName,newName);
+  if (findType_valtbl(funcTranslator->partialValTbl, tmpName, NULL, NULL))
+  {
+    fprintf(funcTranslator->warningFout,"type %s has defined!\n",tmpName);
+    return 0;
+  }
+  // 如果新类型名已经注册为变量
+  else if (findVal(funcTranslator->partialValTbl, tmpName, NULL, NULL, NULL))
+  {
+    fprintf(funcTranslator->warningFout,"val %s has defined!\n",tmpName);
+    return 0;
+  }
+  // 如果新类型名已经注册为函数指针
+  else if (findFuncPointer_valtbl(funcTranslator->partialValTbl, tmpName,NULL,NULL,NULL ))
+  {
+    fprintf(funcTranslator->warningFout,"func pointer %s has defined!\n",tmpName);
+    return 0;
+  }
+  //判断是否存在函数名中
+  else if(findFunc(funcTranslator->funcTbl,tmpName,NULL)){
+    fprintf(funcTranslator->warningFout,"func %s has defined!\n",tmpName);
+    return 0;
+  }
+  //判断是否是合法的类型名
+  else if(!isLegalId(tmpName)){
+    fprintf(funcTranslator->warningFout,"unlegal type name %s!\n",tmpName);
+    return 0;
+  }
+  return 1;
+}
+
+
 
 //翻译函数调用语句
 TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){

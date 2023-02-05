@@ -26,6 +26,10 @@ typedef struct struct_val_tbl{
 
   //再保存一个变量名与类型名的映射,这里的变量名可以是函数指针名,绑定的类型则为格式化后的函数指针类型
   hashtbl valToType;
+
+  //建立旧类型到typedef新名之间的映射
+  hashtbl newOld;
+
   
   //局部类型表
   TypeTbl typeTbl;  //可以定义一个空的类型表
@@ -48,9 +52,15 @@ int isFuncPointerValDef_valtbl(const char* str);
 //加载函数指针变量定义语句,如果加载成功返回非0值,如果加载失败返回0
 int loadFuncPointerValDef_valtbl(ValTbl* valTbl,const char* str);
 
+//判断是否是typedef语句
+int isTypeDefLine_valtbl(const char* str);
+
+//处理typedef语句
+int loadTypeDefLine_valtbl(ValTbl* valTbl,char* str);
+
 
 //从一个量定义语句中加载量到量表中，成功返回非0值，失败返回0
-int loadLine_valtbl(ValTbl* val_tbl,char* str);
+int loadLine_valtbl(ValTbl* valTbl,char* str);
 
 //获取一个量
 Val getVal(char* name,int isConst,char* defaultVal);
@@ -88,6 +98,8 @@ int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer
 //查找成功返回1,查找失败返回0
 int findFuncPointer_valtbl(ValTbl* topValTbl,char* fpName,Val* val,char* retTypeName,vector* args);
 
+//在某个指定的单独量表中给类型起别名,
+int assignTypeNewName(ValTbl* thisTbl,const char* defaultTypeName,const int oldTypeLayer,const char* newTypeName);
 
 
 //删除一个量表

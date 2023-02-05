@@ -14,6 +14,7 @@
 #define MAX_TYPE_NAME_LENGTH 200
 
 typedef enum enum_type_kind{
+  TYPE_VOID,  //加入void类型
   TYPE_INT,
   TYPE_SHORT,
   TYPE_LONG,
@@ -30,6 +31,7 @@ typedef enum enum_type_kind{
 }TypeKind;
 
 char* baseTypeNames[]={
+  [TYPE_VOID] "void",
   [TYPE_INT] "int",
   [TYPE_CHAR] "char",
   [TYPE_SHORT] "short",
@@ -44,6 +46,7 @@ char* baseTypeNames[]={
 };
 
 char* typeKindName[]={
+  [TYPE_VOID] "void",
   [TYPE_INT] "int",
   [TYPE_SHORT] "short",
   [TYPE_CHAR] "char",
@@ -61,6 +64,9 @@ char* typeKindName[]={
 
 //准备基础数据类型的默认值
 char* defaultValueOfBaseTypes[]={
+  [TYPE_VOID] NULL, //void类型的值不能赋值,属于特殊类型的一种,也不能够在赋值语句中出现
+  //也不能够定义void类型的变量,但是可以定义void*指针
+  //TODO,进行void使用情况的检查
   [TYPE_INT] "0",
   [TYPE_CHAR] "\'\\0\'",
   [TYPE_LONG] "0L",

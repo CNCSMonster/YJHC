@@ -1,2 +1,7 @@
 {
-const intb=1
+	const inta=3 ;
+	int arr[a] ;
+	int M ;
+	M c=4 ;
+	return 1 ;
+}

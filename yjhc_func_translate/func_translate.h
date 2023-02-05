@@ -154,6 +154,11 @@ TBNode* translateFuncPointerDef(FuncTranslator* functranslator,TBNode* tokens);
 //typedef命名类型别名语句
 TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens);
 
+//判断是否是合法的新类型名,如果是返回非0值,如果不是返回0
+int isLegalNewTypeName(FuncTranslator* funcTranslator,const char* newName);
+
+
+
 //翻译函数调用语句
 TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens);
 

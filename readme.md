@@ -58,6 +58,8 @@ cp
 
 2. de普通块的分析bug,见example15.yjhc
 
+3. 见yjhc_funtranlator/test.c中typedef重命名函数指针类型 ,解决识别为void的bug
+
 ### 希望有缘人帮忙做了这些工作
 
 1. 制作个yjhc的语法高亮插件

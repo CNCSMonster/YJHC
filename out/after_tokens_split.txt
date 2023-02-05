@@ -1,11 +1,12 @@
 {	1
-const int b = 1	1
-; {	1
-int b	1
+const int a = 3	1
+;	1
+int arr [ a ]	1
+;	1
+int M	1
+;	1
+M c = 4	1
+;	1
+return 1	1
 ;	0
 }	0
-long long a	0
-;	0
-int arr [ b ]	0
-;	-1
-}	-1

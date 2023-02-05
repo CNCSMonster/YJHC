@@ -341,6 +341,8 @@ int main(){
   loadLine_valtbl(&valTbl,"const M aa=2");
   loadLine_valtbl(&valTbl,"M (*ac)(  int  ,  char  , long long)");
   loadLine_valtbl(&valTbl,"int (*const bb)(int,short)=gm");
+  loadLine_valtbl(&valTbl,"typedef char MC");
+  loadLine_valtbl(&valTbl,"typedef void (*fa)(int)");
   
   vector args=getVector(sizeof(char*));
   char retTypeName[300];

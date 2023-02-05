@@ -899,6 +899,8 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
 
 
 
+
+
 //清空一个type的所有内容
 void delType(Type* type){
   if(type->defaultName!=NULL) free(type->defaultName);

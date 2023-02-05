@@ -66,5 +66,7 @@ void release_token_reader();
 //产生一个动态分配空间的孤立TBNode*
 TBNode* getTBNode(const char* str,TokenKind kind);
 
+//把tokenline写入字符串中,写入成功返回非0值,失败返回0
+int sprint_tbnodes(char* str,int n,TBNode* nodes);
 
 #endif

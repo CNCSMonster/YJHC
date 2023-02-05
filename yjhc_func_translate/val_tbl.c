@@ -9,6 +9,7 @@ ValTbl getValTbl(TypeTbl typeTbl){
   valTbl.vals=getVector(sizeof(Val));
   valTbl.valIds=getStrIdTable();
   valTbl.valToType=getHashTbl(100,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
+  valTbl.newOld=getHashTbl(50,sizeof(char*),sizeof(char*),typeFieldNameHash,typeFieldEq);
   valTbl.typeTbl=typeTbl;
   return valTbl;
 }
@@ -31,10 +32,14 @@ int loadFile_valtbl(ValTbl* valTbl, FILE* fin){
 
 //判断是否是函数指针变量定义语句,包括函数指针常量和函数指针变量两种形式,如果是返回非0值,如果不是返回0
 int isFuncPointerValDef_valtbl(const char* str){
+  //如果开头不是typedef,则是函数指针定义语句
   //如果读取不到(,则一定不是函数指针定义语句
   char end;
   char tmp[1000];
-  end= mysgets(tmp,"(=",str);
+  end=mysgets(tmp," ",str);
+  myStrStrip(tmp," "," ");
+  if(strcmp(tmp,"typedef")==0) return 0;
+  end=mysgets(tmp,"(=",str);
   if(end!='(') return 0;
   //因为如果是函数指针定义 则，格式如 fpDef 或者fpDef = val 的形式 ,其中fpDef中含有(
   return 1;
@@ -82,13 +87,61 @@ int loadFuncPointerValDef_valtbl(ValTbl* valTbl,const char* str){
   return 1;
 }
 
+//判断是否是typedef语句
+int isTypeDefLine_valtbl(const char* str){
+  char tmp[1000];
+  char end=mysgets(tmp," ",str);
+  if(end!=' '||strcmp(tmp,"typedef")!=0) return 0;
+  return 1;
+}
 
+
+//处理typedef语句
+int loadTypeDefLine_valtbl(ValTbl* valTbl,char* str){
+  //首先判断是否是函数指针重命名语句
+  //如果是函数指针重命名语句,则有(,否则没有,TODO,更细致的语法分析
+  if(myIsCharInStr(str,'(')){
+    //对函数指针重命名的情况
+    str+=strlen("typedef")+1;
+    char tmp[1000];
+    char newName[200];
+    strcpy(tmp,str);
+    if(!extractFuncPointerFieldName(tmp,newName,NULL)){
+      //TODO,报错提示
+      return 0;
+    }
+    if(!formatFuncPointerTypeName(tmp)){
+      //TODO,报错提示
+      return 0;
+    }
+    return assignTypeNewName(valTbl,tmp,0,newName);
+  }
+  //如果不是typedef函数指针类型
+  //则是typedef普通类型
+  char oldTypeName[500];
+  char newTypeName[500];
+  char end;
+  //首先找到
+  while(*str!=' '&&*str!='\0') str++;
+  while(*str==' '&&*str!='\0') str++;
+  if(*str=='\0') return 0;
+  end=mysgets(oldTypeName," ",str);
+  str+=strlen(oldTypeName);
+  while(*str!='\0'&&*str==' ') str++;
+  if(*str=='\0') return 0;
+  end=mysgets(newTypeName," ",str);
+  return assignTypeNewName(valTbl,oldTypeName,0,newTypeName);
+}
 
 //从一个量定义语句中加载量到量表中
 int loadLine_valtbl(ValTbl* valTbl,char* line){
-  //TODO,首先判断是否是函数指针变量定义语句,如果是,则加入函数指针
+  //判断是否是函数指针变量定义语句
   if(isFuncPointerValDef_valtbl(line)) {
     return loadFuncPointerValDef_valtbl(valTbl,line);
+  }
+  //判断是否是typedef语句,
+  if(isTypeDefLine_valtbl(line)){
+    return loadTypeDefLine_valtbl(valTbl,line);
   }
   char tmpStr[1000];
   strcpy(tmpStr,line);
@@ -360,10 +413,15 @@ void loadArgs_valtbl(ValTbl* valTbl,FuncTbl* funcTbl,Func* func){
 
 //通过量表查找类型,查找成功返回非0值，查找失败返回0
 int findType_valtbl(ValTbl* topValTbl,char* typeName,Type* retType,int* retLayer){
-  //
+  //首先查找类型名字有没有别名
+  char* newTypeName=NULL;
   if(retType==NULL||topValTbl==NULL) return 0;
   int typeIndex;
   do{
+    //首先查找是否有重命名,(ps之前使用过的类型名或者变量名不能够用来重命名)
+    if(hashtbl_get(&topValTbl->newOld,&typeName,&newTypeName)){
+      typeName=newTypeName;
+    }
     typeIndex=findType(&topValTbl->typeTbl,typeName,retLayer);
     if(typeIndex!=0){
       break;
@@ -408,18 +466,31 @@ int findFuncPointer_valtbl(ValTbl* topValTbl,char* fpName,Val* val,char* retType
   if(!isFuncPointerType(typeName)){
     return 0;
   }
-  vector_clear(args);
-  if(args->valSize!=sizeof(char*)) {
-    //如果传入参数异常,TODO
-    return 0;
+
+  if(args!=NULL){
+    vector_clear(args);
+    if(args->valSize!=sizeof(char*)) {
+      //如果传入参数异常,TODO
+      return 0;
+    }
+    //否则是正常的args,进行获取信息
+    vector_clear(args); //首先清掉args里的内容
+    //然后加载类型信息里的内容
+    if(!extractRetTypeNameAndArgTypes(typeName,retTypeName,args)) return 0;
   }
-  //否则是正常的args,进行获取信息
-  vector_clear(args); //首先清掉args里的内容
-  //然后加载类型信息里的内容
-  if(!extractRetTypeNameAndArgTypes(typeName,retTypeName,args)) return 0;
   return 1;
 }
 
+//在某个指定的单独量表中给类型起别名,
+int assignTypeNewName(ValTbl* thisTbl,const char* defaultTypeName,const int oldTypeLayer,const char* newTypeName){
+  //TODO,加入别名前的一些安全性检查
+  if(defaultTypeName==NULL||newTypeName==NULL) return 0;
+  //直接加入别名
+  char* typeName=getTypeName(defaultTypeName,oldTypeLayer);
+  char* newName=strcpy(malloc(strlen(newTypeName)+1),newTypeName);
+  hashtbl_put(&thisTbl->newOld,&newName,&typeName);
+  return 1;
+}
 
 
 //删除一个量表
@@ -437,6 +508,19 @@ void del_valTbl(ValTbl* valTbl){
   free(keys);
   free(vals);
   hashtbl_release(&tmp->valToType);
+  //删除
+  keys=malloc(sizeof(char *) * tmp->valToType.size);
+  vals=malloc(sizeof(char *) * tmp->valToType.size);
+  hashtbl_toArr(&tmp->newOld,keys,vals);
+  for (int i = 0; i < tmp->valToType.size; i++)
+  {
+    free(keys[i]);
+    free(vals[i]);
+  }
+  free(keys);
+  free(vals);
+  hashtbl_release(&tmp->newOld);
+
   delStrIdTable(tmp->valIds);
   delTypeTbl(&tmp->typeTbl);
   for (int i = 0; i < tmp->vals.size; i++)

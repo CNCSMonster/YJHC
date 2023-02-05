@@ -211,6 +211,19 @@ TBNode* getTBNode(const char* str,TokenKind kind){
   return out;
 }
 
-
+//把tokenline写入字符串中,写入成功返回非0值,失败返回0
+int sprint_tbnodes(char* str,int n,TBNode* nodes){
+  int i=0;  //记录写入长度
+  TBNode* nt=nodes;
+  while(nt!=NULL){
+    //获取nt位置字符串长度
+    int len=strlen(nodes->token.val);
+    if(i+len>=n) return 0;
+    strcpy(str+i,nodes->token.val);
+    i+=len;
+    nt=nt->next;
+  }
+  return 1;
+}
 
 

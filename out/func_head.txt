@@ -1,1 +1,1 @@
-main|NULL|void|()
+main|NULL|int|()
