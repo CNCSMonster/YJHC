@@ -266,12 +266,22 @@ int findVal(ValTbl* curTbl,char* valName,Val* retVal,Type* retType,int* typeLaye
 
   // 否则根据类型名在类型表内查找
   int typeIndex = 0;
+  if(retType!=NULL){
+    do
+    {
+      int typeIndex = findType(&curTbl->typeTbl, typeName, typeLayer);
+      vector_get(&curTbl->typeTbl.types, typeIndex, retType);
+      curTbl = curTbl->pre;
+    } while (retType->kind == TYPE_UNKNOW && curTbl != NULL);
+    return 1;
+  }
+  Type tType;
   do
   {
     int typeIndex = findType(&curTbl->typeTbl, typeName, typeLayer);
-    vector_get(&curTbl->typeTbl.types, typeIndex, retType);
+    vector_get(&curTbl->typeTbl.types, typeIndex, &tType);
     curTbl = curTbl->pre;
-  } while (retType->kind == TYPE_UNKNOW && curTbl != NULL);
+  } while (tType.kind == TYPE_UNKNOW && curTbl != NULL);
   return 1;
 }
 

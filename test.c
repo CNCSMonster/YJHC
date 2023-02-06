@@ -25,9 +25,7 @@ enum M{
 
 int main(char* argv[])
 {    
-    int (*const a)(int)=countA; //常函数指针的定义
-    printf("%d",a(1));
-    //测试按位取反
-    return 1;
+    const int arr[3]={1,2,3};
+    return 0;
 }
 

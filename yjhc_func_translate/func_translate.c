@@ -595,6 +595,7 @@ int isAssignSentence(FuncTranslator* funcTranslator,TBNode* nodes){
     //初始状态仅仅可能遇到VAR
     if(state==0&&nodes->token.kind==VAR){
       state=1;
+      toNum++;
     } 
     //读到var之后进入状态1,可能遇到,或者=
     //遇到','进入状态0,期待遇到下一个变量
@@ -755,6 +756,28 @@ TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   TBNode* head=tokens->next->next;
   TBNode* preHead=head->last;
   TBNode* sufTail=head;
+  //首先判断是否是常量数组
+  int isConst=0;
+  {
+    int isRight=1;
+    char* arrName=tokens->token.val;
+    Val val;
+    int layer;
+    if(!findVal(funcTranslator->partialValTbl,arrName,&val,NULL,&layer)){
+      fprintf(funcTranslator->warningFout,"undefined arr name %s in:\n\t",arrName);
+      isRight=0;
+    }
+    else if(layer<1){
+      fprintf(funcTranslator->warningFout,"not arr name %s for arr visit in:\n\t",arrName);
+      isRight=0;
+    }
+    if(!isRight){
+      fshow_tokenLine(funcTranslator->warningFout,tokens);
+      del_tokenLine(tokens);
+      return NULL;
+    }
+    isConst=val.isConst;
+  }
   int leftP=1;
   while(sufTail!=NULL){
     TokenKind kind=sufTail->token.kind;
@@ -849,6 +872,7 @@ TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   TBNode* sufSufTail=sufTail->next;
 
 
+
   //分离数组元素访问表达式,
   
   sufTail->next=NULL;
@@ -857,14 +881,13 @@ TBNode* translateArrVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   //处理数组访问表达式,数组表达式处理完后应该是一个var
   tokens=connect_tokens(tokens,VAR,"");
 
-
   //合并处理后的数组访问表达式和之前分离的内容
   tokens->next=sufSufTail;
   if(sufSufTail!=NULL) sufSufTail->last=tokens;
-
   //加入量表
   layer--;
-  addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,0,type.defaultName,layer);
+
+  addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,isConst,type.defaultName,layer);
 
   //然后返回对剩下部分继续翻译的结果
   return process_singleLine(funcTranslator,tokens);
@@ -912,6 +935,7 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
   char* typeName=tokens->token.val;
   Type type;
   int typeLayer;
+  StrSet constArrName=getStrSet(myStrHash);
   //查找类型
   findType_valtbl(funcTranslator->partialValTbl,typeName,&type,&typeLayer);
 
@@ -1014,6 +1038,11 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
     }
     //state3是状态1遇到方括号之后,读取一个维度大小表达式并处理
     else if(state==3){
+      //把该量名加入值表达式
+      char* cName=NULL;
+      vector_get(&vars,vars.size-1,&cName);
+      addStr_StrSet(&constArrName,cName);
+
       //读取方括号进行处理,并进入状态1
       TBNode* head=track;
       TBNode* preHead=head->last;
@@ -1107,11 +1136,11 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
     del_tokenLine(tokens);
     vector_clear(&layers);
     vector_clear(&vars);
+    initStrSet(&constArrName);
     return NULL;
   }
   
   //加入变量表
-  //TODO,应该对数组名进行标记，因为数组名不能够被赋值，应该标记为指针常量
   for(int i=0;i<vars.size;i++){
     //取出名
     char* valName=NULL;
@@ -1120,20 +1149,26 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
     //取出层次
     vector_get(&layers,i,&layer);
 
-    //TODO,增加待增加变量检查
+    int isConst=0;
+    //TODO,进行是否常量判断,如果这个id是变量数组名,则设置为对应的指针常量
+    if(containsStr_StrSet(&constArrName,valName)) 
+      isConst=1;
+
+    //增加待增加变量检查
     if(!preValNameAddJudge(funcTranslator,valName)){
       fprintf(funcTranslator->warningFout,"fail to define var %s in:\n\t",valName);
       fshow_tokenLine(funcTranslator->warningFout,tokens);
       isRight=0;
       break;
     }
-
     //加入量表
-    addVal_valtbl(funcTranslator->partialValTbl,valName,NULL,0,type.defaultName,layer);
+    addVal_valtbl(funcTranslator->partialValTbl,valName,NULL,isConst,type.defaultName,layer);
   }
   //清除表
   vector_clear(&vars);
   vector_clear(&layers);
+  //TODO,释放常id表空间
+  initStrSet(&constArrName);
   if(!isRight){
     del_tokenLine(tokens); return NULL;
   }
@@ -1156,7 +1191,6 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
   类似于变量定义语句,不过是把变量加入为常量
   */
   //首先获取类型定义
-  int isConst=1;  //用isConst表示该次加入的所有量为常量
   //首先获取类型
   char* typeName=tokens->next->token.val;
   Type type;
@@ -1400,7 +1434,7 @@ TBNode* translateConstDef(FuncTranslator* funcTranslator,TBNode* tokens){
       break;
     }
     //加入量表
-    addVal_valtbl(funcTranslator->partialValTbl,valName,defaultVal,isConst,type.defaultName,layer);
+    addVal_valtbl(funcTranslator->partialValTbl,valName,defaultVal,1,type.defaultName,layer);
   }
   //清空三个表
   vector_clear(&vars);
@@ -1909,8 +1943,46 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
 
 //翻译赋值语句
 TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
-  //TODO
+  //TODO,首先先简单地实现一个单赋值语句
+  
+  //单赋值语句只有三个token
+  int isRight=1;
+  if(tokens==NULL||tokens->next==NULL||tokens->next->next==NULL) isRight=0;
+  else if(tokens->next->token.kind!=OP||strcmp(tokens->next->token.val,"=")!=0) isRight=0;
+  else if(tokens->token.kind!=VAR){
+    fprintf(functranslator->warningFout,"target of assign sentence should be var but not %s in:\n\t",tokens->token.val);
+    fshow_tokenLine(functranslator->warningFout, tokens);
+    isRight=0;
+  }
+  else if(tokens->next->next->token.kind!=VAR&&tokens->next->next->token.kind!=CONST)
+    isRight=0;
+  if(!isRight){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //否则先获取目的变量以及目的变量类型,判断是否类型匹配
+  Type type;
+  Val val;
+  int typeLayer;
+  char* valName=tokens->token.val;
+  if(!findVal(functranslator->partialValTbl,valName,&val,&type,&typeLayer)){
+    fprintf(functranslator->warningFout,"undefined var %s in:\n\t",valName);
+    isRight=0;
+  }
+  else if(val.isConst){
+    fprintf(functranslator->warningFout,"Error!use const var %s as target var in assign sentence in:\n\t",valName);
+    isRight=0;
+  }
+  if(!isRight){
+    fshow_tokenLine(functranslator->warningFout,tokens);
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //TODO,对值与目的量地类型进行判断是否匹配
+  //因为隐式强转的存在,这里可以暂且先不实现
 
+  //最后合并所有tokens
+  tokens=connect_tokens(tokens,CONST,"");
 
   return tokens;
 }

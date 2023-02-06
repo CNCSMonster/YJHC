@@ -1,5 +1,0 @@
-#include stdio.h
-#include stdlib.h
-#define N a=M;
-#define M 3
-#define T printf("N=M=%d",M);
