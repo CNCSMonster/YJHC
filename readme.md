@@ -58,7 +58,7 @@ cp
 
 2. de普通块的分析bug,见example15.yjhc:
 
-   1. 解决普通块缩进格式化的bug
+   1. ~~解决普通块缩进格式化的bug~~
 
    2. 解决普通块translate不通过的bug
 
