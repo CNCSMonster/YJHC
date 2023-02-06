@@ -1,10 +1,12 @@
 {	1
-typedef int M	1
+const int b = 1	1
 ;	1
-typedef int ( * G ) ( int , long long )	1
+{	2
+int b	2
 ;	1
-typedef int ( * M ) ( char )	1
+}	1
+long long a	1
 ;	1
-return 1	1
+int arr [ b ]	1
 ;	0
 }	0

@@ -56,9 +56,13 @@ cp
 
 1. ~~修复token_reader，缩进和分割的bug,见example13,example14~~
 
-2. de普通块的分析bug,见example15.yjhc
+2. de普通块的分析bug,见example15.yjhc:
 
-3. 见yjhc_funtranlator/test.c中typedef重命名函数指针类型 ,解决识别为void的bug
+   1. 解决普通块缩进格式化的bug
+
+   2. 解决普通块translate不通过的bug
+
+3. ~~见yjhc_funtranlator/test.c中typedef重命名函数指针类型 ,解决识别为void的bug~~
 
 ### 希望有缘人帮忙做了这些工作
 

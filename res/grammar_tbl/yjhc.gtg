@@ -10,6 +10,8 @@ run tokens.gtg
 run actionkind.gtg
 #分析动作的种类和各种动作
 
+#调试打印
+#check symbol
 
 #首先加入打印动作指导表
 run PrintAction.gtg
@@ -20,20 +22,26 @@ run PrintAction.gtg
 run BlockAction.gtg
 
 
+
 #加入压弹栈动作指导
 run StackAction.gtg
+
 
 #加入是否打印语句前打印制表符动作
 run PrintTblAction.gtg
 
-
 #加入新token加入前分割动作指导
 run SplitPreAction.gtg
 
+#调试打印
+#check symbol
 
 
 #加入新token加入后分割动作指导
 run SplitAfterAction.gtg
+
+#调试打印
+#check symbol
 
 #加入回退动作指导
 run UngetAction.gtg

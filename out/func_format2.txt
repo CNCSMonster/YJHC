@@ -1,3 +1,2 @@
 {
-	typedef int M ;
-	typedef int(*G)(int,long long) 	; 
+	const intb=1 	; 

@@ -1,4 +1,4 @@
-#决定是否要在打印句子前对句子进行格式化
+#决定是否要在打印句子前对句子进行缩进
 
 action add PrintTblAction
 PRINT_TBL_PRE PRINT_TBL_AFTER
@@ -40,3 +40,7 @@ ELIF_BLOCK_OUT,ELSE,PRINT_TBL_PRE
 syntax add PrintTblAction -n 2
 BLOCK_IN,RIGHT_BRACE,PRINT_TBL_AFTER
 IF_BLOCK_IN,RIGHT_BRACE,PRINT_TBL_AFTER
+
+#块进入要后缩进
+syntax add PrintTblAction -n 1
+BLOCK_IN,LEFT_BRACE,PRINT_TBL_AFTER

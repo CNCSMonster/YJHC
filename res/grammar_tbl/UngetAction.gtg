@@ -3,5 +3,6 @@ action add UngetAction -n 1
 UN_GET
 
 #该动作指导是否退回当前读取的token
-syntax add UngetAction -n 1
+syntax add UngetAction -n 2
 ELIF_BLOCK_OUT,RIGHT_BRACE,UN_GET
+IF_BLOCK_OUT,RIGHT_BRACE,UN_GET
