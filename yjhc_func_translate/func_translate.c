@@ -486,7 +486,7 @@ int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
   //则取反后者1110_0000,然后拿后者与前者做与运算
   //如果结果不为0,则说明目标句子含有其他符号,否则没有
 
-  //如果只有运算表达式和量符号,而且没有属性访问语句,则是不需要方法调用翻译的句子
+  //如果只有运算表达式和常量符号或者界符号,而且没有属性访问语句,则是不需要方法调用翻译的句子
   BitMapUtil bmu={
     .mapSize=sizeof(long long)
   };
@@ -495,21 +495,21 @@ int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
   while(track!=NULL){
     int ifRet=0;
     TokenKind kind=track->token.kind;
-    if(kind==LEFT_BRACE||kind==LEFT_PAR||kind==LEFT_BRACKET
-    ){
-      ifRet=1;
-    }
-    else if(track->token.kind==OP&&strcmp(track->token.val,".")==0){
-      ifRet=1;
-    }
-    if(ifRet){
-      delBitMap(&bm);
-      return 0;
-    }
+    // if(kind==LEFT_BRACE||kind==LEFT_PAR||kind==LEFT_BRACKET
+    // ){
+    //   ifRet=1;
+    // }
+    // else if(track->token.kind==OP&&strcmp(track->token.val,".")==0){
+    //   ifRet=1;
+    // }
+    // if(ifRet){
+    //   delBitMap(&bm);
+    //   return 0;
+    // }
     put_bitmap(&bmu,&bm,track->token.kind);
     track=track->next;
   }
-  long long mode=COUNT_BITMAP|CONTROL_KEYWORD_BITMAP|SEP_BITMAP;
+  long long mode=CONTROL_KEYWORD_BITMAP|SEP_BITMAP|(1<<CONST);
   long long cur;
   memcpy(&cur,bm.map,sizeof(cur));
   delBitMap(&bm);

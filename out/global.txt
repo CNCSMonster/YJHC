@@ -1,1 +1,6 @@
-const int m=11
+const double pi = 3.1415926
+const int minutePerHour=60
+const float ggb
+const double* mm
+int year
+int month

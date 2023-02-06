@@ -1,3 +1,5 @@
 19 {
-1 const intb=1
+10 for
+15 (
+1 int i=1
 21 ;

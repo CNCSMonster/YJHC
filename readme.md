@@ -60,7 +60,7 @@ cp
 
    1. ~~解决普通块缩进格式化的bug~~
 
-   2. 解决普通块translate不通过的bug
+   2. ~~解决普通块translate不通过的bug~~
 
 3. ~~见yjhc_funtranlator/test.c中typedef重命名函数指针类型 ,解决识别为void的bug~~
 

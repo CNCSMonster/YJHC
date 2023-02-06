@@ -1,2 +1,2 @@
 {
-	const intb=1 	; 
+	for ( int i=1 ; 

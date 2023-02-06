@@ -5,6 +5,5 @@ void main(){
     {
         int b;
     }
-    long long a;
     int arr[b];
 }

@@ -23,7 +23,7 @@ gcc yjhc_func_translate\tokens_split.c -o exe\tks
 gcc tool\genBitMap.c -o exe\genBitMap
 
 @REM 然后使用该生成工具去产生头文件
-exe\genBitMap>yjhc_func_translate/config.h
+exe\genBitMap > yjhc_func_translate/config.h
 
 @REM 准备翻译工具
 gcc yjhc_func_translate\main.c -o exe\ft
