@@ -106,6 +106,9 @@ int isTypeChangeSentence(FuncTranslator* funcTranslator,TBNode* nodes);
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
 
+//独立出一个参数检查功能，检查匹配返回非０值，检查不匹配返回０
+int checkArgs(FuncTranslator* transLator,Func* thisFunc,TBNode* argNodes,vector* args);
+
 //翻译成员属性访问语句
 TBNode* translateMemberFieldVisit(FuncTranslator* functranslator,TBNode* tokens);
 

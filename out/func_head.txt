@@ -1,1 +1,3 @@
+doB|struct G|void|()
+doa|struct G|int|(char a)
 main|NULL|int|()

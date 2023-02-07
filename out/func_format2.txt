@@ -1,0 +1,4 @@
+{
+	typedef int M ;
+	return 1 ;
+}

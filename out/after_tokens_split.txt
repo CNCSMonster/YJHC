@@ -1,8 +1,16 @@
 {	1
-const int a [ 3 ]	1
+int c	1
 ;	1
-a [ 0 ] = 3	1
+doa ( c )	1
+;	0
+}	0
+{	1
+printf ( "%d" , 1 )	1
+;	0
+}	0
+{	1
+typedef int M	1
 ;	1
-return 0	1
+return 1	1
 ;	0
 }	0

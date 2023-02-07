@@ -22,9 +22,9 @@ enum M{
     Ma=33,
     Mb
 };
-
 int main(char* argv[])
 {    
+  
     const int arr[3]={1,2,3};
     return 0;
 }

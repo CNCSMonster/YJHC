@@ -1,1 +1,1 @@
-int main(){ const int a[3]; a[0]=3; return 0; }
+struct G{ void doB(); int doa(char a); }; struct G->void doB(){ int c; doa(c); } struct G->int doa(char a){ printf("%d",1); } int main(){ typedef int M; return 1; }

@@ -486,6 +486,12 @@ int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
   //则取反后者1110_0000,然后拿后者与前者做与运算
   //如果结果不为0,则说明目标句子含有其他符号,否则没有
 
+  //如果是单个已知变量,则是不需要翻译的类型
+  if(nodes->next==NULL&&nodes->token.kind==VAR){
+    return 1;
+  }
+
+
   //如果只有运算表达式和常量符号或者界符号,而且没有属性访问语句,则是不需要方法调用翻译的句子
   BitMapUtil bmu={
     .mapSize=sizeof(long long)
@@ -513,6 +519,7 @@ int ifNotNeedFuncTranslate(FuncTranslator* translator,TBNode* nodes){
   long long cur;
   memcpy(&cur,bm.map,sizeof(cur));
   delBitMap(&bm);
+
   //如果nodes中含有mode以外的token类型,则不是不需要进行yjhc->c翻译的句子
   if(cur&(~mode)){
     return 0;
@@ -643,7 +650,7 @@ int isAssignSentence(FuncTranslator* funcTranslator,TBNode* nodes){
 int isArrVisitSentence(FuncTranslator* funcTranslator,TBNode* nodes){
   if(nodes->token.kind!=VAR) return 0;
   nodes=nodes->next;
-  if(nodes->token.kind!=LEFT_BRACKET) return 0;
+  if(nodes==NULL||nodes->token.kind!=LEFT_BRACKET) return 0;
   nodes=nodes->next;
   //获取中间内容
   int leftBra=1;
@@ -679,7 +686,11 @@ int isTypeChangeSentence(FuncTranslator* funcTranslator,TBNode* nodes){
 
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
-
+//独立出一个参数检查功能，检查匹配返回非０值，检查不匹配返回０
+int checkArgs(FuncTranslator* transLator,Func* thisFunc,TBNode* argNodes,vector* args){
+  //TODO
+  return 0;
+}
 
 //翻译成员属性访问语句
 TBNode* translateMemberFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens){
@@ -1078,27 +1089,28 @@ TBNode* translateVarDef(FuncTranslator* funcTranslator,TBNode* tokens){
       head->next=sufTail;
       sufTail->last=head;
       //分析维度表达式内的内容是否符合要求
-      int isSuitable=0;
-      if(head->token.kind==CONST){
-        isSuitable=1;
-      }
-      else if(head->token.kind==VAR){
+      if(head->token.kind==VAR){
         //获取量的类型,判断是否是常量
         //TODO,查找这个量,必须是常整型的量
         Val val;
         Type type;
         int typeLayer;
-        if(findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&typeLayer)
-        &&typeLayer==0&&type.kind==TYPE_INT&&val.isConst
-        ){
-          isSuitable=1;
+        if(!findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&typeLayer)){
+          fprintf(funcTranslator->warningFout,"var %s used but not defined\n",head->token.val);
+          isRight=0;
         }
-      }else{
-
-      }
-      //如果维度大小表达式不是合适的常量,则进行报错提示
-      if(!isSuitable){
+        else if(typeLayer!=0||type.kind!=TYPE_INT||!val.isConst
+        ){
+          fprintf(funcTranslator->warningFout,"used %s as arr dimension but not const int val\n",head->token.val);
+          isRight=0;
+        }
+        if(!isRight) break;
+      }else if(head->token.kind!=CONST){
         fprintf(funcTranslator->warningFout,"arr definition should use const int val,but not %s\n",head->token.val);
+        isRight=0;
+        break;
+      }else{
+        //TODO
       }
       //对指针层次进行更新
       int layer;
@@ -1489,7 +1501,9 @@ TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
 
 //去除括号表达式
 TBNode* removeParExp(FuncTranslator* translator,TBNode* tokens){
-  //TODO
+  //去除括号表达式很简单
+  
+
   return tokens;
 }
 
@@ -1802,12 +1816,13 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
       TBNode* preHead=argHead->last;
       TBNode* sufTail=argTail->next;
 
+      //摘出参数表达式
       preHead->next=NULL;argHead->last=NULL;
       sufTail->last=NULL;argTail->next=NULL;
       preHead->next=sufTail;sufTail->last=preHead;
 
-      argHead=process_singleLine(functranslator,tokens);
-      if(argHead->next!=NULL||argHead==NULL||argHead->last==NULL){
+      argHead=process_singleLine(functranslator,argHead);
+      if(argHead==NULL||argHead->last==NULL||argHead->next!=NULL){
         del_tokenLine(argHead);
         isRight=0;
         break;
@@ -1826,6 +1841,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
         break;
       }
     }
+
     //TODO,异常处理
     if(!isRight){
       del_tokenLine(tokens);
@@ -1925,6 +1941,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   if(sufTail!=NULL)
     sufTail->last=NULL;
   tokens=connect_tokens(tokens,VAR,""); //合并式子得到变量
+
   if(tokens==NULL){
     del_tokenLine(sufTail);
     return NULL;
@@ -1936,6 +1953,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   Type type;
   vector_get(&functranslator->gloabalTypeTbl->types,typeIndex,&type);
   addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,1,type.defaultName,typeLayer);
+  //接回表达式
   tokens->next=sufTail;
   sufTail->last=tokens;
   return process_singleLine(functranslator,tokens);
@@ -2076,12 +2094,140 @@ TBNode* translateSelfFuncVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   //否则如果是调用自身方法
   else if(containsStr_StrSet(&type.funcs,tokens->next->next->token.val)){
     //查询方法属性
+    char* ownerName=type.defaultName;
+    char* funcName=tokens->next->next->token.val;
+    Func* func=findFunc(funcTranslator->funcTbl,funcName,ownerName);
+    //如果函数没有找到
+    if(func==NULL){
+      fprintf(funcTranslator->warningFout,"member method %s of type %s undefined but used in:\n\t",funcName,ownerName);
+      fshow_tokenLine(funcTranslator->warningFout,tokens);
+      del_tokenLine(tokens);
+      return NULL;
+    }
+    //进行参数匹配,分析
+    TBNode* track=tokens->next->next->next->next; //让track来到第一个参数开头位置
+    //记录匹配到的参数的数量
+    int i=0;
+    int isRight=1;  //标记是否正常运行
+    //TODO,开始匹配
+    while(track->token.kind!=RIGHT_PAR&&i<funcTranslator->curFunc->args.size){
+      //读取到尽头,进行process处理
+      TBNode* head=track;
+      TBNode* preHead=head->last;
+      TBNode* tail;
+      TokenKind kinds[]={COMMA,RIGHT_PAR};
+      //查找逗号
+      if(!searchExpressUntil(head,&tail,kinds,2)||tail==NULL){
+        isRight=0;
+        break;
+      }
+      int isFinished=0;
+      if(tail->next==NULL){
+        isRight=0;
+        break;
+      }
+      TBNode* sufTail=tail->next;
+      if(sufTail->token.kind!=COMMA&&sufTail->token.kind!=RIGHT_PAR){
+        isRight=0;
+        break;
+      }
+      if(tail->next->token.kind==RIGHT_PAR) isFinished=1;
+      //进行process处理
+
+      //首先分离
+      tail->next=NULL;
+      sufTail->last=preHead;
+      preHead->next=sufTail;
+      head->last=NULL;
+
+      head=process_singleLine(funcTranslator,head);
+      if(head==NULL){
+        isRight=0;
+        break;
+      }
+      //TODO,否则head处理成功,接回来
+      preHead->next=head;
+      head->last=preHead;
+      head->next=sufTail;
+      sufTail->last=head;
+      
+      //然后进行参数类型匹配
+      //查找实参类型
+      Type type;
+      Val val;
+      int typeLayer;
+      //如果实参变量不存在
+      if(!findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&typeLayer)){
+        fprintf(funcTranslator->warningFout,"var %s used but not defined in\n\t:",head->token.val);
+        fshow_tokenLine(funcTranslator->warningFout,tokens);
+        isRight=0;
+        break;
+      }
+      //然后取出形参
+      Arg arg;
+      vector_get(&funcTranslator->curFunc->args,i,&arg);
+      //获取参数类型
+      Type argType;
+      int argTypeLayer;
+      int typeIndex;
+      extractTypeIndexAndPointerLayer(arg.typeId,&typeIndex,&argTypeLayer);
+      vector_get(&funcTranslator->gloabalTypeTbl->types,typeIndex,&argType);
+
+
+      //进行匹配,TODO
+      if(!(argType.defaultName==type.defaultName)&&argTypeLayer==typeLayer){
+        //提示是不同的类型名
+        char* argTypeName=getTypeName(argType.defaultName,argTypeLayer);
+        char* typeName=getTypeName(type.defaultName,typeLayer);
+        fprintf(funcTranslator->warningFout,"%d arg need %s type val but not %s,which is of %s type in:\n\t",i+1,argTypeName,head->token.val,typeName);
+        fshow_tokenLine(funcTranslator->warningFout,tokens);
+        free(argTypeName);
+        free(typeName);
+        isRight=0;
+        break;
+      }
+      //判断常变是否匹配
+      else if(arg.isConst&&!val.isConst){
+        //TODO
+      } 
+      else if(!arg.isConst&&val.isConst){
+
+      }
+      
+
+      //进行退出判断和处理,
+      //如果结束让track来到函数结尾的右括号位置
+      if(isFinished){
+        //TODO,
+        track=sufTail;
+        break;
+      }
+      //如果还没处理完参数,进入到下一个位置
+      else{
+        track=sufTail->next;
+      }
+    }
+    //TODO,检查形参数量与实参数量是否匹配
+
+
+    if(!isRight){
+      fprintf(funcTranslator->warningFout,"%d arg wrong!in use of func %s of type %s in:\n\t",i+1,funcName,ownerName);
+      fshow_tokenLine(funcTranslator->warningFout,tokens);
+      fprintf(funcTranslator->warningFout,"in definition of func %s\n",funcTranslator->curFunc->func_name);
+      del_tokenLine(tokens);
+      return NULL;
+    } 
+
+    //进行方法改名
+
+    //修改
+
     //TODO
 
   }
-  //否则是异常情况,调用不属于自身的方法
+  //否则是异常情况,调用不属于自身的方法，进行语法报错
   else{
-    fprintf(funcTranslator->warningFout,"visit unknown function %s!\n",tokens->next->next->token.val);
+    fprintf(funcTranslator->warningFout,"visit undeclare function %s of type %s!\n",tokens->next->next->token.val,funcTranslator->curFunc->owner);
     del_tokenLine(tokens);
     return NULL;
   }
