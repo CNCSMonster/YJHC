@@ -26,7 +26,7 @@ typedef struct func_translator{
   TypeTbl* gloabalTypeTbl; //全局类型表
   ValTbl* globalValTbl;  //全局量表
   ValTbl* partialValTbl;  //局部量表
-  FuncTbl* funcTbl; //全局函数表
+  FuncTbl* funcTbl;   //全局函数表
   //设置异常信息,如果异常信息出现问题,用来传递提示
   int judSentenceKindErr;
   //注意,token读取器使用的单例模式
@@ -107,7 +107,7 @@ int isTypeChangeSentence(FuncTranslator* funcTranslator,TBNode* nodes);
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
 
 //独立出一个参数检查功能，检查匹配返回非０值，检查不匹配返回０
-int checkArgs(FuncTranslator* transLator,Func* thisFunc,TBNode* argNodes,vector* args);
+int checkArgs(FuncTranslator* transLator,Func* thisFunc,TBNode* argNodes);
 
 //翻译成员属性访问语句
 TBNode* translateMemberFieldVisit(FuncTranslator* functranslator,TBNode* tokens);

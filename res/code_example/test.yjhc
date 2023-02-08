@@ -1,16 +1,12 @@
-struct G{
-    void doB();
-    int doa(char a);
-};
-struct G->void doB(){
-    int c;
-    doa(c);
-}
-struct G->int doa(char a){
-    printf("%d",1);
-}
-
 int main(){
-    typedef int M;
+    int c;
+    int a=1;
+    int b=2;
+    char d='0';
+    d=add(a,b); //这里应该有个类型匹配
+    //c=add(a,d);
     return 1;
+}
+int add(int a,int b){
+    return 2;
 }

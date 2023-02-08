@@ -687,9 +687,117 @@ int isTypeChangeSentence(FuncTranslator* funcTranslator,TBNode* nodes){
 
 //翻译功能子代码,翻译成功返回非NULL,翻译失败返回NULL
 //独立出一个参数检查功能，检查匹配返回非０值，检查不匹配返回０
-int checkArgs(FuncTranslator* transLator,Func* thisFunc,TBNode* argNodes,vector* args){
-  //TODO
-  return 0;
+//这个函数里面不允许对分配的argNodes进行回收工作
+int checkArgs(FuncTranslator* transLator,Func* thisFunc,TBNode* argNodes){
+  //argNodes内容是(arglist)
+  //以左括号开头,右括号结尾
+  //能够从函数种获取函数名字和参数列表
+  int argIndex=0;
+  TokenKind ends[]={COMMA,RIGHT_PAR};
+  int endsSize=2;
+  //对第一个参数往后面循环读取参数
+  //开始的时候argNodes处于开头的左括号位置
+  //当参数分析没有读取到参数列表的尽头的时候就循环读取
+  while(argNodes!=NULL&&argIndex<thisFunc->args.size){
+    //读取直到逗号或者右括号结尾
+    TBNode* tail=NULL;
+    TBNode* preHead=NULL;
+    TBNode* head=argNodes->next;;
+    TBNode* sufTail=NULL;
+    //如果第argIndex个参数搜索失败
+    if(!searchExpressUntil(head,&tail,ends,endsSize)||tail==NULL||tail->next==NULL||head->token.kind==COMMA||head->token.kind==RIGHT_PAR){
+      fprintf(transLator->warningFout,"%d arg not found in use of func %s:\n\t",argIndex+1,thisFunc->func_name);
+      return 0;
+    }
+    //否则搜索参数成功,取出参数表达式进行处理
+    preHead=head->last;
+    sufTail=tail->next;
+    
+    preHead->next=sufTail;
+    head->last=NULL;
+    tail->next=NULL;
+    sufTail->last=preHead;
+
+    //处理参数表达式
+    head=process_singleLine(transLator,head);
+    //如果处理失败
+    if(head==NULL){
+      fprintf(transLator->warningFout,"fail to recognized %d arg in use of func %s\n",argIndex+1,thisFunc->func_name);
+      return 0;
+    }
+
+    //否则处理成功,首先连接回来,然后用处理成功的式子判断是否是匹配的
+    sufTail->last=head;
+    head->next=sufTail;
+    head->last=preHead;
+    preHead->next=head;
+
+    //保存形参类型信息
+    Arg arg;
+    Type argType;
+    int argTypeLayer;
+    //定义保存实参类型信息
+    Val val;
+    Type type;
+    int typeLayer;
+    //获取形参类型
+    vector_get(&thisFunc->args,argIndex,&arg);
+    //获取形参类型名,通过typeId
+    if(!findTypeById(transLator->gloabalTypeTbl,arg.typeId,&argType,&argTypeLayer)){
+      // fprintf
+      return 0;
+    }
+    //获取实参信息
+    if(head->token.kind==CONST){
+      val.isConst=1;
+      if(isConstIntToken(head->token)){
+        findType_valtbl(transLator->globalValTbl,"int",&type,&typeLayer);
+      }else if(isConstStrToken(head->token)){
+        findType_valtbl(transLator->globalValTbl,"char*",&type,&typeLayer);
+      }
+    }
+    else if(!findVal(transLator->partialValTbl,head->token.val,&val,&type,&typeLayer)){
+      return 0;
+    }
+    //进行类型匹配
+
+    //如果类型不匹配
+    if((arg.isConst^val.isConst)||strcmp(argType.defaultName,type.defaultName)!=0||argTypeLayer!=typeLayer){
+      //首先获得两个类型全名
+      char* typeName=getTypeName(type.defaultName,typeLayer);
+      char* argTypeName=getTypeName(argType.defaultName,argTypeLayer);
+      if(val.isConst) fprintf(transLator->warningFout,"Error! use const val %s of %s type ",head->token.val,typeName);
+      else fprintf(transLator->warningFout,"Error! use var %s of %s type ",head->token.val,typeName);
+      
+      if(arg.isConst) fprintf(transLator->warningFout,"but not const val of %s type as the %dth arg of func %s\n",argTypeName,argIndex+1,thisFunc->func_name);
+      else fprintf(transLator->warningFout,"but not var of %s type as the %dth arg of func %s\n",argTypeName,argIndex+1,thisFunc->func_name);
+      free(typeName);
+      free(argTypeName);
+      return 0;
+    }
+
+    //否则类型匹配,更新argIndex;
+    argIndex++;
+    //然后进入下一个参数分析
+    argNodes=head->next;
+  }
+  //如果形参数量与实参数量不匹配
+  //如果实参数量小于形参数量,(ps:正常匹配的时候的结束的时候argIndex应该等于形参数量<thisFunc->args.size))
+  if(argIndex<thisFunc->args.size){
+    fprintf(transLator->warningFout,"miss arguments in use of func %s",thisFunc->func_name);
+    if(thisFunc->owner!=NULL) fprintf(transLator->warningFout,"of %s type",thisFunc->owner);
+    fprintf(transLator->warningFout,"\n");
+    return 0;
+  }
+  //如果实际参数的数量大于形参的数量,也就是没有读到实际参数结束就已经匹配完所有形参的情况
+  else if(argNodes->token.kind!=RIGHT_PAR){
+    fprintf(transLator->warningFout,"too many arguments of func %s",thisFunc->func_name);
+    if(thisFunc->owner!=NULL) fprintf(transLator->warningFout,"of %s type",thisFunc->owner);
+    fprintf(transLator->warningFout,"\n");
+    return 0;
+  }
+  //否则就是参数数量正常的情况,分析正常结束,参数列表匹配正确
+  return 1;
 }
 
 //翻译成员属性访问语句
@@ -1797,7 +1905,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   //如果返回的函数结构体指针为NULL的话,说明是未知的函数,对未知函数不用对每个参数进行类型匹配
   //对每个参数只需要进行表达处理即可
   if(func==NULL){
-    //TODO,这部分应该是不会到达的位置,不过目前头文件不完善,所以分析
+    //这部分应该是不会到达的位置,不过目前头文件不完善,所以分析
     TBNode* track=tokens->next->next; //首先让足迹来到第一个参数的头部
     int argIndex=0; //记录当前分析的参数下标
     int isRight=1;  //标记分析过程是否出现异常
@@ -1853,109 +1961,78 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
     addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,0,NULL,0);
     return tokens;
   }
-  //否则是可以查到的已经加载的全局函数
-  //获取参数类型
-  TBNode* track=tokens->next->next; //来到第一个参数的开头
-  int isRight=1;
-  for(int i=0;i<func->args.size;i++){
-    Arg arg;
-    vector_get(&func->args,i,&arg);
-    //取出这个部分进行分析
-    TBNode* head=track;
-    TBNode* preHead=track->last;
-    TBNode* tail=head;
-    //搜索参数表达式
-    if(!searchArgExpression(head,&tail)){
-      isRight=0;
-      break;
+  
+  TBNode* head=tokens->next;
+  TBNode* preHead;
+  TBNode* tail;
+  TBNode* sufTail;
+  TokenKind ends[]={RIGHT_PAR};
+  int endsSize=sizeof(ends)/sizeof(ends[0]);
+  //首先搜索参数列表
+  //如果参数为空
+  if(head->next->token.kind==RIGHT_PAR){
+    //空参数调用有参函数
+    if(functranslator->curFunc->args.size!=0){
+      fprintf(functranslator->warningFout,"miss arguement for use of func %s in:\n\t",func->func_name);
+      fshow_tokenLine(functranslator->warningFout,tokens);
+      del_tokenLine(tokens);
+      return NULL;
     }
-    //分离参数表达式,进行处理
-    TBNode* sufTail=tail->next;
-    sufTail->last=NULL;
-    tail->next=NULL;
-    head->last=NULL;
-    preHead->next=NULL;
-    head=process_singleLine(functranslator,head);
-    if(head==NULL){
-      preHead->next=sufTail;
-      sufTail->last=preHead;
-      isRight=0;
-      break;
-    }
-    //否则正确的,连接回来
-    preHead->next=head;
-    head->last=preHead;
-    head->next=sufTail;
-    sufTail->last=head;
-    //类型匹配检查
-
-    //如果输入是常量,则不检查,跳过
-    if(head->token.kind==CONST){
-      if(sufTail->token.kind==RIGHT_BRACE){
-        track=sufTail;
-        if(i!=func->args.size-1) isRight=0;
-        break;
-      }
-      else track=sufTail->next;
-      continue;
-    }
-    //首先搜索对应变量的类型
-    Type type1;
-    int layer1;
-    if(!findVal(functranslator->partialValTbl,head->token.val,NULL,&type1,&layer1)){
-      isRight=0;
-      break;
-    }
-    //搜索type类型
-    Type type2;
-    int layer2;
-    int typeIndex;
-    extractTypeIndexAndPointerLayer(arg.typeId,&typeIndex,&layer2);
-    vector_get(&functranslator->gloabalTypeTbl->types,typeIndex,&type2);
-    if(strcmp(type2.defaultName,type1.defaultName)!=0||layer1!=layer2){
-      char* inputTypeName=getTypeName(type1.defaultName,layer1);
-      char* argTypeName=getTypeName(type2.defaultName,layer2);
-      fprintf(functranslator->warningFout,"arg %d of func %s should be %s type but not %s type\n",i+1,func->func_name,argTypeName,inputTypeName);
-      free(inputTypeName);
-      free(argTypeName);
-      isRight=0;
-      break;
-    }
-    //否则就是合适的类型
-    //把函数调用结果进行处理
-    if(sufTail->token.kind==RIGHT_PAR){
-      track=sufTail;
-      if(i!=func->args.size-1) isRight=0;
-      break;
-    }
-    track=sufTail->next;
   }
-  if(!isRight){
+  //否则如果找不到参数列表
+  else if(!searchExpressUntil(head->next,&tail,ends,endsSize)||tail==NULL||(tail->next!=NULL&&tail->next->token.kind!=RIGHT_PAR)){
+    fprintf(functranslator->warningFout,"unlegal func use in:\n\t");
+    fshow_tokenLine(functranslator->warningFout,tokens);
     del_tokenLine(tokens);
     return NULL;
   }
-  //这个时候track处于函数调用最后括号的位置
-  //把调用合并
-  TBNode* sufTail=track->next;
-  track->next=NULL;
-  if(sufTail!=NULL)
-    sufTail->last=NULL;
-  tokens=connect_tokens(tokens,VAR,""); //合并式子得到变量
+  tail=tail->next;  //让tail来到右括号位置
+  preHead=head->last;
+  sufTail=tail->next;
 
-  if(tokens==NULL){
-    del_tokenLine(sufTail);
+  //分离参数括号表达式
+  tail->next=NULL;head->last=NULL;
+  if(sufTail!=NULL){
+    sufTail->last=preHead;
+  }
+  preHead->next=NULL;
+
+  //然后进行参数匹配
+  int isRightArgs=checkArgs(functranslator,func,head);
+  //接回参数列表
+  preHead->next=head;head->last=preHead;
+  tail->next=sufTail;
+  if(sufTail!=NULL) sufTail->last=tail;
+  //如果参数匹配失败
+  if(!isRightArgs){
+    fprintf(functranslator->warningFout,"un correct use of func %s in:\n\t",func->func_name);
+    fshow_tokenLine(functranslator->warningFout,tokens);
+    del_tokenLine(tokens);
     return NULL;
   }
-  //加入量表
-  int typeIndex;
-  int typeLayer;
-  extractTypeIndexAndPointerLayer(func->retTypeId,&typeIndex,&typeLayer);
-  Type type;
-  vector_get(&functranslator->gloabalTypeTbl->types,typeIndex,&type);
-  addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,1,type.defaultName,typeLayer);
-  //接回表达式
+  //否则参数匹配成功,
+  //对整个函数部分进行处理
+
+  //首先分离出 func(...)部分,把这部分合并
+  tail->next=NULL;
+  if(sufTail!=NULL) sufTail->last=NULL;
+  tokens=connect_tokens(tokens,VAR,"");
+  //合并func(..)部分后再与后面部分连接
   tokens->next=sufTail;
-  sufTail->last=tokens;
+  if(sufTail!=NULL) sufTail->last=tokens;
+
+  //加入量表
+  Type type;  //首先获取返回值类型
+  int typeLayer;
+  if(!findTypeById(functranslator->gloabalTypeTbl,func->retTypeId,&type,&typeLayer)){
+    fprintf(functranslator->warningFout,"undefined retType of func %s in:\n\t",func->func_name);
+    fshow_tokenLine(functranslator->warningFout,tokens);
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //返回值类型查找成功,加入量表
+  addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,1,type.defaultName,typeLayer);
+
   return process_singleLine(functranslator,tokens);
 }
 
@@ -1963,7 +2040,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
 TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
   //TODO,首先先简单地实现一个单赋值语句
   
-  //单赋值语句只有三个token
+  //单赋值语句结构为tg = ...; ...为一个值表达式
   int isRight=1;
   if(tokens==NULL||tokens->next==NULL||tokens->next->next==NULL) isRight=0;
   else if(tokens->next->token.kind!=OP||strcmp(tokens->next->token.val,"=")!=0) isRight=0;
@@ -1972,12 +2049,30 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
     fshow_tokenLine(functranslator->warningFout, tokens);
     isRight=0;
   }
-  else if(tokens->next->next->token.kind!=VAR&&tokens->next->next->token.kind!=CONST)
+  if(!isRight){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  //然后对后面的值表达式进行处理,首先提取值表达式
+  TBNode* valHead=tokens->next->next;
+  TBNode* preValHead=valHead->last;
+  preValHead->next=NULL;valHead->last=NULL;
+  valHead=process_singleLine(functranslator,valHead);
+  if(valHead==NULL){
+    del_tokenLine(tokens);
+    return NULL;
+  }
+  else{
+    preValHead->next=valHead;
+    valHead->last=preValHead;
+  }
+  if(tokens->next->next->token.kind!=VAR&&tokens->next->next->token.kind!=CONST)
     isRight=0;
   if(!isRight){
     del_tokenLine(tokens);
     return NULL;
   }
+
   //否则先获取目的变量以及目的变量类型,判断是否类型匹配
   Type type;
   Val val;
@@ -1997,7 +2092,7 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
     return NULL;
   }
   //TODO,对值与目的量地类型进行判断是否匹配
-  //因为隐式强转的存在,这里可以暂且先不实现
+  
 
   //最后合并所有tokens
   tokens=connect_tokens(tokens,CONST,"");
@@ -2344,6 +2439,7 @@ int searchArgExpression(TBNode* head,TBNode** tail){
 int searchExpressUntil(TBNode* head,TBNode** retTail,TokenKind* kinds,int kindSize){
   int leftP=0;
   if(head==NULL) return 0;
+  
   while(head!=NULL){
     TokenKind kind=head->token.kind;
     if(kind==LEFT_PAR||kind==LEFT_BRACE||kind==LEFT_BRACKET) leftP++;

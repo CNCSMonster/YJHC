@@ -1,1 +1,0 @@
-struct G{ void doB(); int doa(char a); }

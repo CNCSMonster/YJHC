@@ -1,11 +1,11 @@
 {
 	int c ;
-	doa ( c ) ;
-}
-{
-	printf ( "%d" , 1 ) ;
-}
-{
-	typedef int M ;
+	int a = 1 ;
+	int b = 2 ;
+	char d = '0' ;
+	d = add ( a , b ) ;
 	return 1 ;
+}
+{
+	return 2 ;
 }

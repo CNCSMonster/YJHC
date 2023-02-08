@@ -181,6 +181,8 @@ int loadFuncPointerFieldDef(Type* typep,char* str);
 //如果查找成功,返回的类型下标为正数,如果查找失败,返回为0,而0位置保存unknown类型
 int findType(TypeTbl* tbl,char* typeName,int* layerRet);
 
+//使用typeId寻找某个type表中的类型,寻找成功返回非0值,寻找失败返回0
+int findTypeById(TypeTbl* tbl,long long typeId,Type* retType,int* typeLayer);
 
 //清空一个type的所有内容
 void delType(Type* type);

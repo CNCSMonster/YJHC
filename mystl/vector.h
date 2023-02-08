@@ -34,7 +34,7 @@ vector getVector(int size);
 //往vector末尾压入元素
 void vector_push_back(vector* vec,void* val);
 
-//返回vector对应位置的内容,通过dir指针
+//返回vector对应位置的内容,通过dir指针,如果下标正常,返回第index位置内容,如果下标异常返回0值
 void vector_get(vector* vec,int index,void* dir);
 
 //设置vector对应位置的内容,如果对应位置原本有内容,会通过old指针返回,删除失败返回NULL

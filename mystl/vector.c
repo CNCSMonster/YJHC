@@ -19,9 +19,14 @@ void vector_push_back(vector* vec,void* val){
   vec->size++;
 }
 
-//返回vector对应位置的内容,通过dir指针
+
 void vector_get(vector* vec,int index,void* dir){
-  if(dir!=NULL&&index<(vec->size)){
+  //下标检查,输出提示
+  if(index<0){
+    printf("index less than 0 in vector_get\n");
+    return;
+  }
+  if(dir!=NULL&&index<(vec->size)&&index>=0){
     memcpy(dir,vec->vals[index].val,vec->valSize);
   }
   else if(dir!=NULL) memset(dir,0,vec->valSize);

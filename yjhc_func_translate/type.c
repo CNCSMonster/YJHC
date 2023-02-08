@@ -902,9 +902,15 @@ int findType(TypeTbl* tbl,char* typeName,int* layerRet){
   return typeIndex;
 }
 
-
-
-
+//使用typeId寻找某个type表中的类型,寻找成功返回非0值,寻找失败返回0
+int findTypeById(TypeTbl* tbl,long long typeId,Type* retType,int* typeLayer){
+  int typeIndex;
+  extractTypeIndexAndPointerLayer(typeId,&typeIndex,typeLayer);
+  //判断读取到的类型下标是否正确
+  if(typeIndex>=tbl->types.size||typeIndex<0) return 0;
+  vector_get(&tbl->types,typeIndex,retType);
+  return 1;
+}
 
 //清空一个type的所有内容
 void delType(Type* type){
