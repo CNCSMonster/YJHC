@@ -1,20 +1,13 @@
 19 {
-1 int c
-21 ;
-1 int a=1
-21 ;
-1 int b=2
-21 ;
-1 char d='0'
-21 ;
-1 d=add(a,b)
-21 ;
-11 return
-1 1
+1 self->a = 3
 21 ;
 20 }
 19 {
+1 struct M a
+21 ;
+2 _yjhc_struct_M_doa(&a)
+21 ;
 11 return
-1 2
+1 1
 21 ;
 20 }

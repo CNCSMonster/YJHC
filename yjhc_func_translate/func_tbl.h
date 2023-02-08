@@ -2,6 +2,7 @@
 #define _FUNC_TBL_H
 
 #include "func.h"
+#include "func_rename.h"
 
 //准备函数表,函数表应该能够根据函数名还有主人名快速查找到
 //
@@ -18,8 +19,12 @@ FuncTbl getFuncTbl(TypeTbl* typeTbl);
 //加载函数文件
 int loadFile_functbl(FuncTbl* funcTbl,FILE* fin);
 
-//加载一个字符串
+//从一行字符串(以\n结尾)中加载函数
 int loadLine_functbl(FuncTbl* funcTbl,char* str);
+
+//获取某个成员函数的改名函数
+Func* get_rename_member_func(FuncTbl* funcTbl,Func* func);
+
 
 //从一个字符串里面提取参数定义信息,使用到一个类型表
 int extractArgFromLine(TypeTbl *typeTbl, Arg *retArg, char* argStr);

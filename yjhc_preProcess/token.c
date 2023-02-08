@@ -77,12 +77,21 @@ int fputToken(Token token,FILE* fout){
 //判断token是数字常量token还是字符常量token
 int isConstStrToken(Token token){
   if(token.kind!=CONST) return 0;
-  return isConstIntToken(token)?0:1;
+  if(*token.val=='\"') return 1;
+  return 0;
 }
 
 //判断是否是整数token
 int isConstIntToken(Token token){
   if(token.kind==CONST&&*(token.val)>=48&&(*(token.val))<57) return 1;
+  return 0;
+}
+
+//判断是否是常小数token
+int isConstDecimalToken(Token token){
+  if(*token.val=='\"') return 0;
+  //判断是否有小数点
+  if(myIsCharInStr(token.val,'.')) return 1;
   return 0;
 }
 

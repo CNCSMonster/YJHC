@@ -1,0 +1,8 @@
+{
+	self->a = 3 ;
+}
+{
+	struct M a ;
+	_yjhc_struct_M_doa(&a) ;
+	return 1 ;
+}

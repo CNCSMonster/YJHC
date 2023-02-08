@@ -50,5 +50,8 @@ int isConstStrToken(Token token);
 //判断是否是整数token
 int isConstIntToken(Token token);
 
+//判断是否是常小鼠token
+int isConstDecimalToken(Token token);
+
 
 #endif

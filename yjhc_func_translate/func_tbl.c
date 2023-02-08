@@ -91,6 +91,46 @@ int loadLine_functbl(FuncTbl* funcTbl,char* str){
   return 1;
 }
 
+//获取某个成员函数的改名函数
+Func* get_rename_member_func(FuncTbl* funcTbl,Func* func){
+  //TODO
+  if(func->owner==NULL) return NULL;
+  //获取主人函数名
+  Type ownerType;
+  int layer;
+  if(!findType(funcTbl->globalTypeTbl,func->owner,&layer)){
+    return NULL;
+  }
+  if(layer!=0) return 0;
+  //获取复制
+  Func* out=malloc(sizeof(Func));
+  out->args=getVector(sizeof(Arg));
+  out->owner=NULL;
+  out->retTypeId=func->retTypeId;
+  out->func_name=yjhc_rename_member_method(func->func_name,func->owner);
+  Arg targ;
+  targ.isConst=0;
+  targ.name=strcpy(malloc(strlen(SELF_STRING_VALUE)+1),SELF_STRING_VALUE);
+  //查找onwerid
+  int selfIndex;
+  int selfLayer;
+  selfIndex=findType(funcTbl->globalTypeTbl,func->owner,&selfLayer);
+  if(selfLayer!=0){
+    free(targ.name);
+    del_func(out);
+    return NULL;
+  }
+  targ.typeId=getTypeId(selfIndex,1);
+  vector_push_back(&out->args,&targ);
+  //然后加入原函数各种参数
+  for(int i=0;i<func->args.size;i++){
+    char* old;
+    vector_get(&func->args,i,&old);
+    char* to=strcpy(malloc(strlen(old)+1),old);
+    vector_push_back(&out->args,&to);
+  }
+  return out;
+}
 
 //从一个字符串里面提取参数定义信息,使用到一个类型表
 int extractArgFromLine(TypeTbl *typeTbl, Arg *retArg, char* argStr)

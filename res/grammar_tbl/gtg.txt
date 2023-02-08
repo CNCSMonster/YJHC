@@ -1043,7 +1043,7 @@ BlockAction:ELSE_SYMBOL,LEFT_BRACE,BlockInAfter
 BlockAction:ELIF_CASE_OUT,LEFT_BRACE,BlockInAfter
 BlockAction:IF_CASE_OUT,LEFT_BRACE,BlockInAfter
 BlockAction:BLOCK_IN,LEFT_BRACE,BlockInAfter
-BlockAction:INIT,LEFT_BRACE,BlockInAfter
+BlockAction:INIT,LEFT_BRACE,BlockIn
 action add PrintAction
 PRINTENTER PRINTSPACE
 set defaultAction PrintAction

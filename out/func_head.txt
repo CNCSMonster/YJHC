@@ -1,2 +1,2 @@
+doa|struct M|int|()
 main|NULL|int|()
-add|NULL|int|(int a,int b)

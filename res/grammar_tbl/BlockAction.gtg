@@ -11,7 +11,7 @@ BlockKeep
 
 #入块的情况,一般是括号后第一个句子后入块
 syntax add BlockAction -n 8
-INIT,LEFT_BRACE,BlockInAfter
+INIT,LEFT_BRACE,BlockIn
 BLOCK_IN,LEFT_BRACE,BlockInAfter
 IF_CASE_OUT,LEFT_BRACE,BlockInAfter
 ELIF_CASE_OUT,LEFT_BRACE,BlockInAfter

@@ -1,18 +1,12 @@
 {	1
-int c	1
+a = 3	1
+;	0
+}	1
+{	1
+struct M a	1
 ;	1
-int a = 1	1
-;	1
-int b = 2	1
-;	1
-char d = '0'	1
-;	1
-d = add ( a , b )	1
+a . doa ( )	1
 ;	1
 return 1	1
-;	0
-}	0
-{	1
-return 2	1
 ;	0
 }	0

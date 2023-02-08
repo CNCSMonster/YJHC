@@ -63,7 +63,9 @@ def countLinesInFiles(files):
     paths=set()
     for filePath in files:
         fileName,suffix=os.path.splitext(filePath)
-        if suffix!='.c' and suffix!='.h' and suffix!='.gtg' and suffix!='.cmd' and suffix!='.md':
+        # if suffix!='.c' and suffix!='.h' and suffix!='.gtg' and suffix!='.cmd' and suffix!='.md':
+        #     continue
+        if suffix!='.c' and suffix!='.h':
             continue
         if fileName=="gtg":
             continue
@@ -78,8 +80,9 @@ def countLinesInFiles(files):
         #     print(str)
         # lines=list(filter(lambda x: ))
         add=len(lines)
-        print(add)
+        print(add,end='\t')
         count+=add
+        print(count)
     return count
 
 

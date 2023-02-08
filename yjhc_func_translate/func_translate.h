@@ -13,12 +13,6 @@
 
 //目前只是处理单文件的问题,多文件的yjhc代码会先通过静态链接的处理再进行翻译
 
-//一些翻译用的参数,
-//该参数用于重命名结构体方法
-#define PREFIX_OF_NEW_FUNC "__yjhc_"
-//该参数用于重命名结构体方法中调用的自身属性
-#define PREFIX_OF_NEW_VAL "this."
-
 
 //函数翻译者,保存函数翻译者需要的一些参数
 typedef struct func_translator{
@@ -42,6 +36,9 @@ int pre_translate_check(FuncTranslator* translator);
 
 //进行是否有主函数检查,如果有主函数,返回非0值,如果没有，返回0
 int check_main_function(FuncTranslator* translator);
+
+//增加改名函数
+int add_rename_member_func(FuncTranslator* translator);
 
 
 //使用函数翻译器开始翻译
@@ -169,7 +166,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens);
 TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens);
 
 //翻译类型方法调用语句
-TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens);
+TBNode* translateMemberMethodUse(FuncTranslator* functranslator,TBNode* tokens);
 
 //翻译自身属性调用语句
 TBNode* translateSelfFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens);
@@ -202,7 +199,7 @@ TBNode* (*tranFuncs[]) (FuncTranslator*,TBNode*) = {
   [SELF_FUNC_VISIT_FTK] translateSelfFuncVisit,
   [SET_EXP_FTK] translateSetExp,  //翻译枚举表达式,或者说翻译集合表达式
   [MEMBER_FIELD_USE_FTK] translateMemberFieldVisit, //成员属性访问语句
-  [MEMBER_FUNCTION_USE_FTK] translateTypeMethodUse   //类型方法调用语句
+  [MEMBER_FUNCTION_USE_FTK] translateMemberMethodUse   //类型方法调用语句
 };
 
 //从TBNode*某个位置起,读取一个方括号表达式,比如[dsds] 读取的结果从head到tail则为[dsds]

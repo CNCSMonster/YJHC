@@ -1,12 +1,14 @@
-int main(){
-    int c;
-    int a=1;
-    int b=2;
-    char d='0';
-    d=add(a,b); //这里应该有个类型匹配
-    //c=add(a,d);
-    return 1;
+
+struct M{
+    int a;
+    int doa();
 }
-int add(int a,int b){
-    return 2;
+struct M  ->  int doa(){
+    a=3;
+}
+
+int main(){
+    struct M a;
+    a.doa();
+    return 1;
 }

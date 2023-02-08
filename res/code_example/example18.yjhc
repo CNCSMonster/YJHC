@@ -1,0 +1,14 @@
+
+struct A{
+    int a;
+    int doa();
+};
+
+struct A->int doa(){
+    doa();
+}
+
+
+int main(){
+
+}

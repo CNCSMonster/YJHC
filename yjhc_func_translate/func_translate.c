@@ -153,6 +153,33 @@ int check_main_function(FuncTranslator* translator){
   return out;
 }
 
+//增加改名函数
+int add_rename_member_func(FuncTranslator* translator){
+
+  //取出函数表中所有函数,对于成员函数进行改名
+  for(int i=0;i<translator->funcTbl->funcKeys.size;i++){
+    char* funcKey;
+    char* funcName;
+    long long funcOwnerId;
+    vector_get(&translator->funcTbl->funcKeys,i,&funcKey);
+    Func* func;
+    if(!hashtbl_get(&translator->funcTbl->funcs,&funcKey,&func)){
+      return 0;
+    }
+    if(func->owner==NULL) continue;
+    func=get_rename_member_func(translator->funcTbl,func);
+    //异常情况
+    if(func==NULL){
+      return 0;
+    }else{
+      //加入改名函数到函数表
+      char* funcKey=getFuncKey(func->func_name,0);
+      hashtbl_put(&translator->funcTbl->funcs,&funcKey,&func);
+    }
+  }
+  return 1;
+}
+
 
 //使用函数翻译器开始翻译
 int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenOutPath){
@@ -160,13 +187,20 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
   //首先进行选择性检查
   //进行主函数检查
   if(!check_main_function(funcTranslator)){
-    printf("main function miss!\n");
+    fprintf(funcTranslator->warningFout,"main function miss!\n");
     return 0;
   }
   //进行函数完整性检查
   if(!pre_translate_check(funcTranslator)){
     return 0;
   }
+  //进行加入改名函数检查
+  if(!add_rename_member_func(funcTranslator)){
+    fprintf(funcTranslator->warningFout,"fail to add rename member method\n");
+    return 0;
+  }
+
+
   //初始化输入输出工具
   FILE* fin=fopen(tokenInPath,"r");
   FILE* fout=fopen(tokenOutPath,"w");
@@ -225,6 +259,10 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
       funcTranslator->partialValTbl=extendValTbl(funcTranslator->partialValTbl);
       //加入函数的参数表到局部变量中
       loadArgs_valtbl(funcTranslator->partialValTbl,funcTranslator->funcTbl,funcTranslator->curFunc);
+      //如果是成员函数,则加入self参数
+      if(funcTranslator->curFunc->owner!=NULL){
+        addVal_valtbl(funcTranslator->partialValTbl,SELF_STRING_VALUE,NULL,0,funcTranslator->curFunc->owner,1);
+      }
     }
     else if(preBlocks==actionSet.blocks+1){
       //判断函数是否退出
@@ -593,6 +631,16 @@ int isFuncPointerDefSentence(FuncTranslator* funcTranslator,TBNode* nodes){
 int isAssignSentence(FuncTranslator* funcTranslator,TBNode* nodes){
   //准备内容
   // 格式为:var=val,var2=val,...var3=val
+  //判断有没有等号,如果没有搜到等号,则直接不是赋值语句
+  TBNode* track=nodes;
+  int lp=0;
+
+  while(track!=NULL){
+    if(track->token.kind==OP&&strcmp(track->token.val,"=")==0) break;
+    track=track->next;
+  }
+  if(track==NULL) return 0;
+
   //准备个自动机来判断是否是赋值语句
   int state=0;
   const int fail_state=INT_MAX;
@@ -762,7 +810,7 @@ int checkArgs(FuncTranslator* transLator,Func* thisFunc,TBNode* argNodes){
     //进行类型匹配
 
     //如果类型不匹配
-    if((arg.isConst^val.isConst)||strcmp(argType.defaultName,type.defaultName)!=0||argTypeLayer!=typeLayer){
+    else if((arg.isConst^val.isConst)||strcmp(argType.defaultName,type.defaultName)!=0||argTypeLayer!=typeLayer){
       //首先获得两个类型全名
       char* typeName=getTypeName(type.defaultName,typeLayer);
       char* argTypeName=getTypeName(argType.defaultName,argTypeLayer);
@@ -815,7 +863,6 @@ TBNode* translateMemberFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens)
     del_tokenLine(tokens);
     return NULL;
   }
-
   //否则如果找到的类型为结构体类型或者枚举类型的话
   if((type.kind==TYPE_STRUCT||type.kind==TYPE_UNION)
     &&(
@@ -1588,6 +1635,9 @@ TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
   //首先小括号决定运算优先级别
   //先去除除了函数调用外的小括号,小括号的运算结果只能是量,而且一般只能够是运算常量,除非小括号里面的内容是单一变量
   tokens=removeParExp(functranslator,tokens);
+
+  //TODO,清除所有函数调用
+  
   
   //然后花括号是序列表达式,对序列表达式进行分析处理,去除所有花括号
   tokens=removeSetExp(functranslator,tokens);
@@ -1609,7 +1659,10 @@ TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
 
 //去除括号表达式
 TBNode* removeParExp(FuncTranslator* translator,TBNode* tokens){
-  //去除括号表达式很简单
+  //找到所有括号表达式,非函数调用中的括号表达式,对内部内容进行处理
+
+
+
   
 
   return tokens;
@@ -1821,15 +1874,11 @@ TBNode* translateTypedef(FuncTranslator* functranslator,TBNode* tokens){
   sprint_tbnodes(funcPointerTypeName,sizeof(funcPointerTypeName),tokens->next);
   if(!extractFuncPointerFieldName(funcPointerTypeName,newFuncPointerTypeName,NULL)){
     fprintf(functranslator->warningFout,"fail to extract funcPointer Type in:\n");
-    fshow_tokenLine(functranslator->warningFout,tokens);
-    del_tokenLine(tokens);
-    return NULL;
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
   }
   if(formatFuncPointerTypeName(funcPointerTypeName)==NULL){
     fprintf(functranslator->warningFout,"unlegal funcPointerType definition in:\n");
-    fshow_tokenLine(functranslator->warningFout,tokens);
-    del_tokenLine(tokens);
-    return NULL;
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
   }
   //对新类型名进行判断
   if(!isLegalNewTypeName(functranslator,newFuncPointerTypeName)){
@@ -1982,9 +2031,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   //否则如果找不到参数列表
   else if(!searchExpressUntil(head->next,&tail,ends,endsSize)||tail==NULL||(tail->next!=NULL&&tail->next->token.kind!=RIGHT_PAR)){
     fprintf(functranslator->warningFout,"unlegal func use in:\n\t");
-    fshow_tokenLine(functranslator->warningFout,tokens);
-    del_tokenLine(tokens);
-    return NULL;
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
   }
   tail=tail->next;  //让tail来到右括号位置
   preHead=head->last;
@@ -2006,12 +2053,13 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   //如果参数匹配失败
   if(!isRightArgs){
     fprintf(functranslator->warningFout,"un correct use of func %s in:\n\t",func->func_name);
-    fshow_tokenLine(functranslator->warningFout,tokens);
-    del_tokenLine(tokens);
-    return NULL;
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
   }
-  //否则参数匹配成功,
+
+
+
   //对整个函数部分进行处理
+
 
   //首先分离出 func(...)部分,把这部分合并
   tail->next=NULL;
@@ -2026,9 +2074,7 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   int typeLayer;
   if(!findTypeById(functranslator->gloabalTypeTbl,func->retTypeId,&type,&typeLayer)){
     fprintf(functranslator->warningFout,"undefined retType of func %s in:\n\t",func->func_name);
-    fshow_tokenLine(functranslator->warningFout,tokens);
-    del_tokenLine(tokens);
-    return NULL;
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
   }
   //返回值类型查找成功,加入量表
   addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,1,type.defaultName,typeLayer);
@@ -2087,16 +2133,73 @@ TBNode* translateAssign(FuncTranslator* functranslator,TBNode* tokens){
     isRight=0;
   }
   if(!isRight){
-    fshow_tokenLine(functranslator->warningFout,tokens);
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
+  }
+  //TODO,对值与目的量地类型进行判断是否匹配
+
+
+  //如果值是常数
+  if(valHead->token.kind==CONST){
+    //TODO,如果值为常量,比如常量整数,常量小数,或者常量字符串
+    if(type.kind==TYPE_STRUCT){
+      fprintf(functranslator->warningFout,"struct type var can't be assigned ");
+    }
+    else if(type.kind==TYPE_UNION){
+      fprintf(functranslator->warningFout,"union type var can't be assigned ");
+    }
+    if(type.kind==TYPE_STRUCT||type.kind==TYPE_UNION){
+      //获取常量值的类型
+      //是否是整数值
+      char* toType=typeKindName[type.kind];
+      if(isConstIntToken(valHead->token)){
+        fprintf(functranslator->warningFout,"%s type var %s can't be assigned by const int val %s in:\n\t",toType,valName,valHead->token.val);
+        fshow_tokenLine(functranslator->warningFout,tokens);
+      }
+      //是否是常字符串值
+      else if(isConstStrToken(valHead->token)){
+        fprintf(functranslator->warningFout,"%s type var %s can't be assigned by const str val %s in:\n\t",toType,valName,valHead->token.val);
+        fshow_tokenLine(functranslator->warningFout,tokens);
+      }
+      //是否是整小数值
+      else if(isConstDecimalToken(valHead->token)){
+        fprintf(functranslator->warningFout,"%s type var %s can't be assigned by const decimal val %s in:\n\t",toType,valName,valHead->token.val);
+        fshow_tokenLine(functranslator->warningFout,tokens);
+      }
+      else{
+
+      }
+      del_tokenLine(tokens);
+      return NULL;
+    }
+    //忽略匹配异常,赋值语句的返回值是左式
+    tokens=connect_tokens(tokens,CONST," ");
+    return tokens;
+  }
+  //或者也不是变量,是异常情况
+  else if(valHead->token.kind!=VAR){
     del_tokenLine(tokens);
     return NULL;
   }
-  //TODO,对值与目的量地类型进行判断是否匹配
   
-
+  //否则值是变量
+  Type srcType;
+  Val src;
+  int srcLayer;
+  //查找值属性
+  if(!findVal(functranslator->partialValTbl,valHead->token.val,&src,&srcType,&srcLayer)){
+    fprintf(functranslator->warningFout,"var %s used but not defined in:\n\t",valHead->token.val);
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
+  }
+  //找到值属性,进行类型匹配
+  //如果匹配不成功
+  if(typeLayer!=srcLayer||strcmp(srcType.defaultName,type.defaultName)!=0){
+    char* typeName=getTypeName(type.defaultName,typeLayer);
+    char* srcTypeName=getTypeName(srcType.defaultName,srcLayer);
+    fprintf(functranslator->warningFout,"Error!assigned %s type val to %s type var! in:\n\t",srcTypeName,typeName);
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
+  }
   //最后合并所有tokens
   tokens=connect_tokens(tokens,CONST,"");
-
   return tokens;
 }
 
@@ -2161,6 +2264,7 @@ TBNode* translateSelfFuncVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   char* ownerName=funcTranslator->curFunc->owner;
   Type type;
   int layer=0;
+  int isRight=1;
   findType_valtbl(funcTranslator->globalValTbl,ownerName,&type,&layer);
   //默认之前的约束条件经过严格的判断，因此方法主人的类型要么是union要么是strcut，而且指针层次为0
 
@@ -2188,137 +2292,37 @@ TBNode* translateSelfFuncVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   }
   //否则如果是调用自身方法
   else if(containsStr_StrSet(&type.funcs,tokens->next->next->token.val)){
-    //查询方法属性
-    char* ownerName=type.defaultName;
-    char* funcName=tokens->next->next->token.val;
-    Func* func=findFunc(funcTranslator->funcTbl,funcName,ownerName);
-    //如果函数没有找到
+    //TODO,把函数转变为改名函数
+    TBNode* selfNode=tokens;
+    TBNode* pNode=tokens->next;
+    TBNode* funcNode=tokens->next->next;
+    TBNode* leftParNode=funcNode->next;
+    TBNode* sufLeftParNode=leftParNode->next;
+
+    funcNode->last=NULL;
+    leftParNode->next=selfNode;
+    selfNode->last=leftParNode;selfNode->next=sufLeftParNode;
+    sufLeftParNode->last=selfNode;
+    delToken(pNode->token);free(pNode);
+    selfNode->token.kind=VAR;
+
+    //判断要不要加入逗号
+    //如果函数的参数数量大于等于1,则加入逗号
+    Func* func=findFunc(funcTranslator->funcTbl,funcNode->token.val,type.defaultName);
     if(func==NULL){
-      fprintf(funcTranslator->warningFout,"member method %s of type %s undefined but used in:\n\t",funcName,ownerName);
-      fshow_tokenLine(funcTranslator->warningFout,tokens);
-      del_tokenLine(tokens);
+      del_tokenLine(funcNode);
       return NULL;
+    }else if(func->args.size>=1){
+      TBNode* commaNode=getTBNode(",",COMMA);
+      selfNode->next=commaNode;commaNode->last=selfNode;
+      commaNode->next=sufLeftParNode;sufLeftParNode->last=commaNode;
     }
-    //进行参数匹配,分析
-    TBNode* track=tokens->next->next->next->next; //让track来到第一个参数开头位置
-    //记录匹配到的参数的数量
-    int i=0;
-    int isRight=1;  //标记是否正常运行
-    //TODO,开始匹配
-    while(track->token.kind!=RIGHT_PAR&&i<funcTranslator->curFunc->args.size){
-      //读取到尽头,进行process处理
-      TBNode* head=track;
-      TBNode* preHead=head->last;
-      TBNode* tail;
-      TokenKind kinds[]={COMMA,RIGHT_PAR};
-      //查找逗号
-      if(!searchExpressUntil(head,&tail,kinds,2)||tail==NULL){
-        isRight=0;
-        break;
-      }
-      int isFinished=0;
-      if(tail->next==NULL){
-        isRight=0;
-        break;
-      }
-      TBNode* sufTail=tail->next;
-      if(sufTail->token.kind!=COMMA&&sufTail->token.kind!=RIGHT_PAR){
-        isRight=0;
-        break;
-      }
-      if(tail->next->token.kind==RIGHT_PAR) isFinished=1;
-      //进行process处理
+    //改名,TODO
+    char* newFuncName=yjhc_rename_member_method(funcNode->token.val,type.defaultName);
+    free(funcNode->token.val);
+    funcNode->token.val=newFuncName;
 
-      //首先分离
-      tail->next=NULL;
-      sufTail->last=preHead;
-      preHead->next=sufTail;
-      head->last=NULL;
-
-      head=process_singleLine(funcTranslator,head);
-      if(head==NULL){
-        isRight=0;
-        break;
-      }
-      //TODO,否则head处理成功,接回来
-      preHead->next=head;
-      head->last=preHead;
-      head->next=sufTail;
-      sufTail->last=head;
-      
-      //然后进行参数类型匹配
-      //查找实参类型
-      Type type;
-      Val val;
-      int typeLayer;
-      //如果实参变量不存在
-      if(!findVal(funcTranslator->partialValTbl,head->token.val,&val,&type,&typeLayer)){
-        fprintf(funcTranslator->warningFout,"var %s used but not defined in\n\t:",head->token.val);
-        fshow_tokenLine(funcTranslator->warningFout,tokens);
-        isRight=0;
-        break;
-      }
-      //然后取出形参
-      Arg arg;
-      vector_get(&funcTranslator->curFunc->args,i,&arg);
-      //获取参数类型
-      Type argType;
-      int argTypeLayer;
-      int typeIndex;
-      extractTypeIndexAndPointerLayer(arg.typeId,&typeIndex,&argTypeLayer);
-      vector_get(&funcTranslator->gloabalTypeTbl->types,typeIndex,&argType);
-
-
-      //进行匹配,TODO
-      if(!(argType.defaultName==type.defaultName)&&argTypeLayer==typeLayer){
-        //提示是不同的类型名
-        char* argTypeName=getTypeName(argType.defaultName,argTypeLayer);
-        char* typeName=getTypeName(type.defaultName,typeLayer);
-        fprintf(funcTranslator->warningFout,"%d arg need %s type val but not %s,which is of %s type in:\n\t",i+1,argTypeName,head->token.val,typeName);
-        fshow_tokenLine(funcTranslator->warningFout,tokens);
-        free(argTypeName);
-        free(typeName);
-        isRight=0;
-        break;
-      }
-      //判断常变是否匹配
-      else if(arg.isConst&&!val.isConst){
-        //TODO
-      } 
-      else if(!arg.isConst&&val.isConst){
-
-      }
-      
-
-      //进行退出判断和处理,
-      //如果结束让track来到函数结尾的右括号位置
-      if(isFinished){
-        //TODO,
-        track=sufTail;
-        break;
-      }
-      //如果还没处理完参数,进入到下一个位置
-      else{
-        track=sufTail->next;
-      }
-    }
-    //TODO,检查形参数量与实参数量是否匹配
-
-
-    if(!isRight){
-      fprintf(funcTranslator->warningFout,"%d arg wrong!in use of func %s of type %s in:\n\t",i+1,funcName,ownerName);
-      fshow_tokenLine(funcTranslator->warningFout,tokens);
-      fprintf(funcTranslator->warningFout,"in definition of func %s\n",funcTranslator->curFunc->func_name);
-      del_tokenLine(tokens);
-      return NULL;
-    } 
-
-    //进行方法改名
-
-    //修改
-
-    //TODO
-
+    return translateFuncUse(funcTranslator,funcNode);
   }
   //否则是异常情况,调用不属于自身的方法，进行语法报错
   else{
@@ -2326,48 +2330,83 @@ TBNode* translateSelfFuncVisit(FuncTranslator* funcTranslator,TBNode* tokens){
     del_tokenLine(tokens);
     return NULL;
   }
-  return tokens;
+  return NULL;
 }
 
+
+
 //翻译类型方法调用语句
-TBNode* translateTypeMethodUse(FuncTranslator* functranslator,TBNode* tokens){
-  //首先根据变量名查找量和类型
-  Val val;
+TBNode* translateMemberMethodUse(FuncTranslator* functranslator,TBNode* tokens){
+  //进行合法性检查
+  //首先查找调用者类型
   Type type;
+  Val val;
   int layer;
-  if(tokens->token.kind!=VAR){
-    del_tokenLine(tokens);
-    return NULL;
-  }
+  //
   if(!findVal(functranslator->partialValTbl,tokens->token.val,&val,&type,&layer)){
-    del_tokenLine(tokens);
-    return NULL;
+    fprintf(functranslator->warningFout,"var %s used but not defined in:\n\t:",tokens->token.val);
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
   }
-  //如果类型是含有这个函数指针
+  //否则判断是否是使用这个类型的函数指针
   if(containsStr_StrSet(&type.funcPointerFields,tokens->next->next->token.val)){
-    //翻译函数指针内部参数内容
-    //TODO
+    //TODO,检查访问函数指针的媒介是否合法
+
+    //使用函数指针,不处理
+    del_tokenLine(tokens);
+    return NULL;
 
   }
-  //如果类型不含有这个类型方法
+  //然后查找调用者是否有对应函数
   if(!containsStr_StrSet(&type.funcs,tokens->next->next->token.val)){
-    fprintf(functranslator->warningFout,"%s type val %s doesn't have member function %s\n",type.defaultName,tokens->token.val,tokens->next->next->token.val);
+    fprintf(functranslator->warningFout,"visit unexistable member method of var %s of type %s in:\n\t");
+    fshow_tokenLine(functranslator->warningFout,tokens);del_tokenLine(tokens);return NULL;
+  }
+  //否则有对应函数
+  Func* func=findFunc(functranslator->funcTbl,tokens->next->next->token.val,type.defaultName);
+  if(func==NULL){
+    del_tokenLine(tokens);return NULL;
+  }
+  //首先根据变量名查找量和类型
+  //进行变名调整
+  TBNode* userNode=tokens;
+  TBNode* pNode=tokens->next;
+  TBNode* funcNode=pNode->next;
+  TBNode* leftParNode=funcNode->next;
+  TBNode* sufTailNode=leftParNode->next;
+
+  delToken(pNode->token);free(pNode);
+  //进行移动,
+  funcNode->last=NULL;
+  leftParNode->next=userNode;userNode->last=leftParNode;
+  userNode->next=sufTailNode;sufTailNode->last=userNode;
+
+  //判断是否移动后第一参数后面是否要加逗号
+  if(func->args.size>=0){
+    TBNode* commaNode=getTBNode(",",COMMA);
+    userNode->next=commaNode;commaNode->last=userNode;
+    userNode->next=sufTailNode;sufTailNode->last=commaNode;
+  }
+  //对user进行改名
+  if(layer==0){
+    //只有这个成员自身才能够使用方法
+    char* ns=malloc(strlen(userNode->token.val)+6);
+    sprintf(ns,"&%s",userNode->token.val);
+    free(userNode->token.val);
+    userNode->token.val=ns;
+    //加入这个量到量表中,表示这个类型
+    addVal_valtbl(functranslator->partialValTbl,userNode->token.val,NULL,0,type.defaultName,1);
+  }else{
     del_tokenLine(tokens);
     return NULL;
   }
-  //否则该类型含有该成员方法,进行成员方法改造
-  //TODO
-  //首先找到该方法
-  Func* func=findFunc(functranslator->funcTbl,tokens->next->next->token.val,type.defaultName);
-  //然后,对后面传入的参数进行分析
-  
-  //然后进行成员改造和重命名
-
-  //然后连接函数和后面表达式
 
 
+  //进行重命名,
+  char* newName=yjhc_rename_member_method(func->func_name,func->owner);
+  free(funcNode->token.val);
+  funcNode->token.val=newName;
 
-  return tokens;
+  return translateFuncUse(functranslator,funcNode);
 }
 
 
