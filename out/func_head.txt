@@ -1,2 +1,3 @@
-doa|struct M|int|()
+setAge|Man|void|(int a)
+selfIntroduce|Man|void|()
 main|NULL|int|()

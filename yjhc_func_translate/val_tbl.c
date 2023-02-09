@@ -325,6 +325,7 @@ void addVal_valtbl(ValTbl* valTbl,char* valName,char* defaultVal,const int isCon
   //typeName先暂存到一个位置,
   char tmpTypeName[1000];
   strcpy(tmpTypeName,typeName);
+
   typeName=tmpTypeName;
   //s首先判断是否是未确定类型量,如果是则不绑定类型,只是加入量
   int isfpt=isFuncPointerType(typeName);

@@ -1,14 +1,22 @@
-
-struct M{
-    int a;
-    int doa();
+#include <stdlib.h>
+#include <stdio.h>
+typedef struct s_man{
+    int age;
+    void setAge(int a);
+    void selfIntroduce();
+}Man;
+Man->void setAge(int a){
+    age=a;
 }
-struct M  ->  int doa(){
-    a=3;
+Man->void selfIntroduce(){
+    printf("Hello,I'm %d years old!",age);
 }
 
 int main(){
-    struct M a;
-    a.doa();
+    Man a;
+    a.age=11;
+    a.selfIntroduce();
+    a.setAge(33);
+    a.selfIntroduce();
     return 1;
 }

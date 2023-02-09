@@ -1,2 +1,3 @@
-{ a=3; }
-{ struct M a; a.doa(); return 1; }
+{ age=a; }
+{ printf("Hello,I'm %d years old!",age); }
+{ Man a; a.age=11; a.selfIntroduce(); a.setAge(33); a.selfIntroduce(); return 1; }

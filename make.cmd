@@ -27,3 +27,6 @@ exe\genBitMap > yjhc_func_translate/config.h
 
 @REM 准备翻译工具
 gcc yjhc_func_translate\main.c -o exe\ft
+
+@REM 准备连接工具
+gcc yjhc_combine\combine.c -o exe\combine

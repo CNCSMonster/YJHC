@@ -1,11 +1,21 @@
 {	1
-a = 3	1
+age = a	1
 ;	0
 }	1
 {	1
-struct M a	1
+printf ( "Hello,I'm %d years old!" , age )	1
+;	0
+}	1
+{	1
+Man a	1
 ;	1
-a . doa ( )	1
+a . age = 11	1
+;	1
+a . selfIntroduce ( )	1
+;	1
+a . setAge ( 33 )	1
+;	1
+a . selfIntroduce ( )	1
 ;	1
 return 1	1
 ;	0

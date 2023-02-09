@@ -37,3 +37,9 @@ exe\ft out/type.txt out/global.txt out/func_head.txt out/func_tokens.txt out/fun
 
 @REM 格式化翻译后的代码
 exe\formatter out/func_tokens_after_translate.txt out/func_format2.txt
+
+@REM 使用combine把处理好的各部分代码连接
+exe\combine res/yjhclib.txt out/type.txt out/global.txt out/func_head.txt out/func_format2.txt out/final.c
+
+@REM 把翻译后的代码处理成执行程序
+gcc out/final.c -o final/a.exe

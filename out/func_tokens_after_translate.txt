@@ -1,11 +1,21 @@
 19 {
-1 self->a = 3
+1 self->age=a
 21 ;
 20 }
 19 {
-1 struct M a
+2 printf("Hello,I'm %d years old!",self->age)
 21 ;
-2 _yjhc_struct_M_doa(&a)
+20 }
+19 {
+1 Man a
+21 ;
+1 a.age = 11
+21 ;
+2 _yjhc_Man_selfIntroduce(&a)
+21 ;
+2 _yjhc_Man_setAge(&a,33)
+21 ;
+2 _yjhc_Man_selfIntroduce(&a)
 21 ;
 11 return
 1 1

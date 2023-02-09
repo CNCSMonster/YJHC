@@ -124,10 +124,13 @@ Func* get_rename_member_func(FuncTbl* funcTbl,Func* func){
   vector_push_back(&out->args,&targ);
   //然后加入原函数各种参数
   for(int i=0;i<func->args.size;i++){
-    char* old;
+    Arg old;
     vector_get(&func->args,i,&old);
-    char* to=strcpy(malloc(strlen(old)+1),old);
-    vector_push_back(&out->args,&to);
+    Arg new;
+    new.name=strcpy(malloc(strlen(old.name)+1),old.name);
+    new.typeId=old.typeId;
+    new.isConst=old.isConst;
+    vector_push_back(&out->args,&new);
   }
   return out;
 }

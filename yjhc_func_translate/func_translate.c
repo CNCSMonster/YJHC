@@ -200,7 +200,6 @@ int func_translate(FuncTranslator* funcTranslator,char* tokenInPath,char* tokenO
     return 0;
   }
 
-
   //初始化输入输出工具
   FILE* fin=fopen(tokenInPath,"r");
   FILE* fout=fopen(tokenOutPath,"w");
@@ -336,7 +335,7 @@ TBNode* member_use_complement(FuncTranslator* funcTranslator,TBNode* nodes){
       TBNode *newVisit; // 新访问符点
       // 获取一个新的tokenNode
       newSelf = getTBNode(SELF_STRING_VALUE, SELF_KEYWORD);
-      newVisit = getTBNode(".", OP);
+      newVisit = getTBNode("->", OP);
       newSelf->next = newVisit;
       newVisit->last = newSelf;
       tmpPre->next = newSelf;
@@ -418,7 +417,7 @@ FTK getTokenLineKind(FuncTranslator* funcTranslator,TBNode* nodes){
   }
   //判断是否是自身属性调用语句,self.var的形式
   if(nodes->token.kind==SELF_KEYWORD){
-    if(nodes->next->token.kind==OP&&strcmp(nodes->next->token.val,".")==0){
+    if(nodes->next->token.kind==OP&&(strcmp(nodes->next->token.val,"->")==0||strcmp(nodes->next->token.val,".")==0)){
       if(nodes->next->next->token.kind==VAR) return SELF_FIELD_VISIT_FTK;
       else if(nodes->next->next->token.kind==FUNC) return SELF_FUNC_VISIT_FTK;
       else return NOT_LEAGAL_FTK;
@@ -1631,7 +1630,12 @@ TBNode* translateSetExp(FuncTranslator* funcTranslator,TBNode* tokens){
 
 //翻译运算语句
 TBNode* translateCountDef(FuncTranslator* functranslator,TBNode* tokens){
-  
+  //运算语句不翻译先
+  //TODO
+  tokens=connect_tokens(tokens,CONST," ");
+  return tokens;
+
+
   //首先小括号决定运算优先级别
   //先去除除了函数调用外的小括号,小括号的运算结果只能是量,而且一般只能够是运算常量,除非小括号里面的内容是单一变量
   tokens=removeParExp(functranslator,tokens);
@@ -1674,43 +1678,7 @@ TBNode* removeSetExp(FuncTranslator* translator,TBNode* tokens){
   //TODO,序列表达式不能够调用方法,也不能够进行操作,所以可以赋一个常量类型标志
   //TODO,然后序列表达式类型可以作为一个特殊的类型处理
   if(tokens==NULL) return NULL;
-
-  //首先处理括号表达式里面的每个子表达式,对每个子表达式进行处理
-  //当前先不考虑具名初始化的内容,假设每个子表达式都是没有具名的,也没有指定下标的
-  TBNode head;
-  head.token.kind=UNKNOWN;
-  head.last=NULL;
-  head.next=tokens;
-  TBNode* track=tokens->next;
-  TBNode* tail;
-  TokenKind kinds[]={RIGHT_BRACE,COMMA};
-  int kindsSize=2;
-  int isRight=1;
-  while(searchExpressUntil(track,&tail,kinds,kindsSize)){
-    TBNode* preHead=track->last;
-    TBNode* sufTail=tail->next;
-
-    //分离出子表达式
-    preHead->next=sufTail;sufTail->last=preHead;
-    track->last=NULL;tail->next=NULL;
-
-    //对子表达式分析
-    track=translateCountDef(translator,track);
-    if(track==NULL){
-      isRight=0;
-      break;
-    }
-    if(sufTail->token.kind==RIGHT_BRACE) break;
-    track=sufTail->next;
-  }
-  tokens=head.next;
-  tokens->last=NULL;
-  if(!isRight){
-    del_tokenLine(tokens);
-    return NULL;
-    
-  }
-  tokens=connect_tokens(tokens,CONST," ");
+  
   return tokens;
 }
 
@@ -1955,59 +1923,10 @@ TBNode* translateFuncUse(FuncTranslator* functranslator,TBNode* tokens){
   //对每个参数只需要进行表达处理即可
   if(func==NULL){
     //这部分应该是不会到达的位置,不过目前头文件不完善,所以分析
-    TBNode* track=tokens->next->next; //首先让足迹来到第一个参数的头部
-    int argIndex=0; //记录当前分析的参数下标
-    int isRight=1;  //标记分析过程是否出现异常
-    //然后每次读取一个参数直到读取到函数的最后一个参数为止
-    while(track!=NULL){
-      TBNode* argHead=track;  //参数头部
-      TBNode* argTail=NULL; //参数尾
-      //搜索参数的尾部
-      //如果搜索参数尾部失败,说明参数表达式存在异常
-      if(!searchArgExpression(argHead,&argTail)){
-        //
-        isRight=0;
-        break;
-      }
-      //如果搜索成功,首先把参数表达式摘出,处理,然后再接回,然后分析下一个
-      TBNode* preHead=argHead->last;
-      TBNode* sufTail=argTail->next;
-
-      //摘出参数表达式
-      preHead->next=NULL;argHead->last=NULL;
-      sufTail->last=NULL;argTail->next=NULL;
-      preHead->next=sufTail;sufTail->last=preHead;
-
-      argHead=process_singleLine(functranslator,argHead);
-      if(argHead==NULL||argHead->last==NULL||argHead->next!=NULL){
-        del_tokenLine(argHead);
-        isRight=0;
-        break;
-      }
-      
-      //如果参数处理成功,连接回来
-      preHead->next=argHead;argHead->last=preHead;
-      sufTail->last=argHead;argHead->next=sufTail;
-      //判断是否要结束
-      if(sufTail->token.kind==RIGHT_PAR){
-        break;
-      }
-      track=sufTail->next;
-      if(track==NULL){
-        isRight=0;
-        break;
-      }
-    }
-
-    //TODO,异常处理
-    if(!isRight){
-      del_tokenLine(tokens);
-      return NULL;
-    }
     //连接整个函数调用,整体化作一个unknown类型的变量
     tokens=connect_tokens(tokens,VAR,"");
     //作为unknown类型变量加入量表
-    addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,0,NULL,0);
+    addVal_valtbl(functranslator->partialValTbl,tokens->token.val,NULL,0,"int",0);
     return tokens;
   }
   
@@ -2223,18 +2142,13 @@ TBNode* translateSelfFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens){
   }
   //如果该主人不含有该属性,进行报错提示
   char* fieldName=tokens->next->next->token.val;
-  if(!hashtbl_get(&type.fields,&fieldName,NULL)){
+  char* fieldTypeName;
+  if(!hashtbl_get(&type.fields,&fieldName,&fieldTypeName)){
     //如果不含该属性
     fprintf(funcTranslator->warningFout,"visit unexistable field %s in type %s->%s function\n",fieldName,type.defaultName,funcTranslator->curFunc->func_name);
     del_tokenLine(tokens);
     return NULL;
   }
-  //否则合并为该类型,查找函数的返回类型
-  int typeIndex;
-  int typeLayer;
-  extractTypeIndexAndPointerLayer(funcTranslator->curFunc->retTypeId,&typeIndex,&typeLayer);
-  //取出类型
-  vector_get(&funcTranslator->gloabalTypeTbl->types,typeIndex,&type);
   //截断后面部分
   TBNode* tail=tokens->next->next;
   TBNode* sufTail=tail->next;
@@ -2247,7 +2161,7 @@ TBNode* translateSelfFieldVisit(FuncTranslator* funcTranslator,TBNode* tokens){
     return NULL;
   }
   //加入量表
-  addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,0,type.defaultName,typeLayer);
+  addVal_valtbl(funcTranslator->partialValTbl,tokens->token.val,NULL,0,fieldTypeName,0);
   tokens->next=sufTail;
   sufTail->last=tokens;
   return process_singleLine(funcTranslator,tokens);
@@ -2381,11 +2295,12 @@ TBNode* translateMemberMethodUse(FuncTranslator* functranslator,TBNode* tokens){
   userNode->next=sufTailNode;sufTailNode->last=userNode;
 
   //判断是否移动后第一参数后面是否要加逗号
-  if(func->args.size>=0){
+  if(func->args.size>=1){
     TBNode* commaNode=getTBNode(",",COMMA);
     userNode->next=commaNode;commaNode->last=userNode;
-    userNode->next=sufTailNode;sufTailNode->last=commaNode;
+    commaNode->next=sufTailNode;sufTailNode->last=commaNode;
   }
+
   //对user进行改名
   if(layer==0){
     //只有这个成员自身才能够使用方法

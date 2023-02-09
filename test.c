@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+int countA(int);
 
 typedef long long unsigned int(*G)(const char*);
 

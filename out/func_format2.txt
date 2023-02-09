@@ -1,8 +1,14 @@
 {
-	self->a = 3 ;
+	self->age=a ;
 }
 {
-	struct M a ;
-	_yjhc_struct_M_doa(&a) ;
+	printf("Hello,I'm %d years old!",self->age) ;
+}
+{
+	Man a ;
+	a.age = 11 ;
+	_yjhc_Man_selfIntroduce(&a) ;
+	_yjhc_Man_setAge(&a,33) ;
+	_yjhc_Man_selfIntroduce(&a) ;
 	return 1 ;
 }

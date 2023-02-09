@@ -1,8 +1,14 @@
 {
-	a = 3 ;
+	age = a ;
 }
 {
-	struct M a ;
-	a . doa ( ) ;
+	printf ( "Hello,I'm %d years old!" , age ) ;
+}
+{
+	Man a ;
+	a . age = 11 ;
+	a . selfIntroduce ( ) ;
+	a . setAge ( 33 ) ;
+	a . selfIntroduce ( ) ;
 	return 1 ;
 }

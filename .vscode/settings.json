@@ -28,7 +28,11 @@
         "bitmap.h": "c",
         "lib_use.h": "c",
         "func_translate.h": "c",
-        "mystring.h": "c"
+        "mystring.h": "c",
+        "all.h": "c",
+        "func.h": "c",
+        "func_tbl.h": "c",
+        "func_rename.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

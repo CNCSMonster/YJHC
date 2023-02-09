@@ -1,1 +1,1 @@
-struct M{ int a; int doa(); } struct M -> int doa(){ a=3; } int main(){ struct M a; a.doa(); return 1; }
+  typedef struct s_man{ int age; void setAge(int a); void selfIntroduce(); }Man; Man->void setAge(int a){ age=a; } Man->void selfIntroduce(){ printf("Hello,I'm %d years old!",age); } int main(){ Man a; a.age=11; a.selfIntroduce(); a.setAge(33); a.selfIntroduce(); return 1; }
